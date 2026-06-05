@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 터치 키오스크 운영용 전역 설정: 텍스트 선택/드래그·확대·스크롤바·우클릭 메뉴 억제 */
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+* {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  overscroll-behavior: none;
+  touch-action: manipulation;
+  font-family: 'Pretendard', system-ui, -apple-system, 'Malgun Gothic', sans-serif;
+}
+
+/* 스크롤바 숨김 */
+::-webkit-scrollbar {
+  display: none;
+}
