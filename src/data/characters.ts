@@ -15,6 +15,7 @@ export interface FaceExpr {
 export const FACE_EXPRESSIONS: FaceExpr[] = [
   { id: 'face0', name: '기본', image: assetUrl('images/characters/expr/face0.png'), price: 0 },
   { id: 'face1', name: '뾰로통', image: assetUrl('images/characters/expr/face1.png'), price: 500_000 },
+  { id: 'face2', name: '새 표정', image: assetUrl('images/characters/expr/face2.png'), price: 500_000 },
 ]
 
 // 기본(base) 상태의 표정.
