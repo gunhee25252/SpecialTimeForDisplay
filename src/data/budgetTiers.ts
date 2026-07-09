@@ -19,6 +19,9 @@ export const BUDGET_TIERS: BudgetTier[] = [
 // 뽑힌 금액 반올림 단위(10만원).
 export const BUDGET_ROUND_UNIT = 100_000
 
+// 카운트업 시작 금액(가장 낮은 티어 하한). "낮은 금액부터" 올라가며 뽑는다.
+export const MIN_BUDGET_AMOUNT = Math.min(...BUDGET_TIERS.map((t) => t.min))
+
 export interface BudgetDrawResult {
   tierId: string
   tierLabel: string

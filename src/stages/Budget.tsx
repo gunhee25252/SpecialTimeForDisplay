@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+﻿import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useAppStore } from '../store/useAppStore'
 import StageLayout from '../components/StageLayout'
 import Button from '../components/Button'
 import { formatWon } from '../utils/format'
 import { BUDGET_DRAW, DREAM_TIER_ID } from '../config/budgetDraw'
+import { MIN_BUDGET_AMOUNT } from '../data/budgetTiers'
 import { fireCelebration, fireGoldBurst } from '../transitions/confetti'
 import { useCountUp } from '../hooks/useCountUp'
 import PlayerIndicator from '../components/PlayerIndicator'
@@ -16,7 +17,6 @@ interface Drawn {
   amount: number
   tierId: string | null
   tierLabel: string | null
-  man: number // 만원 단위 정수(슬롯 표시값)
 }
 
 // 4) budget — 티어 가중 추첨 + 슬롯머신 뽑기 연출. 인원/순서에 따라 흐름 분기.
@@ -29,13 +29,19 @@ export default function Budget() {
 
   const [phase, setPhase] = useState<Phase>('idle')
   const [drawn, setDrawn] = useState<Drawn | null>(null)
-  const [spinKey, setSpinKey] = useState(0)
-  const [forceStop, setForceStop] = useState(false)
   const [showGold, setShowGold] = useState(false)
   const timerRef = useRef<number | null>(null)
 
   const isDuo = playerCount === 2
   const isLastPlayer = !isDuo || currentPlayer === 1
+
+  // 뽑기 카운트업(낮은 금액 → 뽑힌 금액). 스핀 중에만 동작.
+  const draw = useCountUp(
+    drawn?.amount ?? MIN_BUDGET_AMOUNT,
+    BUDGET_DRAW.spinDurationMs,
+    phase === 'spinning',
+    MIN_BUDGET_AMOUNT,
+  )
 
   // 둘이 합산 카운트업(마지막 플레이어 합산 단계에서만 동작).
   const total = (players[0]?.budget ?? 0) + (players[1]?.budget ?? 0)
@@ -51,7 +57,6 @@ export default function Budget() {
 
   const handleSettled = () => {
     clearTimer()
-    setForceStop(true)
     setPhase('revealed')
     // 티어별 차등 연출: 드림 웨딩은 골드 플래시 + 컨페티.
     const p = useAppStore.getState().players[currentPlayer]
@@ -66,22 +71,19 @@ export default function Budget() {
     drawBudget() // 1회 확정
     const p = useAppStore.getState().players[currentPlayer]
     if (!p || p.budget == null) return
-    const man = Math.round(p.budget / 10_000)
-    setDrawn({ amount: p.budget, tierId: p.tierId, tierLabel: p.tierLabel, man })
-    setForceStop(false)
+    setDrawn({ amount: p.budget, tierId: p.tierId, tierLabel: p.tierLabel })
     setShowGold(false)
     setPhase('spinning')
-    setSpinKey((k) => k + 1)
-    const n = String(man).length
-    const allStop =
-      BUDGET_DRAW.spinBaseMs + (n - 1) * BUDGET_DRAW.digitStaggerMs + BUDGET_DRAW.settlePadMs
     clearTimer()
-    timerRef.current = window.setTimeout(handleSettled, allStop)
+    timerRef.current = window.setTimeout(handleSettled, BUDGET_DRAW.spinDurationMs)
   }
 
   // 스핀/합산 스킵
   const skipSpin = () => {
-    if (phase === 'spinning') handleSettled()
+    if (phase === 'spinning') {
+      draw.skip()
+      handleSettled()
+    }
   }
   const skipSum = () => sum.skip()
 
@@ -135,7 +137,9 @@ export default function Budget() {
               }`}
             >
               {drawn ? (
-                <SlotDisplay drawn={drawn} spinKey={spinKey} forceStop={forceStop} big={isDream} />
+                <p className={`font-extrabold tabular-nums ${isDream ? 'text-8xl text-amber-500' : 'text-7xl text-gray-800'}`}>
+                  {formatWon(phase === 'revealed' ? drawn.amount : draw.value)}
+                </p>
               ) : (
                 <p className="text-6xl font-bold text-brand-200">??? 만원</p>
               )}
@@ -190,89 +194,5 @@ export default function Budget() {
         />
       )}
     </StageLayout>
-  )
-}
-
-// 슬롯 숫자 묶음 — 만원 단위 정수를 자리별 슬롯으로 표시(콤마 그룹핑 + "만원").
-function SlotDisplay({
-  drawn,
-  spinKey,
-  forceStop,
-  big,
-}: {
-  drawn: Drawn
-  spinKey: number
-  forceStop: boolean
-  big: boolean
-}) {
-  const digits = String(drawn.man).split('')
-  const n = digits.length
-  const sizeClass = big ? 'text-8xl' : 'text-7xl'
-
-  return (
-    <div className={`flex items-end font-extrabold ${sizeClass} ${big ? 'text-amber-500' : 'text-gray-800'}`}>
-      {digits.map((ch, i) => {
-        const showComma = i > 0 && (n - i) % 3 === 0
-        const stopAt = BUDGET_DRAW.spinBaseMs + i * BUDGET_DRAW.digitStaggerMs
-        return (
-          <span key={i} className="flex items-end">
-            {showComma && <span className="px-1 opacity-60">,</span>}
-            <DigitSlot
-              finalDigit={Number(ch)}
-              stopAt={stopAt}
-              forceStop={forceStop}
-              spinKey={spinKey}
-            />
-          </span>
-        )
-      })}
-      <span className="ml-2 text-4xl font-bold opacity-80">만원</span>
-    </div>
-  )
-}
-
-// 한 자리 슬롯 — stopAt까지 빠르게 숫자가 돌다가 멈춘다. forceStop이면 즉시 확정.
-function DigitSlot({
-  finalDigit,
-  stopAt,
-  forceStop,
-  spinKey,
-}: {
-  finalDigit: number
-  stopAt: number
-  forceStop: boolean
-  spinKey: number
-}) {
-  const [d, setD] = useState(finalDigit)
-  const [stopped, setStopped] = useState(false)
-
-  useEffect(() => {
-    setStopped(false)
-    if (forceStop) {
-      setD(finalDigit)
-      setStopped(true)
-      return
-    }
-    const iv = window.setInterval(() => setD(Math.floor(Math.random() * 10)), BUDGET_DRAW.tickMs)
-    const to = window.setTimeout(() => {
-      window.clearInterval(iv)
-      setD(finalDigit)
-      setStopped(true)
-    }, stopAt)
-    return () => {
-      window.clearInterval(iv)
-      window.clearTimeout(to)
-    }
-  }, [spinKey, forceStop, finalDigit, stopAt])
-
-  return (
-    <motion.span
-      key={stopped ? `s${d}` : 'spin'}
-      animate={stopped ? { scale: [1.4, 1], color: undefined } : {}}
-      transition={{ duration: 0.25 }}
-      className="inline-block w-[0.62em] text-center tabular-nums"
-    >
-      {d}
-    </motion.span>
   )
 }

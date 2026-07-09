@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 
-// 0 → target 으로 카운트업(ease-out). active가 true가 되면 시작.
+// from → target 으로 카운트업(ease-out). active가 true가 되면 시작.
 // 반환된 skip()을 호출하면 즉시 target으로 점프(긴 연출 스킵용).
-export function useCountUp(target: number, durationMs: number, active: boolean) {
-  const [value, setValue] = useState(0)
+export function useCountUp(target: number, durationMs: number, active: boolean, from = 0) {
+  const [value, setValue] = useState(from)
   const skipRef = useRef(false)
 
   useEffect(() => {
     if (!active) {
-      setValue(0)
+      setValue(from)
       return
     }
     skipRef.current = false
@@ -20,14 +20,14 @@ export function useCountUp(target: number, durationMs: number, active: boolean) 
         return
       }
       const t = Math.min(1, (now - start) / durationMs)
-      const eased = 1 - Math.pow(1 - t, 3)
-      setValue(target * eased)
+      const eased = 1 - Math.pow(1 - t, 4) // 후반에 더 천천히(긴장감)
+      setValue(from + (target - from) * eased)
       if (t < 1) raf = requestAnimationFrame(step)
       else setValue(target)
     }
     raf = requestAnimationFrame(step)
     return () => cancelAnimationFrame(raf)
-  }, [target, durationMs, active])
+  }, [target, durationMs, active, from])
 
   const skip = () => {
     skipRef.current = true

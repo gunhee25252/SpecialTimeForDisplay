@@ -1,17 +1,27 @@
+import { assetUrl } from '../utils/asset'
+
+// 꾸미기 배경 이미지(3종). 전부 decorate 전용.
+const BG_IMAGES = {
+  chapel: assetUrl('images/backgrounds/chapel.png'),
+  garden: assetUrl('images/backgrounds/garden.png'),
+  ballroom: assetUrl('images/backgrounds/ballroom.png'),
+}
+
 // 꾸미기 아이템 카탈로그. decorate 화면의 상점/캔버스가 이 목록을 쓴다.
-// Phase 1: 색 블록/도형 더미. thumbnail은 색상값(placeholder), 나중에 이미지 경로로 교체.
+// thumbnail: 이미지가 없을 때 쓰는 CSS 색상값. image: 있으면 실제 이미지로 렌더.
 export type ItemCategory = 'background' | 'object' | 'sticker' | 'text'
 
 export interface DecorItem {
   id: string
   category: ItemCategory
   name: string
-  price: number // 원
-  thumbnail: string // Phase 1: CSS 색상값. Phase 2: 이미지 경로
+  price: number // 원 (배경은 무료)
+  thumbnail: string // 이미지 없을 때의 색상 블록
+  image?: string // 실제 이미지 경로(있으면 우선)
   // 캔버스 배치 시 기본 크기(px, 캔버스 좌표 기준)
   defaultWidth: number
   defaultHeight: number
-  shape?: 'rect' | 'circle' // Phase 1 도형 placeholder
+  shape?: 'rect' | 'circle'
 }
 
 export const ITEM_CATEGORIES: { key: ItemCategory; label: string }[] = [
@@ -22,10 +32,12 @@ export const ITEM_CATEGORIES: { key: ItemCategory; label: string }[] = [
 ]
 
 export const ITEMS: DecorItem[] = [
-  { id: 'bg-pink', category: 'background', name: '핑크 배경', price: 1_000_000, thumbnail: '#f9c6d3', defaultWidth: 240, defaultHeight: 320, shape: 'rect' },
-  { id: 'bg-blue', category: 'background', name: '블루 배경', price: 1_000_000, thumbnail: '#bcd5f2', defaultWidth: 240, defaultHeight: 320, shape: 'rect' },
-  { id: 'bg-mono', category: 'background', name: '모노 배경', price: 1_500_000, thumbnail: '#d4d4d4', defaultWidth: 240, defaultHeight: 320, shape: 'rect' },
+  // 배경(무료) — 탭하면 캔버스 배경으로 설정. 크기는 캔버스 전체를 덮는다.
+  { id: 'bg-chapel', category: 'background', name: '실내 채플', price: 0, thumbnail: '#f6ecd9', image: BG_IMAGES.chapel, defaultWidth: 1080, defaultHeight: 1920 },
+  { id: 'bg-garden', category: 'background', name: '야외 가든', price: 0, thumbnail: '#bfe3a8', image: BG_IMAGES.garden, defaultWidth: 1080, defaultHeight: 1920 },
+  { id: 'bg-ballroom', category: 'background', name: '보라 볼룸', price: 0, thumbnail: '#d9c7ee', image: BG_IMAGES.ballroom, defaultWidth: 1080, defaultHeight: 1920 },
 
+  // 오브제/스티커/문구 — Phase 1 더미(색 블록/도형)
   { id: 'obj-arch', category: 'object', name: '아치 오브제', price: 3_000_000, thumbnail: '#e7c8a0', defaultWidth: 160, defaultHeight: 160, shape: 'rect' },
   { id: 'obj-table', category: 'object', name: '테이블', price: 2_500_000, thumbnail: '#c9a27a', defaultWidth: 180, defaultHeight: 120, shape: 'rect' },
 

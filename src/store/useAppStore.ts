@@ -10,6 +10,7 @@ import { WORLDCUP_ROUNDS, type Round } from '../data/worldcupRounds'
 import { findTypeByCode } from '../data/types16'
 import { drawBudgetResult } from '../data/budgetTiers'
 import { findItem } from '../data/items'
+import { DEFAULT_EXPR_ID, exprPrice, type CharacterKey } from '../data/characters'
 
 export type Stage = 'intro' | 'worldcup' | 'result' | 'budget' | 'decorate' | 'complete'
 
@@ -36,6 +37,18 @@ export interface PlacedItem {
   z: number // 순서(쌓임)
 }
 
+// 고정 등장 인물의 상태(표정 + 위치). 삭제/교체는 불가, 위치는 드래그로 이동 가능.
+// x/y는 캔버스 내부 좌표(px). null이면 Decorate 진입 시 기본 위치로 초기화.
+export type CharacterState = { exprId: string; x: number | null; y: number | null }
+export type CharactersState = Record<CharacterKey, CharacterState>
+
+function makeCharacters(): CharactersState {
+  return {
+    groom: { exprId: DEFAULT_EXPR_ID, x: null, y: null },
+    bride: { exprId: DEFAULT_EXPR_ID, x: null, y: null },
+  }
+}
+
 interface AppState {
   stage: Stage
 
@@ -56,6 +69,8 @@ interface AppState {
 
   placedItems: PlacedItem[]
   spent: number
+  canvasBackgroundId: string | null // decorate 캔버스 배경(배경 아이템 id)
+  characters: CharactersState // 고정 배치되는 신랑·신부
 
   // actions
   setStage: (stage: Stage) => void
@@ -68,6 +83,9 @@ interface AppState {
   placeItem: (itemId: string, x: number, y: number) => boolean // 예산 초과면 false
   moveItem: (instanceId: string, x: number, y: number) => void
   removeItem: (instanceId: string) => void
+  setCharacterExpr: (who: CharacterKey, exprId: string) => boolean // 표정 교체(가격차 반영, 초과면 false)
+  moveCharacter: (who: CharacterKey, x: number, y: number) => void // 인물 위치 이동
+  setCanvasBackground: (itemId: string | null) => void // 배경 선택(예산 무관)
   reset: () => void
 }
 
@@ -123,6 +141,8 @@ const initialState = {
   budget: null as number | null,
   placedItems: [] as PlacedItem[],
   spent: 0,
+  canvasBackgroundId: null as string | null,
+  characters: makeCharacters(),
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -145,6 +165,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       budget: null,
       placedItems: [],
       spent: 0,
+      canvasBackgroundId: null,
+      characters: makeCharacters(),
     })),
 
   choose: (round, side) => {
@@ -240,6 +262,24 @@ export const useAppStore = create<AppState>((set, get) => ({
       ),
     })),
 
+  setCharacterExpr: (who, exprId) => {
+    const { characters, spent, budget } = get()
+    const cur = characters[who]?.exprId
+    // 표정 교체 = 가격차만큼 예산 반영(기본표정=0, 되돌리면 환불).
+    const delta = exprPrice(exprId) - exprPrice(cur)
+    if (budget !== null && spent + delta > budget) return false
+    set({
+      characters: { ...characters, [who]: { ...characters[who], exprId } },
+      spent: Math.max(0, spent + delta),
+    })
+    return true
+  },
+
+  moveCharacter: (who, x, y) =>
+    set((state) => ({
+      characters: { ...state.characters, [who]: { ...state.characters[who], x, y } },
+    })),
+
   removeItem: (instanceId) =>
     set((state) => {
       const target = state.placedItems.find((p) => p.instanceId === instanceId)
@@ -251,8 +291,16 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
     }),
 
+  setCanvasBackground: (itemId) => set({ canvasBackgroundId: itemId }),
+
   reset: () => {
     placeCounter = 0
-    set({ ...initialState, axisScores: emptyAxisScores(), players: [], placedItems: [] })
+    set({
+      ...initialState,
+      axisScores: emptyAxisScores(),
+      players: [],
+      placedItems: [],
+      characters: makeCharacters(),
+    })
   },
 }))
