@@ -2,11 +2,16 @@ import { useRef, useState, useCallback, useLayoutEffect } from 'react'
 import { useAppStore } from '../store/useAppStore'
 import { ITEMS, findItem, type DecorItem, type ItemCategory } from '../data/items'
 import {
-  CHARACTER_BASE,
+  CHARACTER_BODY,
+  CHARACTER_HEAD,
   CHARACTERS,
+  DEFAULT_HAIR_ID,
   FACE_EXPRESSIONS,
+  HAIR_OPTIONS,
   findExpr,
+  findHair,
   exprPrice,
+  hairPrice,
   DEFAULT_EXPR_ID,
   type CharacterKey,
 } from '../data/characters'
@@ -20,11 +25,14 @@ interface ShopTab {
   label: string
   itemCat?: ItemCategory
   who?: CharacterKey
+  characterPart?: 'face' | 'hair'
 }
 const SHOP_TABS: ShopTab[] = [
   { key: 'background', label: '배경', itemCat: 'background' },
-  { key: 'groomFace', label: '신랑 표정', who: 'groom' },
-  { key: 'brideFace', label: '신부 표정', who: 'bride' },
+  { key: 'groomFace', label: '신랑 표정', who: 'groom', characterPart: 'face' },
+  { key: 'brideFace', label: '신부 표정', who: 'bride', characterPart: 'face' },
+  { key: 'groomHair', label: '신랑 헤어', who: 'groom', characterPart: 'hair' },
+  { key: 'brideHair', label: '신부 헤어', who: 'bride', characterPart: 'hair' },
   { key: 'object', label: '오브제', itemCat: 'object' },
   { key: 'sticker', label: '스티커', itemCat: 'sticker' },
   { key: 'text', label: '문구', itemCat: 'text' },
@@ -47,7 +55,7 @@ const FIGURE_ASPECT_W = CW_FRAC * 1000
 const FIGURE_ASPECT_H = CH_FRAC * 1400
 const FIGURE_H_OVER_W = FIGURE_ASPECT_H / FIGURE_ASPECT_W
 
-// base·표정 이미지를 잘라낸 박스에 채우는 공용 스타일.
+// 캐릭터 파츠·표정 이미지를 잘라낸 박스에 채우는 공용 스타일.
 const CHAR_IMG_STYLE: React.CSSProperties = {
   position: 'absolute',
   width: `${IMG_W_PCT}%`,
@@ -77,6 +85,7 @@ export default function Decorate() {
   const removeItem = useAppStore((s) => s.removeItem)
   const characters = useAppStore((s) => s.characters)
   const setCharacterExpr = useAppStore((s) => s.setCharacterExpr)
+  const setCharacterHair = useAppStore((s) => s.setCharacterHair)
   const moveCharacter = useAppStore((s) => s.moveCharacter)
   const canvasBackgroundId = useAppStore((s) => s.canvasBackgroundId)
   const setCanvasBackground = useAppStore((s) => s.setCanvasBackground)
@@ -214,6 +223,7 @@ export default function Decorate() {
             const cs = characters[c.key]
             if (cs.x === null || cs.y === null) return null // 위치 초기화 전
             const ex = findExpr(cs.exprId ?? DEFAULT_EXPR_ID)
+            const hair = findHair(c.key, cs.hairId ?? DEFAULT_HAIR_ID)
             return (
               <div
                 key={c.key}
@@ -230,10 +240,35 @@ export default function Decorate() {
                   touchAction: 'none',
                 }}
               >
-                {/* 풀프레임 이미지를 잘라낸 박스에 확대·오프셋(투명 여백 제거) */}
+                {/* z순서: head → hair → 표정 → body. 모두 같은 풀프레임 이미지라 그대로 겹친다. */}
                 <img
-                  src={CHARACTER_BASE}
+                  src={CHARACTER_HEAD}
                   alt={c.label}
+                  className="pointer-events-none drop-shadow"
+                  style={CHAR_IMG_STYLE}
+                  draggable={false}
+                />
+                {hair?.image && (
+                  <img
+                    src={hair.image}
+                    alt=""
+                    className="pointer-events-none"
+                    style={CHAR_IMG_STYLE}
+                    draggable={false}
+                  />
+                )}
+                {ex && (
+                  <img
+                    src={ex.image}
+                    alt=""
+                    className="pointer-events-none"
+                    style={CHAR_IMG_STYLE}
+                    draggable={false}
+                  />
+                )}
+                <img
+                  src={CHARACTER_BODY}
+                  alt=""
                   className="pointer-events-none drop-shadow"
                   style={CHAR_IMG_STYLE}
                   draggable={false}
@@ -251,16 +286,6 @@ export default function Decorate() {
                 >
                   {c.label}
                 </span>
-                {/* TODO: 옷(outfit) 레이어는 여기(라벨 다음, 표정 앞)에 그려 라벨을 덮게 한다. */}
-                {ex && (
-                  <img
-                    src={ex.image}
-                    alt=""
-                    className="pointer-events-none"
-                    style={CHAR_IMG_STYLE}
-                    draggable={false}
-                  />
-                )}
               </div>
             )
           })}
@@ -318,7 +343,7 @@ export default function Decorate() {
         {/* 상점 */}
         <div className="rounded-2xl bg-white p-3 shadow-sm">
           {/* 카테고리 탭 */}
-          <div className="mb-3 grid grid-cols-6 gap-2">
+          <div className="mb-3 grid grid-cols-4 gap-2">
             {SHOP_TABS.map((t) => (
               <button
                 key={t.key}
@@ -333,7 +358,7 @@ export default function Decorate() {
           </div>
 
           {/* 표정 탭: 해당 인물의 표정 교체 */}
-          {activeTab.who ? (
+          {activeTab.who && activeTab.characterPart === 'face' ? (
             <ShopScrollRow key={activeTab.key}>
               {FACE_EXPRESSIONS.map((ex) => {
                 const who = activeTab.who!
@@ -364,6 +389,46 @@ export default function Decorate() {
                     <span className="w-full truncate text-center text-sm text-gray-700">{ex.name}</span>
                     <span className="w-full truncate text-center text-xs text-gray-400">
                       {ex.price === 0 ? '무료' : formatWon(ex.price)}
+                    </span>
+                  </button>
+                )
+              })}
+            </ShopScrollRow>
+          ) : activeTab.who && activeTab.characterPart === 'hair' ? (
+            <ShopScrollRow key={activeTab.key}>
+              {HAIR_OPTIONS[activeTab.who].map((hair) => {
+                const who = activeTab.who!
+                const curHair = characters[who]?.hairId ?? DEFAULT_HAIR_ID
+                const isCur = hair.id === curHair
+                const delta = hair.price - hairPrice(who, curHair)
+                const affordable = budget === null || spent + delta <= budget
+                return (
+                  <button
+                    key={hair.id}
+                    onClick={() => {
+                      if (!setCharacterHair(who, hair.id)) warn('예산을 초과해서 바꿀 수 없어요.')
+                    }}
+                    disabled={!affordable && !isCur}
+                    className={`flex w-24 shrink-0 select-none flex-col items-center gap-1 rounded-xl border-2 p-2 active:bg-brand-50 disabled:opacity-40 ${
+                      isCur ? 'border-brand-500 bg-brand-50' : 'border-brand-100'
+                    }`}
+                  >
+                    <span className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-lg bg-brand-50 text-xs font-bold text-brand-300">
+                      {hair.image ? (
+                        <img
+                          src={hair.image}
+                          alt={hair.name}
+                          className="h-full w-full object-cover"
+                          style={{ objectPosition: '50% 20%' }}
+                          draggable={false}
+                        />
+                      ) : (
+                        '없음'
+                      )}
+                    </span>
+                    <span className="w-full truncate text-center text-sm text-gray-700">{hair.name}</span>
+                    <span className="w-full truncate text-center text-xs text-gray-400">
+                      {hair.price === 0 ? '무료' : formatWon(hair.price)}
                     </span>
                   </button>
                 )
