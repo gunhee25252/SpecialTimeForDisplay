@@ -13,8 +13,10 @@ import { findItem } from '../data/items'
 import {
   DEFAULT_EXPR_ID,
   DEFAULT_HAIR_ID,
+  DEFAULT_OUTFIT_ID,
   exprPrice,
   hairPrice,
+  outfitPrice,
   type CharacterKey,
 } from '../data/characters'
 
@@ -44,15 +46,33 @@ export interface PlacedItem {
   z: number // 순서(쌓임)
 }
 
-// 고정 등장 인물의 상태(표정/헤어 + 위치). 삭제/교체는 불가, 위치는 드래그로 이동 가능.
+// 고정 등장 인물의 상태(표정/헤어/의상 + 위치). 삭제/교체는 불가, 위치는 드래그로 이동 가능.
 // x/y는 캔버스 내부 좌표(px). null이면 Decorate 진입 시 기본 위치로 초기화.
-export type CharacterState = { exprId: string; hairId: string; x: number | null; y: number | null }
+export type CharacterState = {
+  exprId: string
+  hairId: string
+  outfitId: string
+  x: number | null
+  y: number | null
+}
 export type CharactersState = Record<CharacterKey, CharacterState>
 
 function makeCharacters(): CharactersState {
   return {
-    groom: { exprId: DEFAULT_EXPR_ID, hairId: DEFAULT_HAIR_ID, x: null, y: null },
-    bride: { exprId: DEFAULT_EXPR_ID, hairId: DEFAULT_HAIR_ID, x: null, y: null },
+    groom: {
+      exprId: DEFAULT_EXPR_ID,
+      hairId: DEFAULT_HAIR_ID,
+      outfitId: DEFAULT_OUTFIT_ID,
+      x: null,
+      y: null,
+    },
+    bride: {
+      exprId: DEFAULT_EXPR_ID,
+      hairId: DEFAULT_HAIR_ID,
+      outfitId: DEFAULT_OUTFIT_ID,
+      x: null,
+      y: null,
+    },
   }
 }
 
@@ -92,6 +112,7 @@ interface AppState {
   removeItem: (instanceId: string) => void
   setCharacterExpr: (who: CharacterKey, exprId: string) => boolean // 표정 교체(가격차 반영, 초과면 false)
   setCharacterHair: (who: CharacterKey, hairId: string) => boolean // 헤어 교체(가격차 반영, 초과면 false)
+  setCharacterOutfit: (who: CharacterKey, outfitId: string) => boolean // 의상 교체(가격차 반영, 초과면 false)
   moveCharacter: (who: CharacterKey, x: number, y: number) => void // 인물 위치 이동
   setCanvasBackground: (itemId: string | null) => void // 배경 선택(예산 무관)
   reset: () => void
@@ -333,6 +354,18 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (budget !== null && spent + delta > budget) return false
     set({
       characters: { ...characters, [who]: { ...characters[who], hairId } },
+      spent: Math.max(0, spent + delta),
+    })
+    return true
+  },
+
+  setCharacterOutfit: (who, outfitId) => {
+    const { characters, spent, budget } = get()
+    const cur = characters[who]?.outfitId
+    const delta = outfitPrice(who, outfitId) - outfitPrice(who, cur)
+    if (budget !== null && spent + delta > budget) return false
+    set({
+      characters: { ...characters, [who]: { ...characters[who], outfitId } },
       spent: Math.max(0, spent + delta),
     })
     return true

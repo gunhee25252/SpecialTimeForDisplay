@@ -6,12 +6,16 @@ import {
   CHARACTER_HEAD,
   CHARACTERS,
   DEFAULT_HAIR_ID,
+  DEFAULT_OUTFIT_ID,
   FACE_EXPRESSIONS,
   HAIR_OPTIONS,
+  OUTFIT_OPTIONS,
   findExpr,
   findHair,
+  findOutfit,
   exprPrice,
   hairPrice,
+  outfitPrice,
   DEFAULT_EXPR_ID,
   type CharacterKey,
 } from '../data/characters'
@@ -25,7 +29,7 @@ interface ShopTab {
   label: string
   itemCat?: ItemCategory
   who?: CharacterKey
-  characterPart?: 'face' | 'hair'
+  characterPart?: 'face' | 'hair' | 'outfit'
 }
 const SHOP_TABS: ShopTab[] = [
   { key: 'background', label: '배경', itemCat: 'background' },
@@ -33,6 +37,8 @@ const SHOP_TABS: ShopTab[] = [
   { key: 'brideFace', label: '신부 표정', who: 'bride', characterPart: 'face' },
   { key: 'groomHair', label: '신랑 헤어', who: 'groom', characterPart: 'hair' },
   { key: 'brideHair', label: '신부 헤어', who: 'bride', characterPart: 'hair' },
+  { key: 'groomOutfit', label: '남자 의상', who: 'groom', characterPart: 'outfit' },
+  { key: 'brideOutfit', label: '여자 의상', who: 'bride', characterPart: 'outfit' },
   { key: 'object', label: '오브제', itemCat: 'object' },
   { key: 'sticker', label: '스티커', itemCat: 'sticker' },
   { key: 'text', label: '문구', itemCat: 'text' },
@@ -40,7 +46,7 @@ const SHOP_TABS: ShopTab[] = [
 
 // 원본 1000×1400 프레임에서 실제로 쓸 영역. base 실루엣(측정: x0.31~0.69, y0.21~0.79)에
 // 넉넉히 여백을 둬서, 표정 별·머리·드레스처럼 몸 밖으로 나가는 요소가 잘리지 않게 한다.
-const CONTENT = { x0: 0.15, x1: 0.85, y0: 0.08, y1: 0.92 }
+const CONTENT = { x0: 0.08, x1: 0.92, y0: 0.06, y1: 0.98 }
 const CW_FRAC = CONTENT.x1 - CONTENT.x0 // 잘라낸 폭 비율
 const CH_FRAC = CONTENT.y1 - CONTENT.y0 // 잘라낸 높이 비율
 // 잘라낸 박스 안에 풀프레임 이미지를 확대·오프셋해서 넣기 위한 값(%).
@@ -50,7 +56,7 @@ const IMG_L_PCT = -CONTENT.x0 * IMG_W_PCT
 const IMG_T_PCT = -CONTENT.y0 * IMG_H_PCT
 // 캔버스 대비 인물(잘라낸 박스) 너비 + 종횡비. 여백을 늘린 만큼 박스 너비도 키워
 // 실제 인물의 화면상 크기는 비슷하게 유지.
-const FIGURE_W_RATIO = 0.26
+const FIGURE_W_RATIO = 0.29
 const FIGURE_ASPECT_W = CW_FRAC * 1000
 const FIGURE_ASPECT_H = CH_FRAC * 1400
 const FIGURE_H_OVER_W = FIGURE_ASPECT_H / FIGURE_ASPECT_W
@@ -86,6 +92,7 @@ export default function Decorate() {
   const characters = useAppStore((s) => s.characters)
   const setCharacterExpr = useAppStore((s) => s.setCharacterExpr)
   const setCharacterHair = useAppStore((s) => s.setCharacterHair)
+  const setCharacterOutfit = useAppStore((s) => s.setCharacterOutfit)
   const moveCharacter = useAppStore((s) => s.moveCharacter)
   const canvasBackgroundId = useAppStore((s) => s.canvasBackgroundId)
   const setCanvasBackground = useAppStore((s) => s.setCanvasBackground)
@@ -224,6 +231,8 @@ export default function Decorate() {
             if (cs.x === null || cs.y === null) return null // 위치 초기화 전
             const ex = findExpr(cs.exprId ?? DEFAULT_EXPR_ID)
             const hair = findHair(c.key, cs.hairId ?? DEFAULT_HAIR_ID)
+            const outfit = findOutfit(c.key, cs.outfitId ?? DEFAULT_OUTFIT_ID)
+            const isDefaultOutfit = (cs.outfitId ?? DEFAULT_OUTFIT_ID) === DEFAULT_OUTFIT_ID
             return (
               <div
                 key={c.key}
@@ -267,25 +276,26 @@ export default function Decorate() {
                   />
                 )}
                 <img
-                  src={CHARACTER_BODY}
+                  src={outfit?.image ?? CHARACTER_BODY}
                   alt=""
                   className="pointer-events-none drop-shadow"
                   style={CHAR_IMG_STYLE}
                   draggable={false}
                 />
-                {/* 신랑/신부 라벨: 몸통 중앙에 배치. 나중에 옷 레이어를 이 다음에 그리면 덮인다. */}
-                <span
-                  className="pointer-events-none absolute font-bold text-gray-600"
-                  style={{
-                    left: '50%',
-                    top: '55%',
-                    transform: 'translate(-50%, -50%)',
-                    fontSize: 25,
-                    textShadow: '0 1px 3px rgba(255,255,255,0.9)',
-                  }}
-                >
-                  {c.label}
-                </span>
+                {isDefaultOutfit && (
+                  <span
+                    className="pointer-events-none absolute font-bold text-gray-600"
+                    style={{
+                      left: '50%',
+                      top: '55%',
+                      transform: 'translate(-50%, -50%)',
+                      fontSize: 25,
+                      textShadow: '0 1px 3px rgba(255,255,255,0.9)',
+                    }}
+                  >
+                    {c.label}
+                  </span>
+                )}
               </div>
             )
           })}
@@ -343,7 +353,7 @@ export default function Decorate() {
         {/* 상점 */}
         <div className="rounded-2xl bg-white p-3 shadow-sm">
           {/* 카테고리 탭 */}
-          <div className="mb-3 grid grid-cols-4 gap-2">
+          <div className="mb-3 grid grid-cols-5 gap-2">
             {SHOP_TABS.map((t) => (
               <button
                 key={t.key}
@@ -429,6 +439,42 @@ export default function Decorate() {
                     <span className="w-full truncate text-center text-sm text-gray-700">{hair.name}</span>
                     <span className="w-full truncate text-center text-xs text-gray-400">
                       {hair.price === 0 ? '무료' : formatWon(hair.price)}
+                    </span>
+                  </button>
+                )
+              })}
+            </ShopScrollRow>
+          ) : activeTab.who && activeTab.characterPart === 'outfit' ? (
+            <ShopScrollRow key={activeTab.key}>
+              {OUTFIT_OPTIONS[activeTab.who].map((outfit) => {
+                const who = activeTab.who!
+                const curOutfit = characters[who]?.outfitId ?? DEFAULT_OUTFIT_ID
+                const isCur = outfit.id === curOutfit
+                const delta = outfit.price - outfitPrice(who, curOutfit)
+                const affordable = budget === null || spent + delta <= budget
+                return (
+                  <button
+                    key={outfit.id}
+                    onClick={() => {
+                      if (!setCharacterOutfit(who, outfit.id)) warn('예산을 초과해서 바꿀 수 없어요.')
+                    }}
+                    disabled={!affordable && !isCur}
+                    className={`flex w-24 shrink-0 select-none flex-col items-center gap-1 rounded-xl border-2 p-2 active:bg-brand-50 disabled:opacity-40 ${
+                      isCur ? 'border-brand-500 bg-brand-50' : 'border-brand-100'
+                    }`}
+                  >
+                    <span className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-lg bg-brand-50">
+                      <img
+                        src={outfit.image}
+                        alt={outfit.name}
+                        className="h-full w-full object-cover"
+                        style={{ objectPosition: '50% 55%' }}
+                        draggable={false}
+                      />
+                    </span>
+                    <span className="w-full truncate text-center text-sm text-gray-700">{outfit.name}</span>
+                    <span className="w-full truncate text-center text-xs text-gray-400">
+                      {outfit.price === 0 ? '무료' : formatWon(outfit.price)}
                     </span>
                   </button>
                 )

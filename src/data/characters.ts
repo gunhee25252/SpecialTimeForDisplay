@@ -5,6 +5,8 @@ export const CHARACTER_HEAD = assetUrl('images/characters/head.png')
 export const CHARACTER_BODY = assetUrl('images/characters/body.png')
 export const GROOM_HAIR = assetUrl('images/characters/man_hair_00.png')
 export const BRIDE_HAIR = assetUrl('images/characters/woman_hair_00.png')
+export const GROOM_SUIT = assetUrl('images/characters/suit00.png')
+export const BRIDE_DRESS = assetUrl('images/characters/dress00.png')
 
 export interface FaceExpr {
   id: string
@@ -17,6 +19,13 @@ export interface HairOption {
   id: string
   name: string
   image: string | null
+  price: number
+}
+
+export interface OutfitOption {
+  id: string
+  name: string
+  image: string
   price: number
 }
 
@@ -41,6 +50,7 @@ export const FACE_EXPRESSIONS: FaceExpr[] = [
 export const DEFAULT_EXPR_ID = 'face00'
 
 export const DEFAULT_HAIR_ID = 'none'
+export const DEFAULT_OUTFIT_ID = 'body'
 
 // 고정 등장 인물 2명(삭제/변경 불가). 몸/머리는 공유하고, 헤어와 표정만 각자.
 export type CharacterKey = 'groom' | 'bride'
@@ -60,6 +70,17 @@ export const HAIR_OPTIONS: Record<CharacterKey, HairOption[]> = {
   ],
 }
 
+export const OUTFIT_OPTIONS: Record<CharacterKey, OutfitOption[]> = {
+  groom: [
+    { id: DEFAULT_OUTFIT_ID, name: '기본 의상', image: CHARACTER_BODY, price: 0 },
+    { id: 'suit00', name: '정장 1', image: GROOM_SUIT, price: 1_000_000 },
+  ],
+  bride: [
+    { id: DEFAULT_OUTFIT_ID, name: '기본 의상', image: CHARACTER_BODY, price: 0 },
+    { id: 'dress00', name: '드레스 1', image: BRIDE_DRESS, price: 1_000_000 },
+  ],
+}
+
 export function findExpr(id: string | null | undefined): FaceExpr | undefined {
   return FACE_EXPRESSIONS.find((e) => e.id === id)
 }
@@ -74,4 +95,12 @@ export function findHair(who: CharacterKey, id: string | null | undefined): Hair
 
 export function hairPrice(who: CharacterKey, id: string | null | undefined): number {
   return findHair(who, id)?.price ?? 0
+}
+
+export function findOutfit(who: CharacterKey, id: string | null | undefined): OutfitOption | undefined {
+  return OUTFIT_OPTIONS[who].find((o) => o.id === id)
+}
+
+export function outfitPrice(who: CharacterKey, id: string | null | undefined): number {
+  return findOutfit(who, id)?.price ?? 0
 }
