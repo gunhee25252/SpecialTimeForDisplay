@@ -57,6 +57,16 @@ const CHAR_IMG_STYLE: React.CSSProperties = {
   maxWidth: 'none',
 }
 
+function ShopScrollRow({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="shop-scrollbar-cards">
+      <div className="shop-scrollbar flex gap-3 overflow-x-scroll pb-3">
+        {children}
+      </div>
+    </div>
+  )
+}
+
 // 5) decorate — 신랑·신부 고정 배치 + 배경/표정/아이템 꾸미기.
 export default function Decorate() {
   const placedItems = useAppStore((s) => s.placedItems)
@@ -308,12 +318,12 @@ export default function Decorate() {
         {/* 상점 */}
         <div className="rounded-2xl bg-white p-3 shadow-sm">
           {/* 카테고리 탭 */}
-          <div className="mb-3 flex gap-2">
+          <div className="mb-3 grid grid-cols-6 gap-2">
             {SHOP_TABS.map((t) => (
               <button
                 key={t.key}
                 onClick={() => setActiveTabKey(t.key)}
-                className={`flex-1 select-none rounded-xl py-2 text-base font-medium ${
+                className={`select-none rounded-xl py-2 text-base font-medium ${
                   t.key === activeTabKey ? 'bg-brand-500 text-white' : 'bg-brand-50 text-brand-500'
                 }`}
               >
@@ -324,7 +334,7 @@ export default function Decorate() {
 
           {/* 표정 탭: 해당 인물의 표정 교체 */}
           {activeTab.who ? (
-            <div className="flex gap-3 overflow-x-auto pb-1">
+            <ShopScrollRow key={activeTab.key}>
               {FACE_EXPRESSIONS.map((ex) => {
                 const who = activeTab.who!
                 const curExpr = characters[who]?.exprId ?? DEFAULT_EXPR_ID
@@ -358,10 +368,10 @@ export default function Decorate() {
                   </button>
                 )
               })}
-            </div>
+            </ShopScrollRow>
           ) : (
             // 배치 아이템 탭
-            <div className="flex gap-3 overflow-x-auto pb-1">
+            <ShopScrollRow key={activeTab.key}>
               {ITEMS.filter((i) => i.category === activeTab.itemCat).map((item) => {
                 const isBg = item.category === 'background'
                 const affordable = isBg || budget === null || spent + item.price <= budget
@@ -398,7 +408,7 @@ export default function Decorate() {
                   </button>
                 )
               })}
-            </div>
+            </ShopScrollRow>
           )}
         </div>
 

@@ -12,7 +12,7 @@ import { drawBudgetResult } from '../data/budgetTiers'
 import { findItem } from '../data/items'
 import { DEFAULT_EXPR_ID, exprPrice, type CharacterKey } from '../data/characters'
 
-export type Stage = 'intro' | 'worldcup' | 'result' | 'budget' | 'decorate' | 'complete'
+export type Stage = 'intro' | 'playerSelect' | 'worldcup' | 'result' | 'budget' | 'decorate' | 'complete'
 
 export type PlayerCount = 1 | 2
 
@@ -23,6 +23,7 @@ export type AxisScores = Record<AxisKey, Record<string, number>>
 export interface PlayerResult {
   resultTypeId: string | null
   resultCode: string | null
+  axisScores: AxisScores | null
   budget: number | null
   tierId: string | null
   tierLabel: string | null
@@ -75,7 +76,7 @@ interface AppState {
   // actions
   setStage: (stage: Stage) => void
   setPlayerCount: (count: PlayerCount) => void
-  start: () => void // intro → worldcup (P1부터)
+  start: (count?: PlayerCount) => void // 인원 확정 → worldcup (P1부터)
   choose: (round: Round, side: 'A' | 'B') => void // 선택 → 점수 누적 → (마지막이면) budget으로
   computeResult: () => void // 현재 플레이어 유형 산출 → players에 기록
   drawBudget: () => void // 현재 플레이어 예산 1회 확정(티어 가중 추첨)
@@ -101,8 +102,34 @@ function emptyAxisScores(): AxisScores {
   return scores
 }
 
+function cloneAxisScores(axisScores: AxisScores): AxisScores {
+  return Object.fromEntries(
+    Object.entries(axisScores).map(([key, value]) => [key, { ...value }]),
+  ) as AxisScores
+}
+
+function combineAxisScores(scoresList: (AxisScores | null)[]): AxisScores {
+  const combined = emptyAxisScores()
+  for (const scores of scoresList) {
+    if (!scores) continue
+    for (const axis of AXES) {
+      for (const pole of axis.poles) {
+        combined[axis.key][pole.code] += scores[axis.key]?.[pole.code] ?? 0
+      }
+    }
+  }
+  return combined
+}
+
 function emptyPlayer(): PlayerResult {
-  return { resultTypeId: null, resultCode: null, budget: null, tierId: null, tierLabel: null }
+  return {
+    resultTypeId: null,
+    resultCode: null,
+    axisScores: null,
+    budget: null,
+    tierId: null,
+    tierLabel: null,
+  }
 }
 
 function makePlayers(count: number): PlayerResult[] {
@@ -152,11 +179,12 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   setPlayerCount: (count) => set({ playerCount: count }),
 
-  start: () =>
+  start: (count) =>
     set((state) => ({
       stage: 'worldcup',
+      playerCount: count ?? state.playerCount,
       currentPlayer: 0,
-      players: makePlayers(state.playerCount),
+      players: makePlayers(count ?? state.playerCount),
       roundIndex: 0,
       axisScores: emptyAxisScores(),
       resultTypeId: null,
@@ -203,7 +231,9 @@ export const useAppStore = create<AppState>((set, get) => ({
     const type = findTypeByCode(code)
     const typeId = type ? type.typeId : null
     const updated = players.map((p, i) =>
-      i === currentPlayer ? { ...p, resultCode: code, resultTypeId: typeId } : p,
+      i === currentPlayer
+        ? { ...p, resultCode: code, resultTypeId: typeId, axisScores: cloneAxisScores(axisScores) }
+        : p,
     )
     // 미러도 갱신(다른 스테이지 표시용).
     set({ players: updated, resultCode: code, resultTypeId: typeId })
@@ -231,9 +261,23 @@ export const useAppStore = create<AppState>((set, get) => ({
         stage: 'worldcup',
       })
     } else {
-      // 마지막 플레이어까지 끝 — 예산 합계 확정 후 결과로.
+      // 마지막 플레이어까지 끝 — 예산 합계와 둘이 모드의 합산 취향을 확정 후 결과로.
       const total = players.reduce((sum, p) => sum + (p.budget ?? 0), 0)
-      set({ totalBudget: total, budget: total, stage: 'result' })
+      if (playerCount === 2) {
+        const combinedScores = combineAxisScores(players.map((p) => p.axisScores))
+        const code = computeCode(combinedScores)
+        const type = findTypeByCode(code)
+        set({
+          totalBudget: total,
+          budget: total,
+          axisScores: combinedScores,
+          resultCode: code,
+          resultTypeId: type ? type.typeId : null,
+          stage: 'result',
+        })
+      } else {
+        set({ totalBudget: total, budget: total, stage: 'result' })
+      }
     }
   },
 

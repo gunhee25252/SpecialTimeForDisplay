@@ -3,6 +3,7 @@ import { useIdleReset } from './hooks/useIdleReset'
 import KioskFrame from './components/KioskFrame'
 import TransitionController from './transitions/TransitionController'
 import Intro from './stages/Intro'
+import PlayerSelect from './stages/PlayerSelect'
 import WorldCup from './stages/WorldCup'
 import Result from './stages/Result'
 import Budget from './stages/Budget'
@@ -27,6 +28,8 @@ function StageView({ stage }: { stage: Stage }) {
   switch (stage) {
     case 'intro':
       return <Intro />
+    case 'playerSelect':
+      return <PlayerSelect />
     case 'worldcup':
       return <WorldCup />
     case 'result':

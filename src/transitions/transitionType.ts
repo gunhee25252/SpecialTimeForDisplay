@@ -14,7 +14,7 @@ export type TransitionType =
 export function getTransitionType(from: Stage | null, to: Stage): TransitionType {
   if (from === null) return 'initial'
   if (to === 'intro' && from !== 'intro') return 'reset'
-  if (from === 'intro' && to === 'worldcup') return 'introToWorldcup'
+  if (from === 'playerSelect' && to === 'worldcup') return 'introToWorldcup'
   if (to === 'result') return 'enterResult'
   if (to === 'decorate') return 'enterDecorate'
   if (to === 'complete') return 'decorateToComplete'

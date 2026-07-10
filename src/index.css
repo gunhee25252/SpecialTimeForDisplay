@@ -27,3 +27,28 @@ body {
 ::-webkit-scrollbar {
   display: none;
 }
+
+.shop-scrollbar-cards {
+  min-height: 128px;
+}
+
+.shop-scrollbar {
+  scrollbar-color: #f472b6 #fdf2f8;
+  scrollbar-width: thin;
+}
+
+.shop-scrollbar::-webkit-scrollbar {
+  display: block;
+  height: 12px;
+}
+
+.shop-scrollbar::-webkit-scrollbar-track {
+  border-radius: 9999px;
+  background: #fdf2f8;
+}
+
+.shop-scrollbar::-webkit-scrollbar-thumb {
+  border: 3px solid #fdf2f8;
+  border-radius: 9999px;
+  background: #f472b6;
+}

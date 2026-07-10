@@ -5,9 +5,9 @@ import StageLayout from '../components/StageLayout'
 import Button from '../components/Button'
 import { formatWon } from '../utils/format'
 import { BUDGET_DRAW, DREAM_TIER_ID } from '../config/budgetDraw'
-import { MIN_BUDGET_AMOUNT } from '../data/budgetTiers'
 import { fireCelebration, fireGoldBurst } from '../transitions/confetti'
 import { useCountUp } from '../hooks/useCountUp'
+import { budgetRollDuration, useBudgetRoll } from '../hooks/useBudgetRoll'
 import PlayerIndicator from '../components/PlayerIndicator'
 import { PLAYER_LABELS } from '../config/players'
 
@@ -34,13 +34,15 @@ export default function Budget() {
 
   const isDuo = playerCount === 2
   const isLastPlayer = !isDuo || currentPlayer === 1
+  const budgetTitle = isDuo
+    ? `${PLAYER_LABELS[currentPlayer]} 예산을 뽑아볼까요?`
+    : '나의 웨딩 예산은?'
 
-  // 뽑기 카운트업(낮은 금액 → 뽑힌 금액). 스핀 중에만 동작.
-  const draw = useCountUp(
-    drawn?.amount ?? MIN_BUDGET_AMOUNT,
-    BUDGET_DRAW.spinDurationMs,
+  // 뽑기 롤링: 100만원대 → 1000만원대 → 1억원대 순서로 일정 박자씩 굴린다.
+  const draw = useBudgetRoll(
+    drawn?.amount ?? 0,
     phase === 'spinning',
-    MIN_BUDGET_AMOUNT,
+    BUDGET_DRAW.rollStageDurationMs,
   )
 
   // 둘이 합산 카운트업(마지막 플레이어 합산 단계에서만 동작).
@@ -75,7 +77,10 @@ export default function Budget() {
     setShowGold(false)
     setPhase('spinning')
     clearTimer()
-    timerRef.current = window.setTimeout(handleSettled, BUDGET_DRAW.spinDurationMs)
+    timerRef.current = window.setTimeout(
+      handleSettled,
+      budgetRollDuration(p.budget, BUDGET_DRAW.rollStageDurationMs),
+    )
   }
 
   // 스핀/합산 스킵
@@ -105,12 +110,10 @@ export default function Budget() {
         {/* 헤더: (둘이) 플레이어 인디케이터 + 라벨 + 앞사람 요약 */}
         <div className="space-y-3">
           {isDuo && <PlayerIndicator />}
-          <p className="text-2xl text-brand-400">
-            {isDuo ? `${PLAYER_LABELS[currentPlayer]} 분의 예산은?` : '나의 웨딩 예산은?'}
-          </p>
+          <p className="text-2xl text-brand-400">{budgetTitle}</p>
           {isDuo && currentPlayer === 1 && players[0]?.budget != null && (
             <p className="text-lg text-gray-400">
-              {PLAYER_LABELS[0]} · {players[0].tierLabel} {formatWon(players[0].budget)}
+              {PLAYER_LABELS[0]} 예산 · {players[0].tierLabel} {formatWon(players[0].budget)}
             </p>
           )}
         </div>
@@ -141,7 +144,7 @@ export default function Budget() {
                   {formatWon(phase === 'revealed' ? drawn.amount : draw.value)}
                 </p>
               ) : (
-                <p className="text-6xl font-bold text-brand-200">??? 만원</p>
+                <p className="text-6xl font-bold text-brand-200">???만원</p>
               )}
             </div>
 
@@ -173,15 +176,15 @@ export default function Budget() {
             </Button>
           )}
           {phase === 'revealed' && !isLastPlayer && (
-            <Button onClick={nextAfterBudget}>다음 사람 →</Button>
+            <Button onClick={nextAfterBudget}>두 번째 예산 뽑기</Button>
           )}
           {phase === 'revealed' && isLastPlayer && isDuo && (
-            <Button onClick={() => setPhase('summing')}>합산 결과 보기</Button>
+            <Button onClick={() => setPhase('summing')}>두 사람 예산 합치기</Button>
           )}
           {phase === 'revealed' && isLastPlayer && !isDuo && (
             <Button onClick={nextAfterBudget}>결과 보기</Button>
           )}
-          {phase === 'summing' && <Button onClick={nextAfterBudget}>결과 보기</Button>}
+          {phase === 'summing' && <Button onClick={nextAfterBudget}>합친 취향 결과 보기</Button>}
         </div>
       </div>
 
