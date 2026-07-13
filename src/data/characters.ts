@@ -3,11 +3,9 @@ import { assetUrl } from '../utils/asset'
 // 캐릭터 공통 파츠. 모든 파츠/표정/헤어는 동일한 1000×1400 프레임의 투명 PNG라 그대로 겹치면 정렬된다.
 export const CHARACTER_HEAD = assetUrl('images/characters/head.png')
 export const CHARACTER_BODY = assetUrl('images/characters/body.png')
-export const GROOM_HAIR = assetUrl('images/characters/man_hair_00.png')
-export const BRIDE_HAIR = assetUrl('images/characters/woman_hair_00.png')
-export const BRIDE_HAIR_01 = assetUrl('images/characters/woman_hair_01.png')
 export const GROOM_SUIT = assetUrl('images/characters/suit00.png')
 export const BRIDE_DRESS = assetUrl('images/characters/dress00.png')
+export const BRIDE_DRESS_01 = assetUrl('images/characters/dress01.png')
 
 export interface FaceExpr {
   id: string
@@ -20,6 +18,14 @@ export interface HairOption {
   id: string
   name: string
   image: string | null
+  price: number
+}
+
+export interface HairColorOption {
+  id: string
+  name: string
+  swatch: string
+  filter: string
   price: number
 }
 
@@ -51,7 +57,64 @@ export const FACE_EXPRESSIONS: FaceExpr[] = [
 export const DEFAULT_EXPR_ID = 'face00'
 
 export const DEFAULT_HAIR_ID = 'none'
+export const DEFAULT_HAIR_COLOR_ID = 'natural'
 export const DEFAULT_OUTFIT_ID = 'body'
+const HAIR_PRICE = 500_000
+const HAIR_COLOR_PRICE = 500_000
+
+const GROOM_HAIR_IDS = [
+  'man_hair_00',
+  'man_hair_01',
+  'man_hair_02',
+  'man_hair_03',
+  'man_hair_04',
+  'man_hair_05',
+  'man_hair_06',
+  'man_hair_07',
+  'man_hair_08',
+  'man_hair_09',
+  'man_hair_10',
+  'man_hair_12',
+  'man_hair_13',
+  'man_hair_14',
+  'man_hair_15',
+  'man_hair_16',
+  'man_hair_17',
+  'man_hair_18',
+  'man_hair_19',
+]
+
+const BRIDE_HAIR_IDS = [
+  'woman_hair_00',
+  'woman_hair_01',
+  'woman_hair_02',
+  'woman_hair_03',
+  'woman_hair_04',
+  'woman_hair_05',
+  'woman_hair_06',
+  'woman_hair_07',
+  'woman_hair_08',
+  'woman_hair_09',
+  'woman_hair_10',
+  'woman_hair_11',
+  'woman_hair_12',
+  'woman_hair_13',
+  'woman_hair_14',
+  'woman_hair_15',
+  'woman_hair_16',
+  'woman_hair_17',
+  'woman_hair_18',
+  'woman_hair_19',
+]
+
+function makeHairOption(id: string, label: string, index: number): HairOption {
+  return {
+    id,
+    name: `${label} 헤어 ${index + 1}`,
+    image: assetUrl(`images/characters/${id}.png`),
+    price: HAIR_PRICE,
+  }
+}
 
 // 고정 등장 인물 2명(삭제/변경 불가). 몸/머리는 공유하고, 헤어와 표정만 각자.
 export type CharacterKey = 'groom' | 'bride'
@@ -63,24 +126,52 @@ export const CHARACTERS: { key: CharacterKey; label: string }[] = [
 export const HAIR_OPTIONS: Record<CharacterKey, HairOption[]> = {
   groom: [
     { id: DEFAULT_HAIR_ID, name: '헤어 없음', image: null, price: 0 },
-    { id: 'man_hair_00', name: '신랑 헤어 1', image: GROOM_HAIR, price: 500_000 },
+    ...GROOM_HAIR_IDS.map((id, index) => makeHairOption(id, '신랑', index)),
   ],
   bride: [
     { id: DEFAULT_HAIR_ID, name: '헤어 없음', image: null, price: 0 },
-    { id: 'woman_hair_00', name: '신부 헤어 1', image: BRIDE_HAIR, price: 500_000 },
-    { id: 'woman_hair_01', name: '신부 헤어 2', image: BRIDE_HAIR_01, price: 500_000 },
-    { id: 'woman_hair_02', name: '신부 헤어 3', image: assetUrl('images/characters/woman_hair_02.png'), price: 500_000 },
-    { id: 'woman_hair_03', name: '신부 헤어 4', image: assetUrl('images/characters/woman_hair_03.png'), price: 500_000 },
-    { id: 'woman_hair_04', name: '신부 헤어 5', image: assetUrl('images/characters/woman_hair_04.png'), price: 500_000 },
-    { id: 'woman_hair_05', name: '신부 헤어 6', image: assetUrl('images/characters/woman_hair_05.png'), price: 500_000 },
-    { id: 'woman_hair_06', name: '신부 헤어 7', image: assetUrl('images/characters/woman_hair_06.png'), price: 500_000 },
-    { id: 'woman_hair_07', name: '신부 헤어 8', image: assetUrl('images/characters/woman_hair_07.png'), price: 500_000 },
-    { id: 'woman_hair_08', name: '신부 헤어 9', image: assetUrl('images/characters/woman_hair_08.png'), price: 500_000 },
-    { id: 'woman_hair_11', name: '신부 헤어 12', image: assetUrl('images/characters/woman_hair_11.png'), price: 500_000 },
-    { id: 'woman_hair_13', name: '신부 헤어 14', image: assetUrl('images/characters/woman_hair_13.png'), price: 500_000 },
-    { id: 'woman_hair_17', name: '신부 헤어 18', image: assetUrl('images/characters/woman_hair_17.png'), price: 500_000 },
+    ...BRIDE_HAIR_IDS.map((id, index) => makeHairOption(id, '신부', index)),
   ],
 }
+
+export const HAIR_COLOR_OPTIONS: HairColorOption[] = [
+  { id: DEFAULT_HAIR_COLOR_ID, name: '기본색', swatch: '#27211f', filter: 'none', price: 0 },
+  {
+    id: 'brown',
+    name: '브라운',
+    swatch: '#7a4a2a',
+    filter: 'sepia(0.85) saturate(1.8) hue-rotate(340deg) brightness(0.82)',
+    price: HAIR_COLOR_PRICE,
+  },
+  {
+    id: 'blonde',
+    name: '블론드',
+    swatch: '#d8aa52',
+    filter: 'sepia(1) saturate(2.4) hue-rotate(350deg) brightness(1.18)',
+    price: HAIR_COLOR_PRICE,
+  },
+  {
+    id: 'ash',
+    name: '애쉬',
+    swatch: '#8b9299',
+    filter: 'grayscale(1) brightness(1.28) contrast(0.82)',
+    price: HAIR_COLOR_PRICE,
+  },
+  {
+    id: 'pink',
+    name: '핑크',
+    swatch: '#d77a9d',
+    filter: 'sepia(1) saturate(2.4) hue-rotate(285deg) brightness(1.08)',
+    price: HAIR_COLOR_PRICE,
+  },
+  {
+    id: 'blue',
+    name: '블루',
+    swatch: '#4f80c7',
+    filter: 'sepia(1) saturate(2.5) hue-rotate(175deg) brightness(0.95)',
+    price: HAIR_COLOR_PRICE,
+  },
+]
 
 export const OUTFIT_OPTIONS: Record<CharacterKey, OutfitOption[]> = {
   groom: [
@@ -90,6 +181,7 @@ export const OUTFIT_OPTIONS: Record<CharacterKey, OutfitOption[]> = {
   bride: [
     { id: DEFAULT_OUTFIT_ID, name: '기본 의상', image: CHARACTER_BODY, price: 0 },
     { id: 'dress00', name: '드레스 1', image: BRIDE_DRESS, price: 1_000_000 },
+    { id: 'dress01', name: '드레스 2', image: BRIDE_DRESS_01, price: 1_000_000 },
   ],
 }
 
@@ -107,6 +199,14 @@ export function findHair(who: CharacterKey, id: string | null | undefined): Hair
 
 export function hairPrice(who: CharacterKey, id: string | null | undefined): number {
   return findHair(who, id)?.price ?? 0
+}
+
+export function findHairColor(id: string | null | undefined): HairColorOption | undefined {
+  return HAIR_COLOR_OPTIONS.find((c) => c.id === id)
+}
+
+export function hairColorPrice(id: string | null | undefined): number {
+  return findHairColor(id)?.price ?? 0
 }
 
 export function findOutfit(who: CharacterKey, id: string | null | undefined): OutfitOption | undefined {

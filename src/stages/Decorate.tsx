@@ -5,15 +5,19 @@ import {
   CHARACTER_BODY,
   CHARACTER_HEAD,
   CHARACTERS,
+  DEFAULT_HAIR_COLOR_ID,
   DEFAULT_HAIR_ID,
   DEFAULT_OUTFIT_ID,
   FACE_EXPRESSIONS,
+  HAIR_COLOR_OPTIONS,
   HAIR_OPTIONS,
   OUTFIT_OPTIONS,
   findExpr,
   findHair,
+  findHairColor,
   findOutfit,
   exprPrice,
+  hairColorPrice,
   hairPrice,
   outfitPrice,
   DEFAULT_EXPR_ID,
@@ -29,7 +33,7 @@ interface ShopTab {
   label: string
   itemCat?: ItemCategory
   who?: CharacterKey
-  characterPart?: 'face' | 'hair' | 'outfit'
+  characterPart?: 'face' | 'hair' | 'hairColor' | 'outfit'
 }
 const SHOP_TABS: ShopTab[] = [
   { key: 'background', label: '배경', itemCat: 'background' },
@@ -37,6 +41,8 @@ const SHOP_TABS: ShopTab[] = [
   { key: 'brideFace', label: '신부 표정', who: 'bride', characterPart: 'face' },
   { key: 'groomHair', label: '신랑 헤어', who: 'groom', characterPart: 'hair' },
   { key: 'brideHair', label: '신부 헤어', who: 'bride', characterPart: 'hair' },
+  { key: 'groomHairColor', label: '신랑 염색', who: 'groom', characterPart: 'hairColor' },
+  { key: 'brideHairColor', label: '신부 염색', who: 'bride', characterPart: 'hairColor' },
   { key: 'groomOutfit', label: '신랑 의상', who: 'groom', characterPart: 'outfit' },
   { key: 'brideOutfit', label: '신부 의상', who: 'bride', characterPart: 'outfit' },
   { key: 'object', label: '오브제', itemCat: 'object' },
@@ -92,6 +98,7 @@ export default function Decorate() {
   const characters = useAppStore((s) => s.characters)
   const setCharacterExpr = useAppStore((s) => s.setCharacterExpr)
   const setCharacterHair = useAppStore((s) => s.setCharacterHair)
+  const setCharacterHairColor = useAppStore((s) => s.setCharacterHairColor)
   const setCharacterOutfit = useAppStore((s) => s.setCharacterOutfit)
   const moveCharacter = useAppStore((s) => s.moveCharacter)
   const canvasBackgroundId = useAppStore((s) => s.canvasBackgroundId)
@@ -231,8 +238,13 @@ export default function Decorate() {
             if (cs.x === null || cs.y === null) return null // 위치 초기화 전
             const ex = findExpr(cs.exprId ?? DEFAULT_EXPR_ID)
             const hair = findHair(c.key, cs.hairId ?? DEFAULT_HAIR_ID)
+            const hairColor = findHairColor(cs.hairColorId ?? DEFAULT_HAIR_COLOR_ID)
             const outfit = findOutfit(c.key, cs.outfitId ?? DEFAULT_OUTFIT_ID)
             const isDefaultOutfit = (cs.outfitId ?? DEFAULT_OUTFIT_ID) === DEFAULT_OUTFIT_ID
+            const hairStyle = {
+              ...CHAR_IMG_STYLE,
+              filter: hairColor?.filter === 'none' ? undefined : hairColor?.filter,
+            }
             return (
               <div
                 key={c.key}
@@ -262,7 +274,7 @@ export default function Decorate() {
                     src={hair.image}
                     alt=""
                     className="pointer-events-none"
-                    style={CHAR_IMG_STYLE}
+                    style={hairStyle}
                     draggable={false}
                   />
                 )}
@@ -409,6 +421,7 @@ export default function Decorate() {
               {HAIR_OPTIONS[activeTab.who].map((hair) => {
                 const who = activeTab.who!
                 const curHair = characters[who]?.hairId ?? DEFAULT_HAIR_ID
+                const curHairColor = findHairColor(characters[who]?.hairColorId ?? DEFAULT_HAIR_COLOR_ID)
                 const isCur = hair.id === curHair
                 const delta = hair.price - hairPrice(who, curHair)
                 const affordable = budget === null || spent + delta <= budget
@@ -429,7 +442,10 @@ export default function Decorate() {
                           src={hair.image}
                           alt={hair.name}
                           className="h-full w-full object-cover"
-                          style={{ objectPosition: '50% 20%' }}
+                          style={{
+                            objectPosition: '50% 20%',
+                            filter: curHairColor?.filter === 'none' ? undefined : curHairColor?.filter,
+                          }}
                           draggable={false}
                         />
                       ) : (
@@ -439,6 +455,39 @@ export default function Decorate() {
                     <span className="w-full truncate text-center text-sm text-gray-700">{hair.name}</span>
                     <span className="w-full truncate text-center text-xs text-gray-400">
                       {hair.price === 0 ? '무료' : formatWon(hair.price)}
+                    </span>
+                  </button>
+                )
+              })}
+            </ShopScrollRow>
+          ) : activeTab.who && activeTab.characterPart === 'hairColor' ? (
+            <ShopScrollRow key={activeTab.key}>
+              {HAIR_COLOR_OPTIONS.map((color) => {
+                const who = activeTab.who!
+                const curColor = characters[who]?.hairColorId ?? DEFAULT_HAIR_COLOR_ID
+                const isCur = color.id === curColor
+                const delta = color.price - hairColorPrice(curColor)
+                const affordable = budget === null || spent + delta <= budget
+                return (
+                  <button
+                    key={color.id}
+                    onClick={() => {
+                      if (!setCharacterHairColor(who, color.id)) warn('예산을 초과해서 바꿀 수 없어요.')
+                    }}
+                    disabled={!affordable && !isCur}
+                    className={`flex w-24 shrink-0 select-none flex-col items-center gap-1 rounded-xl border-2 p-2 active:bg-brand-50 disabled:opacity-40 ${
+                      isCur ? 'border-brand-500 bg-brand-50' : 'border-brand-100'
+                    }`}
+                  >
+                    <span className="flex h-16 w-16 items-center justify-center rounded-lg bg-brand-50">
+                      <span
+                        className="h-11 w-11 rounded-full border border-white shadow-inner"
+                        style={{ backgroundColor: color.swatch }}
+                      />
+                    </span>
+                    <span className="w-full truncate text-center text-sm text-gray-700">{color.name}</span>
+                    <span className="w-full truncate text-center text-xs text-gray-400">
+                      {color.price === 0 ? '무료' : formatWon(color.price)}
                     </span>
                   </button>
                 )

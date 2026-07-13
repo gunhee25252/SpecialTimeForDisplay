@@ -12,9 +12,11 @@ import { drawBudgetResult } from '../data/budgetTiers'
 import { findItem } from '../data/items'
 import {
   DEFAULT_EXPR_ID,
+  DEFAULT_HAIR_COLOR_ID,
   DEFAULT_HAIR_ID,
   DEFAULT_OUTFIT_ID,
   exprPrice,
+  hairColorPrice,
   hairPrice,
   outfitPrice,
   type CharacterKey,
@@ -51,6 +53,7 @@ export interface PlacedItem {
 export type CharacterState = {
   exprId: string
   hairId: string
+  hairColorId: string
   outfitId: string
   x: number | null
   y: number | null
@@ -62,6 +65,7 @@ function makeCharacters(): CharactersState {
     groom: {
       exprId: DEFAULT_EXPR_ID,
       hairId: DEFAULT_HAIR_ID,
+      hairColorId: DEFAULT_HAIR_COLOR_ID,
       outfitId: DEFAULT_OUTFIT_ID,
       x: null,
       y: null,
@@ -69,6 +73,7 @@ function makeCharacters(): CharactersState {
     bride: {
       exprId: DEFAULT_EXPR_ID,
       hairId: DEFAULT_HAIR_ID,
+      hairColorId: DEFAULT_HAIR_COLOR_ID,
       outfitId: DEFAULT_OUTFIT_ID,
       x: null,
       y: null,
@@ -112,6 +117,7 @@ interface AppState {
   removeItem: (instanceId: string) => void
   setCharacterExpr: (who: CharacterKey, exprId: string) => boolean // 표정 교체(가격차 반영, 초과면 false)
   setCharacterHair: (who: CharacterKey, hairId: string) => boolean // 헤어 교체(가격차 반영, 초과면 false)
+  setCharacterHairColor: (who: CharacterKey, hairColorId: string) => boolean // 헤어 염색(가격차 반영, 초과면 false)
   setCharacterOutfit: (who: CharacterKey, outfitId: string) => boolean // 의상 교체(가격차 반영, 초과면 false)
   moveCharacter: (who: CharacterKey, x: number, y: number) => void // 인물 위치 이동
   setCanvasBackground: (itemId: string | null) => void // 배경 선택(예산 무관)
@@ -354,6 +360,18 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (budget !== null && spent + delta > budget) return false
     set({
       characters: { ...characters, [who]: { ...characters[who], hairId } },
+      spent: Math.max(0, spent + delta),
+    })
+    return true
+  },
+
+  setCharacterHairColor: (who, hairColorId) => {
+    const { characters, spent, budget } = get()
+    const cur = characters[who]?.hairColorId
+    const delta = hairColorPrice(hairColorId) - hairColorPrice(cur)
+    if (budget !== null && spent + delta > budget) return false
+    set({
+      characters: { ...characters, [who]: { ...characters[who], hairColorId } },
       spent: Math.max(0, spent + delta),
     })
     return true
