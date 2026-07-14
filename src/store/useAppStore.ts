@@ -57,6 +57,7 @@ export type CharacterState = {
   outfitId: string
   x: number | null
   y: number | null
+  z: number
 }
 export type CharactersState = Record<CharacterKey, CharacterState>
 
@@ -69,6 +70,7 @@ function makeCharacters(): CharactersState {
       outfitId: DEFAULT_OUTFIT_ID,
       x: null,
       y: null,
+      z: 1,
     },
     bride: {
       exprId: DEFAULT_EXPR_ID,
@@ -77,6 +79,7 @@ function makeCharacters(): CharactersState {
       outfitId: DEFAULT_OUTFIT_ID,
       x: null,
       y: null,
+      z: 2,
     },
   }
 }
@@ -114,12 +117,14 @@ interface AppState {
   nextAfterBudget: () => void // 예산 확정 후 흐름 진행(다음 사람 / 결과)
   placeItem: (itemId: string, x: number, y: number) => boolean // 예산 초과면 false
   moveItem: (instanceId: string, x: number, y: number) => void
+  bringItemToFront: (instanceId: string) => void
   removeItem: (instanceId: string) => void
   setCharacterExpr: (who: CharacterKey, exprId: string) => boolean // 표정 교체(가격차 반영, 초과면 false)
   setCharacterHair: (who: CharacterKey, hairId: string) => boolean // 헤어 교체(가격차 반영, 초과면 false)
   setCharacterHairColor: (who: CharacterKey, hairColorId: string) => boolean // 헤어 염색(가격차 반영, 초과면 false)
   setCharacterOutfit: (who: CharacterKey, outfitId: string) => boolean // 의상 교체(가격차 반영, 초과면 false)
   moveCharacter: (who: CharacterKey, x: number, y: number) => void // 인물 위치 이동
+  bringCharacterToFront: (who: CharacterKey) => void
   setCanvasBackground: (itemId: string | null) => void // 배경 선택(예산 무관)
   reset: () => void
 }
@@ -188,6 +193,12 @@ function computeCode(axisScores: AxisScores): string {
 
 // 다음 배치 z값과 고유 instanceId 생성을 위한 단조 증가 카운터.
 let placeCounter = 0
+
+function nextZ(placedItems: PlacedItem[], characters: CharactersState): number {
+  const itemZ = placedItems.map((p) => p.z)
+  const characterZ = Object.values(characters).map((c) => c.z ?? 0)
+  return Math.max(0, ...itemZ, ...characterZ) + 1
+}
 
 const initialState = {
   stage: 'intro' as Stage,
@@ -318,7 +329,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   placeItem: (itemId, x, y) => {
     const item = findItem(itemId)
     if (!item) return false
-    const { spent, budget, placedItems } = get()
+    const { spent, budget, placedItems, characters } = get()
     // 예산 한도 반영: 합계가 예산을 넘으면 배치하지 않음.
     if (budget !== null && spent + item.price > budget) return false
     placeCounter += 1
@@ -327,7 +338,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       itemId,
       x,
       y,
-      z: placeCounter,
+      z: nextZ(placedItems, characters),
     }
     set({ placedItems: [...placedItems, placed], spent: spent + item.price })
     return true
@@ -339,6 +350,16 @@ export const useAppStore = create<AppState>((set, get) => ({
         p.instanceId === instanceId ? { ...p, x, y } : p,
       ),
     })),
+
+  bringItemToFront: (instanceId) =>
+    set((state) => {
+      const z = nextZ(state.placedItems, state.characters)
+      return {
+        placedItems: state.placedItems.map((p) =>
+          p.instanceId === instanceId ? { ...p, z } : p,
+        ),
+      }
+    }),
 
   setCharacterExpr: (who, exprId) => {
     const { characters, spent, budget } = get()
@@ -392,6 +413,14 @@ export const useAppStore = create<AppState>((set, get) => ({
   moveCharacter: (who, x, y) =>
     set((state) => ({
       characters: { ...state.characters, [who]: { ...state.characters[who], x, y } },
+    })),
+
+  bringCharacterToFront: (who) =>
+    set((state) => ({
+      characters: {
+        ...state.characters,
+        [who]: { ...state.characters[who], z: nextZ(state.placedItems, state.characters) },
+      },
     })),
 
   removeItem: (instanceId) =>

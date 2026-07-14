@@ -94,6 +94,7 @@ export default function Decorate() {
   const budget = useAppStore((s) => s.budget)
   const placeItem = useAppStore((s) => s.placeItem)
   const moveItem = useAppStore((s) => s.moveItem)
+  const bringItemToFront = useAppStore((s) => s.bringItemToFront)
   const removeItem = useAppStore((s) => s.removeItem)
   const characters = useAppStore((s) => s.characters)
   const setCharacterExpr = useAppStore((s) => s.setCharacterExpr)
@@ -101,6 +102,7 @@ export default function Decorate() {
   const setCharacterHairColor = useAppStore((s) => s.setCharacterHairColor)
   const setCharacterOutfit = useAppStore((s) => s.setCharacterOutfit)
   const moveCharacter = useAppStore((s) => s.moveCharacter)
+  const bringCharacterToFront = useAppStore((s) => s.bringCharacterToFront)
   const canvasBackgroundId = useAppStore((s) => s.canvasBackgroundId)
   const setCanvasBackground = useAppStore((s) => s.setCanvasBackground)
   const setStage = useAppStore((s) => s.setStage)
@@ -167,6 +169,7 @@ export default function Decorate() {
     e.stopPropagation()
     setSelectedId(instanceId)
     setSelectedChar(null)
+    bringItemToFront(instanceId)
     const { x, y } = toCanvasCoords(e.clientX, e.clientY)
     dragRef.current = { kind: 'item', key: instanceId, offsetX: x - px, offsetY: y - py }
     ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
@@ -177,6 +180,7 @@ export default function Decorate() {
     e.stopPropagation()
     setSelectedChar(who)
     setSelectedId(null)
+    bringCharacterToFront(who)
     const { x, y } = toCanvasCoords(e.clientX, e.clientY)
     dragRef.current = { kind: 'char', key: who, offsetX: x - px, offsetY: y - py }
     ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
@@ -268,7 +272,7 @@ export default function Decorate() {
                   top: cs.y,
                   width: `${FIGURE_W_RATIO * 100}%`,
                   aspectRatio: `${FIGURE_ASPECT_W} / ${FIGURE_ASPECT_H}`,
-                  zIndex: 10,
+                  zIndex: cs.z ?? 0,
                   touchAction: 'none',
                 }}
               >
@@ -351,7 +355,7 @@ export default function Decorate() {
                   top: p.y,
                   width: item.defaultWidth,
                   height: item.defaultHeight,
-                  zIndex: p.z + 100, // 인물 위에 올라오도록
+                  zIndex: p.z,
                   backgroundColor: item.image ? 'transparent' : item.thumbnail,
                   borderRadius: item.shape === 'circle' ? '9999px' : '12px',
                   touchAction: 'none',

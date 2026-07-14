@@ -3,10 +3,6 @@ import { assetUrl } from '../utils/asset'
 // 캐릭터 공통 파츠. 모든 파츠/표정/헤어는 동일한 1000×1400 프레임의 투명 PNG라 그대로 겹치면 정렬된다.
 export const CHARACTER_HEAD = assetUrl('images/characters/head.png')
 export const CHARACTER_BODY = assetUrl('images/characters/body.png')
-export const GROOM_SUIT = assetUrl('images/characters/man_dress/suit00.png')
-export const BRIDE_DRESS = assetUrl('images/characters/woman_dress/dress00.png')
-export const BRIDE_DRESS_01 = assetUrl('images/characters/woman_dress/dress01.png')
-export const BRIDE_DRESS_02 = assetUrl('images/characters/woman_dress/dress02.png')
 
 export interface FaceExpr {
   id: string
@@ -63,6 +59,7 @@ export const DEFAULT_HAIR_COLOR_ID = 'natural'
 export const DEFAULT_OUTFIT_ID = 'body'
 const HAIR_PRICE = 500_000
 const HAIR_COLOR_PRICE = 500_000
+const OUTFIT_PRICE = 1_000_000
 
 const GROOM_HAIR_IDS = [
   'man_hair_00',
@@ -109,6 +106,9 @@ const BRIDE_HAIR_IDS = [
   'woman_hair_19',
 ]
 
+const GROOM_OUTFIT_IDS = ['suit00', 'suit01', 'suit02', 'suit03', 'suit04', 'suit05']
+const BRIDE_OUTFIT_IDS = ['dress00', 'dress01', 'dress02', 'dress03', 'dress04']
+
 function makeHairOption(id: string, label: string, index: number, folder?: string, hasMask = false): HairOption {
   const path = folder ? `images/characters/${folder}/${id}.png` : `images/characters/${id}.png`
   return {
@@ -117,6 +117,15 @@ function makeHairOption(id: string, label: string, index: number, folder?: strin
     image: assetUrl(path),
     maskImage: hasMask ? assetUrl(path.replace('.png', '_m.png')) : null,
     price: HAIR_PRICE,
+  }
+}
+
+function makeOutfitOption(id: string, label: string, index: number, folder: string): OutfitOption {
+  return {
+    id,
+    name: `${label} ${index + 1}`,
+    image: assetUrl(`images/characters/${folder}/${id}.png`),
+    price: OUTFIT_PRICE,
   }
 }
 
@@ -229,13 +238,11 @@ export const HAIR_COLOR_OPTIONS: HairColorOption[] = [
 export const OUTFIT_OPTIONS: Record<CharacterKey, OutfitOption[]> = {
   groom: [
     { id: DEFAULT_OUTFIT_ID, name: '기본 의상', image: CHARACTER_BODY, price: 0 },
-    { id: 'suit00', name: '정장 1', image: GROOM_SUIT, price: 1_000_000 },
+    ...GROOM_OUTFIT_IDS.map((id, index) => makeOutfitOption(id, '정장', index, 'man_clothes')),
   ],
   bride: [
     { id: DEFAULT_OUTFIT_ID, name: '기본 의상', image: CHARACTER_BODY, price: 0 },
-    { id: 'dress00', name: '드레스 1', image: BRIDE_DRESS, price: 1_000_000 },
-    { id: 'dress01', name: '드레스 2', image: BRIDE_DRESS_01, price: 1_000_000 },
-    { id: 'dress02', name: '드레스 3', image: BRIDE_DRESS_02, price: 1_000_000 },
+    ...BRIDE_OUTFIT_IDS.map((id, index) => makeOutfitOption(id, '드레스', index, 'woman_clothes')),
   ],
 }
 
