@@ -3,9 +3,10 @@ import { assetUrl } from '../utils/asset'
 // 캐릭터 공통 파츠. 모든 파츠/표정/헤어는 동일한 1000×1400 프레임의 투명 PNG라 그대로 겹치면 정렬된다.
 export const CHARACTER_HEAD = assetUrl('images/characters/head.png')
 export const CHARACTER_BODY = assetUrl('images/characters/body.png')
-export const GROOM_SUIT = assetUrl('images/characters/suit00.png')
-export const BRIDE_DRESS = assetUrl('images/characters/dress00.png')
-export const BRIDE_DRESS_01 = assetUrl('images/characters/dress01.png')
+export const GROOM_SUIT = assetUrl('images/characters/man_dress/suit00.png')
+export const BRIDE_DRESS = assetUrl('images/characters/woman_dress/dress00.png')
+export const BRIDE_DRESS_01 = assetUrl('images/characters/woman_dress/dress01.png')
+export const BRIDE_DRESS_02 = assetUrl('images/characters/woman_dress/dress02.png')
 
 export interface FaceExpr {
   id: string
@@ -18,6 +19,7 @@ export interface HairOption {
   id: string
   name: string
   image: string | null
+  maskImage?: string | null
   price: number
 }
 
@@ -107,11 +109,13 @@ const BRIDE_HAIR_IDS = [
   'woman_hair_19',
 ]
 
-function makeHairOption(id: string, label: string, index: number): HairOption {
+function makeHairOption(id: string, label: string, index: number, folder?: string, hasMask = false): HairOption {
+  const path = folder ? `images/characters/${folder}/${id}.png` : `images/characters/${id}.png`
   return {
     id,
     name: `${label} 헤어 ${index + 1}`,
-    image: assetUrl(`images/characters/${id}.png`),
+    image: assetUrl(path),
+    maskImage: hasMask ? assetUrl(path.replace('.png', '_m.png')) : null,
     price: HAIR_PRICE,
   }
 }
@@ -126,11 +130,11 @@ export const CHARACTERS: { key: CharacterKey; label: string }[] = [
 export const HAIR_OPTIONS: Record<CharacterKey, HairOption[]> = {
   groom: [
     { id: DEFAULT_HAIR_ID, name: '헤어 없음', image: null, price: 0 },
-    ...GROOM_HAIR_IDS.map((id, index) => makeHairOption(id, '신랑', index)),
+    ...GROOM_HAIR_IDS.map((id, index) => makeHairOption(id, '신랑', index, 'man_hair', true)),
   ],
   bride: [
     { id: DEFAULT_HAIR_ID, name: '헤어 없음', image: null, price: 0 },
-    ...BRIDE_HAIR_IDS.map((id, index) => makeHairOption(id, '신부', index)),
+    ...BRIDE_HAIR_IDS.map((id, index) => makeHairOption(id, '신부', index, 'woman_hair', true)),
   ],
 }
 
@@ -171,6 +175,55 @@ export const HAIR_COLOR_OPTIONS: HairColorOption[] = [
     filter: 'sepia(1) saturate(2.5) hue-rotate(175deg) brightness(0.95)',
     price: HAIR_COLOR_PRICE,
   },
+  {
+    id: 'choco',
+    name: '초코',
+    swatch: '#4a2f25',
+    filter: 'sepia(0.85) saturate(1.45) hue-rotate(335deg) brightness(0.62)',
+    price: HAIR_COLOR_PRICE,
+  },
+  {
+    id: 'copper',
+    name: '카퍼',
+    swatch: '#b76534',
+    filter: 'sepia(1) saturate(2.6) hue-rotate(330deg) brightness(1.02)',
+    price: HAIR_COLOR_PRICE,
+  },
+  {
+    id: 'wine',
+    name: '와인',
+    swatch: '#7c2538',
+    filter: 'sepia(0.85) saturate(2.4) hue-rotate(295deg) brightness(0.72)',
+    price: HAIR_COLOR_PRICE,
+  },
+  {
+    id: 'lavender',
+    name: '라벤더',
+    swatch: '#a78bd6',
+    filter: 'sepia(0.8) saturate(2.2) hue-rotate(215deg) brightness(1.12)',
+    price: HAIR_COLOR_PRICE,
+  },
+  {
+    id: 'mint',
+    name: '민트',
+    swatch: '#7fcfbc',
+    filter: 'sepia(0.9) saturate(1.9) hue-rotate(115deg) brightness(1.12)',
+    price: HAIR_COLOR_PRICE,
+  },
+  {
+    id: 'navy',
+    name: '네이비',
+    swatch: '#28395f',
+    filter: 'sepia(0.75) saturate(2.4) hue-rotate(180deg) brightness(0.62)',
+    price: HAIR_COLOR_PRICE,
+  },
+  {
+    id: 'white',
+    name: '화이트',
+    swatch: '#e7e2da',
+    filter: 'grayscale(1) brightness(1.72) contrast(0.72)',
+    price: HAIR_COLOR_PRICE,
+  },
 ]
 
 export const OUTFIT_OPTIONS: Record<CharacterKey, OutfitOption[]> = {
@@ -182,6 +235,7 @@ export const OUTFIT_OPTIONS: Record<CharacterKey, OutfitOption[]> = {
     { id: DEFAULT_OUTFIT_ID, name: '기본 의상', image: CHARACTER_BODY, price: 0 },
     { id: 'dress00', name: '드레스 1', image: BRIDE_DRESS, price: 1_000_000 },
     { id: 'dress01', name: '드레스 2', image: BRIDE_DRESS_01, price: 1_000_000 },
+    { id: 'dress02', name: '드레스 3', image: BRIDE_DRESS_02, price: 1_000_000 },
   ],
 }
 

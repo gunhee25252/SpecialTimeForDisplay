@@ -52,7 +52,7 @@ const SHOP_TABS: ShopTab[] = [
 
 // 원본 1000×1400 프레임에서 실제로 쓸 영역. base 실루엣(측정: x0.31~0.69, y0.21~0.79)에
 // 넉넉히 여백을 둬서, 표정 별·머리·드레스처럼 몸 밖으로 나가는 요소가 잘리지 않게 한다.
-const CONTENT = { x0: 0.08, x1: 0.92, y0: 0.06, y1: 0.98 }
+const CONTENT = { x0: 0, x1: 1, y0: 0.12, y1: 0.98 }
 const CW_FRAC = CONTENT.x1 - CONTENT.x0 // 잘라낸 폭 비율
 const CH_FRAC = CONTENT.y1 - CONTENT.y0 // 잘라낸 높이 비율
 // 잘라낸 박스 안에 풀프레임 이미지를 확대·오프셋해서 넣기 위한 값(%).
@@ -62,7 +62,7 @@ const IMG_L_PCT = -CONTENT.x0 * IMG_W_PCT
 const IMG_T_PCT = -CONTENT.y0 * IMG_H_PCT
 // 캔버스 대비 인물(잘라낸 박스) 너비 + 종횡비. 여백을 늘린 만큼 박스 너비도 키워
 // 실제 인물의 화면상 크기는 비슷하게 유지.
-const FIGURE_W_RATIO = 0.29
+const FIGURE_W_RATIO = 0.36
 const FIGURE_ASPECT_W = CW_FRAC * 1000
 const FIGURE_ASPECT_H = CH_FRAC * 1400
 const FIGURE_H_OVER_W = FIGURE_ASPECT_H / FIGURE_ASPECT_W
@@ -241,9 +241,20 @@ export default function Decorate() {
             const hairColor = findHairColor(cs.hairColorId ?? DEFAULT_HAIR_COLOR_ID)
             const outfit = findOutfit(c.key, cs.outfitId ?? DEFAULT_OUTFIT_ID)
             const isDefaultOutfit = (cs.outfitId ?? DEFAULT_OUTFIT_ID) === DEFAULT_OUTFIT_ID
-            const hairStyle = {
+            const hasHairColor = hairColor?.id !== DEFAULT_HAIR_COLOR_ID
+            const hairBaseStyle =
+              hasHairColor && !hair?.maskImage
+                ? { ...CHAR_IMG_STYLE, filter: hairColor?.filter }
+                : CHAR_IMG_STYLE
+            const hairColorStyle = {
               ...CHAR_IMG_STYLE,
-              filter: hairColor?.filter === 'none' ? undefined : hairColor?.filter,
+              filter: hairColor?.filter,
+              WebkitMaskImage: hair?.maskImage ? `url(${hair.maskImage})` : undefined,
+              maskImage: hair?.maskImage ? `url(${hair.maskImage})` : undefined,
+              WebkitMaskSize: '100% 100%',
+              maskSize: '100% 100%',
+              WebkitMaskRepeat: 'no-repeat',
+              maskRepeat: 'no-repeat',
             }
             return (
               <div
@@ -270,13 +281,24 @@ export default function Decorate() {
                   draggable={false}
                 />
                 {hair?.image && (
-                  <img
-                    src={hair.image}
-                    alt=""
-                    className="pointer-events-none"
-                    style={hairStyle}
-                    draggable={false}
-                  />
+                  <>
+                    <img
+                      src={hair.image}
+                      alt=""
+                      className="pointer-events-none"
+                      style={hairBaseStyle}
+                      draggable={false}
+                    />
+                    {hasHairColor && hair.maskImage && (
+                      <img
+                        src={hair.image}
+                        alt=""
+                        className="pointer-events-none"
+                        style={hairColorStyle}
+                        draggable={false}
+                      />
+                    )}
+                  </>
                 )}
                 {ex && (
                   <img
@@ -422,6 +444,21 @@ export default function Decorate() {
                 const who = activeTab.who!
                 const curHair = characters[who]?.hairId ?? DEFAULT_HAIR_ID
                 const curHairColor = findHairColor(characters[who]?.hairColorId ?? DEFAULT_HAIR_COLOR_ID)
+                const hasPreviewHairColor = curHairColor?.id !== DEFAULT_HAIR_COLOR_ID
+                const previewBaseStyle =
+                  hasPreviewHairColor && !hair.maskImage
+                    ? { objectPosition: '50% 20%', filter: curHairColor?.filter }
+                    : { objectPosition: '50% 20%' }
+                const previewMaskStyle = {
+                  objectPosition: '50% 20%',
+                  filter: curHairColor?.filter,
+                  WebkitMaskImage: hair.maskImage ? `url(${hair.maskImage})` : undefined,
+                  maskImage: hair.maskImage ? `url(${hair.maskImage})` : undefined,
+                  WebkitMaskSize: '100% 100%',
+                  maskSize: '100% 100%',
+                  WebkitMaskRepeat: 'no-repeat',
+                  maskRepeat: 'no-repeat',
+                }
                 const isCur = hair.id === curHair
                 const delta = hair.price - hairPrice(who, curHair)
                 const affordable = budget === null || spent + delta <= budget
@@ -436,18 +473,26 @@ export default function Decorate() {
                       isCur ? 'border-brand-500 bg-brand-50' : 'border-brand-100'
                     }`}
                   >
-                    <span className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-lg bg-brand-50 text-xs font-bold text-brand-300">
+                    <span className="relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-lg bg-brand-50 text-xs font-bold text-brand-300">
                       {hair.image ? (
-                        <img
-                          src={hair.image}
-                          alt={hair.name}
-                          className="h-full w-full object-cover"
-                          style={{
-                            objectPosition: '50% 20%',
-                            filter: curHairColor?.filter === 'none' ? undefined : curHairColor?.filter,
-                          }}
-                          draggable={false}
-                        />
+                        <>
+                          <img
+                            src={hair.image}
+                            alt={hair.name}
+                            className="h-full w-full object-cover"
+                            style={previewBaseStyle}
+                            draggable={false}
+                          />
+                          {hasPreviewHairColor && hair.maskImage && (
+                            <img
+                              src={hair.image}
+                              alt=""
+                              className="absolute inset-0 h-full w-full object-cover"
+                              style={previewMaskStyle}
+                              draggable={false}
+                            />
+                          )}
+                        </>
                       ) : (
                         '없음'
                       )}
