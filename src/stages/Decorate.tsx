@@ -35,19 +35,27 @@ interface ShopTab {
   who?: CharacterKey
   characterPart?: 'face' | 'hair' | 'hairColor' | 'outfit'
 }
-const SHOP_TABS: ShopTab[] = [
+type CharacterPart = NonNullable<ShopTab['characterPart']>
+type ObjectPart = Exclude<ItemCategory, 'background'>
+
+const MAIN_TABS: ShopTab[] = [
   { key: 'background', label: '배경', itemCat: 'background' },
-  { key: 'groomFace', label: '신랑 표정', who: 'groom', characterPart: 'face' },
-  { key: 'brideFace', label: '신부 표정', who: 'bride', characterPart: 'face' },
-  { key: 'groomHair', label: '신랑 헤어', who: 'groom', characterPart: 'hair' },
-  { key: 'brideHair', label: '신부 헤어', who: 'bride', characterPart: 'hair' },
-  { key: 'groomHairColor', label: '신랑 염색', who: 'groom', characterPart: 'hairColor' },
-  { key: 'brideHairColor', label: '신부 염색', who: 'bride', characterPart: 'hairColor' },
-  { key: 'groomOutfit', label: '신랑 의상', who: 'groom', characterPart: 'outfit' },
-  { key: 'brideOutfit', label: '신부 의상', who: 'bride', characterPart: 'outfit' },
-  { key: 'object', label: '오브제', itemCat: 'object' },
-  { key: 'sticker', label: '스티커', itemCat: 'sticker' },
-  { key: 'text', label: '문구', itemCat: 'text' },
+  { key: 'groom', label: '신랑', who: 'groom' },
+  { key: 'bride', label: '신부', who: 'bride' },
+  { key: 'objects', label: '오브젝트', itemCat: 'object' },
+]
+
+const CHARACTER_PART_TABS: { key: CharacterPart; label: string }[] = [
+  { key: 'hair', label: '헤어' },
+  { key: 'hairColor', label: '염색' },
+  { key: 'face', label: '표정' },
+  { key: 'outfit', label: '의상' },
+]
+
+const OBJECT_PART_TABS: { key: ObjectPart; label: string }[] = [
+  { key: 'object', label: '오브제' },
+  { key: 'sticker', label: '스티커' },
+  { key: 'text', label: '문구' },
 ]
 
 // 원본 1000×1400 프레임에서 실제로 쓸 영역. base 실루엣(측정: x0.31~0.69, y0.21~0.79)에
@@ -107,7 +115,9 @@ export default function Decorate() {
   const setCanvasBackground = useAppStore((s) => s.setCanvasBackground)
   const setStage = useAppStore((s) => s.setStage)
 
-  const [activeTabKey, setActiveTabKey] = useState<string>(SHOP_TABS[0].key)
+  const [activeMainTabKey, setActiveMainTabKey] = useState<string>(MAIN_TABS[0].key)
+  const [activeCharacterPart, setActiveCharacterPart] = useState<CharacterPart>('hair')
+  const [activeObjectPart, setActiveObjectPart] = useState<ObjectPart>('object')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [selectedChar, setSelectedChar] = useState<CharacterKey | null>(null)
   const [warning, setWarning] = useState<string | null>(null)
@@ -117,7 +127,26 @@ export default function Decorate() {
 
   const remaining = budget === null ? null : budget - spent
   const background = canvasBackgroundId ? findItem(canvasBackgroundId) : undefined
-  const activeTab = SHOP_TABS.find((t) => t.key === activeTabKey) ?? SHOP_TABS[0]
+  const activeMainTab = MAIN_TABS.find((t) => t.key === activeMainTabKey) ?? MAIN_TABS[0]
+  const activeMainTabIndex = Math.max(0, MAIN_TABS.findIndex((t) => t.key === activeMainTab.key))
+  const subTabWidthPct = 58
+  const subTabCenterPct = ((activeMainTabIndex + 0.5) / MAIN_TABS.length) * 100
+  const subTabLeftPct = Math.max(0, Math.min(100 - subTabWidthPct, subTabCenterPct - subTabWidthPct / 2))
+  const subTabStyle = { width: `${subTabWidthPct}%`, marginLeft: `${subTabLeftPct}%` }
+  const activeTab: ShopTab = activeMainTab.who
+    ? {
+        key: `${activeMainTab.key}-${activeCharacterPart}`,
+        label: `${activeMainTab.label} ${CHARACTER_PART_TABS.find((t) => t.key === activeCharacterPart)?.label ?? ''}`,
+        who: activeMainTab.who,
+        characterPart: activeCharacterPart,
+      }
+    : activeMainTab.key === 'objects'
+      ? {
+          key: `objects-${activeObjectPart}`,
+          label: OBJECT_PART_TABS.find((t) => t.key === activeObjectPart)?.label ?? '',
+          itemCat: activeObjectPart,
+        }
+      : activeMainTab
 
   // 진입 시 인물 기본 위치 초기화(신랑 왼쪽·신부 오른쪽, 하단 중앙).
   useLayoutEffect(() => {
@@ -391,18 +420,55 @@ export default function Decorate() {
         {/* 상점 */}
         <div className="rounded-2xl bg-white p-3 shadow-sm">
           {/* 카테고리 탭 */}
-          <div className="mb-3 grid grid-cols-5 gap-2">
-            {SHOP_TABS.map((t) => (
+          <div className="mb-2 grid grid-cols-4 gap-2">
+            {MAIN_TABS.map((t) => (
               <button
                 key={t.key}
-                onClick={() => setActiveTabKey(t.key)}
+                onClick={() => setActiveMainTabKey(t.key)}
                 className={`select-none rounded-xl py-2 text-base font-medium ${
-                  t.key === activeTabKey ? 'bg-brand-500 text-white' : 'bg-brand-50 text-brand-500'
+                  t.key === activeMainTabKey ? 'bg-brand-500 text-white' : 'bg-brand-50 text-brand-500'
                 }`}
               >
                 {t.label}
               </button>
             ))}
+          </div>
+          <div className="mb-3 flex min-h-[40px] items-center rounded-lg bg-gray-100 p-1" style={subTabStyle}>
+            {activeMainTab.who ? (
+              <div className="grid w-full grid-cols-4 gap-1">
+                {CHARACTER_PART_TABS.map((t) => (
+                  <button
+                    key={t.key}
+                    onClick={() => setActiveCharacterPart(t.key)}
+                    className={`select-none rounded-md py-1.5 text-sm font-semibold transition ${
+                      t.key === activeCharacterPart
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-500 active:bg-white/70'
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            ) : activeMainTab.key === 'objects' ? (
+              <div className="grid w-full grid-cols-3 gap-1">
+                {OBJECT_PART_TABS.map((t) => (
+                  <button
+                    key={t.key}
+                    onClick={() => setActiveObjectPart(t.key)}
+                    className={`select-none rounded-md py-1.5 text-sm font-semibold transition ${
+                      t.key === activeObjectPart
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-500 active:bg-white/70'
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div aria-hidden="true" className="h-8 w-full" />
+            )}
           </div>
 
           {/* 표정 탭: 해당 인물의 표정 교체 */}
