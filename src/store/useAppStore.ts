@@ -115,7 +115,7 @@ interface AppState {
   computeResult: () => void // 현재 플레이어 유형 산출 → players에 기록
   drawBudget: () => void // 현재 플레이어 예산 1회 확정(티어 가중 추첨)
   nextAfterBudget: () => void // 예산 확정 후 흐름 진행(다음 사람 / 결과)
-  placeItem: (itemId: string, x: number, y: number) => boolean // 예산 초과면 false
+  placeItem: (itemId: string, x: number, y: number) => string | null // 예산 초과면 null
   moveItem: (instanceId: string, x: number, y: number) => void
   bringItemToFront: (instanceId: string) => void
   removeItem: (instanceId: string) => void
@@ -328,10 +328,10 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   placeItem: (itemId, x, y) => {
     const item = findItem(itemId)
-    if (!item) return false
+    if (!item) return null
     const { spent, budget, placedItems, characters } = get()
     // 예산 한도 반영: 합계가 예산을 넘으면 배치하지 않음.
-    if (budget !== null && spent + item.price > budget) return false
+    if (budget !== null && spent + item.price > budget) return null
     placeCounter += 1
     const placed: PlacedItem = {
       instanceId: `p${placeCounter}`,
@@ -341,7 +341,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       z: nextZ(placedItems, characters),
     }
     set({ placedItems: [...placedItems, placed], spent: spent + item.price })
-    return true
+    return placed.instanceId
   },
 
   moveItem: (instanceId, x, y) =>

@@ -1,6 +1,6 @@
 import { useRef, useState, useCallback, useLayoutEffect } from 'react'
 import { useAppStore } from '../store/useAppStore'
-import { ITEMS, findItem, type DecorItem, type ItemCategory } from '../data/items'
+import { ITEMS, findItem, type BackgroundGroup, type DecorItem, type ItemCategory } from '../data/items'
 import {
   CHARACTER_BODY,
   CHARACTER_HEAD,
@@ -56,6 +56,11 @@ const OBJECT_PART_TABS: { key: ObjectPart; label: string }[] = [
   { key: 'object', label: '오브제' },
   { key: 'sticker', label: '스티커' },
   { key: 'text', label: '문구' },
+]
+
+const BACKGROUND_PART_TABS: { key: BackgroundGroup; label: string }[] = [
+  { key: 'indoor', label: '실내' },
+  { key: 'outdoor', label: '야외' },
 ]
 
 // 원본 1000×1400 프레임에서 실제로 쓸 영역. base 실루엣(측정: x0.31~0.69, y0.21~0.79)에
@@ -116,7 +121,11 @@ export default function Decorate() {
   const setStage = useAppStore((s) => s.setStage)
 
   const [activeMainTabKey, setActiveMainTabKey] = useState<string>(MAIN_TABS[0].key)
-  const [activeCharacterPart, setActiveCharacterPart] = useState<CharacterPart>('hair')
+  const [activeBackgroundPart, setActiveBackgroundPart] = useState<BackgroundGroup>('indoor')
+  const [activeCharacterParts, setActiveCharacterParts] = useState<Record<CharacterKey, CharacterPart>>({
+    groom: 'hair',
+    bride: 'hair',
+  })
   const [activeObjectPart, setActiveObjectPart] = useState<ObjectPart>('object')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [selectedChar, setSelectedChar] = useState<CharacterKey | null>(null)
@@ -128,6 +137,7 @@ export default function Decorate() {
   const remaining = budget === null ? null : budget - spent
   const background = canvasBackgroundId ? findItem(canvasBackgroundId) : undefined
   const activeMainTab = MAIN_TABS.find((t) => t.key === activeMainTabKey) ?? MAIN_TABS[0]
+  const activeCharacterPart = activeMainTab.who ? activeCharacterParts[activeMainTab.who] : 'hair'
   const activeMainTabIndex = Math.max(0, MAIN_TABS.findIndex((t) => t.key === activeMainTab.key))
   const subTabWidthPct = 58
   const subTabCenterPct = ((activeMainTabIndex + 0.5) / MAIN_TABS.length) * 100
@@ -191,7 +201,21 @@ export default function Decorate() {
     const jitter = (placedItems.length % 5) * 24
     const x = cw / 2 - item.defaultWidth / 2 + jitter
     const y = ch / 2 - item.defaultHeight / 2 + jitter
-    if (!placeItem(item.id, x, y)) warn('예산을 초과해서 배치할 수 없어요.')
+    const instanceId = placeItem(item.id, x, y)
+    if (!instanceId) {
+      warn('예산을 초과해서 배치할 수 없어요.')
+      return
+    }
+    setSelectedId(instanceId)
+    setSelectedChar(null)
+  }
+
+  const handleMainTabClick = (tab: ShopTab) => {
+    setActiveMainTabKey(tab.key)
+  }
+
+  const handleCharacterPartClick = (who: CharacterKey, part: CharacterPart) => {
+    setActiveCharacterParts((prev) => ({ ...prev, [who]: part }))
   }
 
   const handlePointerDownItem = (e: React.PointerEvent, instanceId: string, px: number, py: number) => {
@@ -424,7 +448,7 @@ export default function Decorate() {
             {MAIN_TABS.map((t) => (
               <button
                 key={t.key}
-                onClick={() => setActiveMainTabKey(t.key)}
+                onClick={() => handleMainTabClick(t)}
                 className={`select-none rounded-xl py-2 text-base font-medium ${
                   t.key === activeMainTabKey ? 'bg-brand-500 text-white' : 'bg-brand-50 text-brand-500'
                 }`}
@@ -439,7 +463,7 @@ export default function Decorate() {
                 {CHARACTER_PART_TABS.map((t) => (
                   <button
                     key={t.key}
-                    onClick={() => setActiveCharacterPart(t.key)}
+                    onClick={() => handleCharacterPartClick(activeMainTab.who!, t.key)}
                     className={`select-none rounded-md py-1.5 text-sm font-semibold transition ${
                       t.key === activeCharacterPart
                         ? 'bg-white text-gray-900 shadow-sm'
@@ -458,6 +482,22 @@ export default function Decorate() {
                     onClick={() => setActiveObjectPart(t.key)}
                     className={`select-none rounded-md py-1.5 text-sm font-semibold transition ${
                       t.key === activeObjectPart
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-500 active:bg-white/70'
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            ) : activeMainTab.key === 'background' ? (
+              <div className="grid w-full grid-cols-2 gap-1">
+                {BACKGROUND_PART_TABS.map((t) => (
+                  <button
+                    key={t.key}
+                    onClick={() => setActiveBackgroundPart(t.key)}
+                    className={`select-none rounded-md py-1.5 text-sm font-semibold transition ${
+                      t.key === activeBackgroundPart
                         ? 'bg-white text-gray-900 shadow-sm'
                         : 'text-gray-500 active:bg-white/70'
                     }`}
@@ -647,7 +687,10 @@ export default function Decorate() {
           ) : (
             // 배치 아이템 탭
             <ShopScrollRow key={activeTab.key}>
-              {ITEMS.filter((i) => i.category === activeTab.itemCat).map((item) => {
+              {ITEMS.filter((i) =>
+                i.category === activeTab.itemCat &&
+                (i.category !== 'background' || i.backgroundGroup === activeBackgroundPart),
+              ).map((item) => {
                 const isBg = item.category === 'background'
                 const affordable = isBg || budget === null || spent + item.price <= budget
                 const selected = isBg && item.id === canvasBackgroundId

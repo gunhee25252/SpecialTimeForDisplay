@@ -5,11 +5,14 @@ const BG_IMAGES = {
   chapel: assetUrl('images/backgrounds/chapel.png'),
   garden: assetUrl('images/backgrounds/garden.png'),
   ballroom: assetUrl('images/backgrounds/ballroom.png'),
+  bg01: assetUrl('images/backgrounds/bg01.png'),
+  bg02: assetUrl('images/backgrounds/bg02.png'),
 }
 
 // 꾸미기 아이템 카탈로그. decorate 화면의 상점/캔버스가 이 목록을 쓴다.
 // thumbnail: 이미지가 없을 때 쓰는 CSS 색상값. image: 있으면 실제 이미지로 렌더.
 export type ItemCategory = 'background' | 'object' | 'sticker' | 'text'
+export type BackgroundGroup = 'indoor' | 'outdoor'
 
 export interface DecorItem {
   id: string
@@ -22,6 +25,7 @@ export interface DecorItem {
   defaultWidth: number
   defaultHeight: number
   shape?: 'rect' | 'circle'
+  backgroundGroup?: BackgroundGroup
 }
 
 export const ITEM_CATEGORIES: { key: ItemCategory; label: string }[] = [
@@ -33,9 +37,11 @@ export const ITEM_CATEGORIES: { key: ItemCategory; label: string }[] = [
 
 export const ITEMS: DecorItem[] = [
   // 배경(무료) — 탭하면 캔버스 배경으로 설정. 크기는 캔버스 전체를 덮는다.
-  { id: 'bg-chapel', category: 'background', name: '실내 채플', price: 0, thumbnail: '#f6ecd9', image: BG_IMAGES.chapel, defaultWidth: 1080, defaultHeight: 1920 },
-  { id: 'bg-garden', category: 'background', name: '야외 가든', price: 0, thumbnail: '#bfe3a8', image: BG_IMAGES.garden, defaultWidth: 1080, defaultHeight: 1920 },
-  { id: 'bg-ballroom', category: 'background', name: '보라 볼룸', price: 0, thumbnail: '#d9c7ee', image: BG_IMAGES.ballroom, defaultWidth: 1080, defaultHeight: 1920 },
+  { id: 'bg-chapel', category: 'background', name: '실내 채플', price: 0, thumbnail: '#f6ecd9', image: BG_IMAGES.chapel, defaultWidth: 1080, defaultHeight: 1920, backgroundGroup: 'indoor' },
+  { id: 'bg-garden', category: 'background', name: '야외 가든', price: 0, thumbnail: '#bfe3a8', image: BG_IMAGES.garden, defaultWidth: 1080, defaultHeight: 1920, backgroundGroup: 'outdoor' },
+  { id: 'bg-ballroom', category: 'background', name: '보라 볼룸', price: 0, thumbnail: '#d9c7ee', image: BG_IMAGES.ballroom, defaultWidth: 1080, defaultHeight: 1920, backgroundGroup: 'indoor' },
+  { id: 'bg-01', category: 'background', name: '야외 웨딩', price: 0, thumbnail: '#ead9ca', image: BG_IMAGES.bg01, defaultWidth: 1080, defaultHeight: 1920, backgroundGroup: 'outdoor' },
+  { id: 'bg-02', category: 'background', name: '실내 웨딩', price: 0, thumbnail: '#d5d8e6', image: BG_IMAGES.bg02, defaultWidth: 1080, defaultHeight: 1920, backgroundGroup: 'indoor' },
 
   // 오브제/스티커/문구 — Phase 1 더미(색 블록/도형)
   { id: 'obj-arch', category: 'object', name: '아치 오브제', price: 3_000_000, thumbnail: '#e7c8a0', defaultWidth: 160, defaultHeight: 160, shape: 'rect' },
