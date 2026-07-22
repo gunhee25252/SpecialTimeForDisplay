@@ -112,7 +112,7 @@ export default function Complete() {
         <div className="flex w-full flex-col items-center justify-center gap-4">
           <div
             className="flex shrink-0 items-center justify-center overflow-hidden rounded-2xl border-4 border-white bg-white shadow-sm"
-            style={{ width: 380, height: 675 }}
+            style={{ width: 630, height: 1121 }}
           >
             {previewUrl ? (
               <img
