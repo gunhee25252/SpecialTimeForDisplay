@@ -9,11 +9,10 @@ export interface BudgetTier {
 }
 
 export const BUDGET_TIERS: BudgetTier[] = [
-  { id: 'small', label: '알뜰 스몰웨딩', min: 1_000_000, max: 5_000_000, weight: 30 },
-  { id: 'modest', label: '단란한 예식', min: 5_000_000, max: 20_000_000, weight: 30 },
-  { id: 'luxury', label: '럭셔리 웨딩', min: 20_000_000, max: 60_000_000, weight: 25 },
-  { id: 'premium', label: '프리미엄 호텔', min: 60_000_000, max: 100_000_000, weight: 12 },
-  { id: 'dream', label: '드림 웨딩', min: 100_000_000, max: 300_000_000, weight: 3 },
+  { id: 'modest', label: '단란한 예식', min: 5_000_000, max: 20_000_000, weight: 1 },
+  { id: 'luxury', label: '럭셔리 웨딩', min: 20_000_000, max: 60_000_000, weight: 1 },
+  { id: 'premium', label: '프리미엄 호텔', min: 60_000_000, max: 100_000_000, weight: 1 },
+  { id: 'dream', label: '드림 웨딩', min: 100_000_000, max: 300_000_000, weight: 1 },
 ]
 
 // 뽑힌 금액 반올림 단위(10만원).
