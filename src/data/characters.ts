@@ -106,8 +106,32 @@ const BRIDE_HAIR_IDS = [
   'woman_hair_19',
 ]
 
-const GROOM_OUTFIT_IDS = ['suit00', 'suit01', 'suit02', 'suit03', 'suit04', 'suit05']
-const BRIDE_OUTFIT_IDS = ['dress00', 'dress01', 'dress02', 'dress03', 'dress04']
+const GROOM_OUTFIT_IDS = [
+  'suit00',
+  'suit01',
+  'suit02',
+  'suit03',
+  'suit04',
+  'suit05',
+  'suit06',
+  'suit07',
+  'suit08',
+  'suit09',
+  'suit10',
+  'suit11',
+]
+const BRIDE_OUTFIT_IDS = [
+  'dress00',
+  'dress01',
+  'dress02',
+  'dress03',
+  'dress04',
+  'dress05',
+  'dress06',
+  'dress07',
+  'dress08',
+  'dress09',
+]
 
 function makeHairOption(id: string, label: string, index: number, folder?: string, hasMask = false): HairOption {
   const path = folder ? `images/characters/${folder}/${id}.png` : `images/characters/${id}.png`
