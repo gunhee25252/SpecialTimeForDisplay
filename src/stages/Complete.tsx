@@ -13,7 +13,7 @@ import {
 } from '../utils/print'
 
 const PRINTING_DELAY_MS = 5_000
-const PRINT_DONE_DELAY_MS = 2_000
+const PRINT_DONE_DELAY_MS = 10_000
 
 export default function Complete() {
   const resultCode = useAppStore((s) => s.resultCode)
@@ -99,6 +99,24 @@ export default function Complete() {
     }
   }
 
+  if (printStatus === 'done') {
+    return (
+      <StageLayout showReset={false}>
+        <div className="flex flex-1 flex-col items-center justify-center text-center">
+          <div className="w-full rounded-3xl border-4 border-brand-200 bg-white px-10 py-20 shadow-sm">
+            <p className="text-7xl font-black text-brand-500">인쇄 중입니다</p>
+            <p className="mt-10 text-4xl font-bold text-gray-800">
+              사진을 받으러 프린터 쪽으로 이동해 주세요.
+            </p>
+            <p className="mt-8 text-3xl font-semibold text-gray-500">
+              10초 후 처음 화면으로 돌아갑니다.
+            </p>
+          </div>
+        </div>
+      </StageLayout>
+    )
+  }
+
   return (
     <StageLayout>
       <div className="flex flex-1 flex-col items-center justify-center gap-5 text-center">
@@ -134,16 +152,13 @@ export default function Complete() {
             <p className="mt-2 text-base text-gray-500">
               남은 예산 {formatWon(remaining)}
             </p>
-            {printStatus === 'done' && (
-              <p className="mt-2 text-brand-500">인쇄가 완료됐어요. 처음 화면으로 돌아갑니다.</p>
-            )}
             {printError && <p className="mt-2 text-red-500">{printError}</p>}
           </div>
         </div>
 
         <div className="flex w-full flex-col gap-3">
           <Button onClick={handlePrintSave} className="w-full" disabled={isSaving || printStatus !== 'idle'}>
-            {printStatus === 'done' ? '인쇄 완료' : isSaving || printStatus === 'printing' ? '인쇄 중...' : '인쇄하기'}
+            {isSaving || printStatus === 'printing' ? '인쇄 중...' : '인쇄하기'}
           </Button>
           <Button onClick={reset} className="w-full" disabled={isSaving || printStatus !== 'idle'}>
             다시 하기

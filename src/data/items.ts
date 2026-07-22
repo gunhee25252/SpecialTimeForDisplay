@@ -11,6 +11,10 @@ const BG_IMAGES = {
 
 const PROP_IMAGES = {
   prop00: assetUrl('images/props/prop00.png'),
+  prop01: assetUrl('images/props/prop01.png'),
+  prop02: assetUrl('images/props/prop02.png'),
+  prop03: assetUrl('images/props/prop03.png'),
+  prop04: assetUrl('images/props/prop04.png'),
 }
 
 // 꾸미기 아이템 카탈로그. decorate 화면의 상점/캔버스가 이 목록을 쓴다.
@@ -49,6 +53,10 @@ export const ITEMS: DecorItem[] = [
 
   // 오브제/스티커/문구 — Phase 1 더미(색 블록/도형)
   { id: 'prop00', category: 'object', name: '오브제 1', price: 1_000_000, thumbnail: '#e7c8a0', image: PROP_IMAGES.prop00, defaultWidth: 202, defaultHeight: 286, shape: 'rect' },
+  { id: 'prop01', category: 'object', name: '오브제 2', price: 1_000_000, thumbnail: '#e7c8a0', image: PROP_IMAGES.prop01, defaultWidth: 186, defaultHeight: 246, shape: 'rect' },
+  { id: 'prop02', category: 'object', name: '오브제 3', price: 1_000_000, thumbnail: '#e7c8a0', image: PROP_IMAGES.prop02, defaultWidth: 187, defaultHeight: 249, shape: 'rect' },
+  { id: 'prop03', category: 'object', name: '오브제 4', price: 1_000_000, thumbnail: '#e7c8a0', image: PROP_IMAGES.prop03, defaultWidth: 186, defaultHeight: 251, shape: 'rect' },
+  { id: 'prop04', category: 'object', name: '오브제 5', price: 1_000_000, thumbnail: '#e7c8a0', image: PROP_IMAGES.prop04, defaultWidth: 195, defaultHeight: 260, shape: 'rect' },
   { id: 'obj-arch', category: 'object', name: '아치 오브제', price: 3_000_000, thumbnail: '#e7c8a0', defaultWidth: 160, defaultHeight: 160, shape: 'rect' },
   { id: 'obj-table', category: 'object', name: '테이블', price: 2_500_000, thumbnail: '#c9a27a', defaultWidth: 180, defaultHeight: 120, shape: 'rect' },
 
