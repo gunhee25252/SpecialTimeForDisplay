@@ -9,6 +9,10 @@ const BG_IMAGES = {
   bg02: assetUrl('images/backgrounds/bg02.png'),
 }
 
+const PROP_IMAGES = {
+  prop00: assetUrl('images/props/prop00.png'),
+}
+
 // 꾸미기 아이템 카탈로그. decorate 화면의 상점/캔버스가 이 목록을 쓴다.
 // thumbnail: 이미지가 없을 때 쓰는 CSS 색상값. image: 있으면 실제 이미지로 렌더.
 export type ItemCategory = 'background' | 'object' | 'sticker' | 'text'
@@ -44,6 +48,7 @@ export const ITEMS: DecorItem[] = [
   { id: 'bg-02', category: 'background', name: '실내 웨딩', price: 0, thumbnail: '#d5d8e6', image: BG_IMAGES.bg02, defaultWidth: 1080, defaultHeight: 1920, backgroundGroup: 'indoor' },
 
   // 오브제/스티커/문구 — Phase 1 더미(색 블록/도형)
+  { id: 'prop00', category: 'object', name: '오브제 1', price: 1_000_000, thumbnail: '#e7c8a0', image: PROP_IMAGES.prop00, defaultWidth: 202, defaultHeight: 286, shape: 'rect' },
   { id: 'obj-arch', category: 'object', name: '아치 오브제', price: 3_000_000, thumbnail: '#e7c8a0', defaultWidth: 160, defaultHeight: 160, shape: 'rect' },
   { id: 'obj-table', category: 'object', name: '테이블', price: 2_500_000, thumbnail: '#c9a27a', defaultWidth: 180, defaultHeight: 120, shape: 'rect' },
 

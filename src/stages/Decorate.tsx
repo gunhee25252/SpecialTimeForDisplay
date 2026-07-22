@@ -75,7 +75,7 @@ const IMG_L_PCT = -CONTENT.x0 * IMG_W_PCT
 const IMG_T_PCT = -CONTENT.y0 * IMG_H_PCT
 // 캔버스 대비 인물(잘라낸 박스) 너비 + 종횡비. 여백을 늘린 만큼 박스 너비도 키워
 // 실제 인물의 화면상 크기는 비슷하게 유지.
-const FIGURE_W_RATIO = 0.36
+const FIGURE_W_RATIO = 400 / 1080
 const FIGURE_ASPECT_W = CW_FRAC * 1000
 const FIGURE_ASPECT_H = CH_FRAC * 1400
 const FIGURE_H_OVER_W = FIGURE_ASPECT_H / FIGURE_ASPECT_W
