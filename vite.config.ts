@@ -29,6 +29,13 @@ function printSavePlugin(): Plugin {
               copies?: number
               grayscale?: boolean
               size?: string
+              frameRatio?: string
+              frame?: {
+                x: number
+                y: number
+                width: number
+                height: number
+              } | null
             }
           }
 

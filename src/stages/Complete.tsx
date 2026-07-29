@@ -23,6 +23,7 @@ export default function Complete() {
   const placedItems = useAppStore((s) => s.placedItems)
   const canvasBackgroundId = useAppStore((s) => s.canvasBackgroundId)
   const characters = useAppStore((s) => s.characters)
+  const printFrameRatio = useAppStore((s) => s.printFrameRatio)
   const printFrame = useAppStore((s) => s.printFrame)
   const reset = useAppStore((s) => s.reset)
   const [printId, setPrintId] = useState(() => getNextPrintId())
@@ -34,7 +35,10 @@ export default function Complete() {
   const type = resultCode ? findTypeByCode(resultCode) : undefined
   const isDuo = playerCount === 2
   const remaining = Math.max(0, (budget ?? 0) - spent)
-  const printSpec = useMemo(() => calculatePrintSpec(printId, budget, spent), [budget, printId, spent])
+  const printSpec = useMemo(
+    () => ({ ...calculatePrintSpec(printId, budget, spent), frameRatio: printFrameRatio, frame: printFrame }),
+    [budget, printFrame, printFrameRatio, printId, spent],
+  )
 
   useEffect(() => {
     let cancelled = false

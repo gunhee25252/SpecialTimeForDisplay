@@ -13,7 +13,7 @@ import {
   findHairColor,
   findOutfit,
 } from '../data/characters'
-import type { CharactersState, PlacedItem, PrintFrame } from '../store/useAppStore'
+import type { CharactersState, PlacedItem, PrintFrame, PrintFrameRatio } from '../store/useAppStore'
 
 export type PrintSize = '4x6' | '5x7' | 'a4'
 
@@ -23,6 +23,8 @@ export interface PrintSpec {
   copies: number
   grayscale: boolean
   size: PrintSize
+  frameRatio?: PrintFrameRatio
+  frame?: PrintFrame | null
 }
 
 export interface PrintRenderState {
