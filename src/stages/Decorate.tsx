@@ -730,7 +730,7 @@ export default function Decorate() {
           )}
         </div>
 
-        <Button onClick={() => setStage('complete')} className="w-full">
+        <Button onClick={() => setStage('frameConfirm')} className="w-full">
           완성하기
         </Button>
       </div>

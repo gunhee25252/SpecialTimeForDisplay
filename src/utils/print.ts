@@ -13,7 +13,7 @@ import {
   findHairColor,
   findOutfit,
 } from '../data/characters'
-import type { CharactersState, PlacedItem } from '../store/useAppStore'
+import type { CharactersState, PlacedItem, PrintFrame } from '../store/useAppStore'
 
 export type PrintSize = '4x6' | '5x7' | 'a4'
 
@@ -32,6 +32,7 @@ export interface PrintRenderState {
   canvasBackgroundId: string | null
   characters: CharactersState
   placedItems: PlacedItem[]
+  printFrame?: PrintFrame | null
 }
 
 const CONTENT = { x0: 0, x1: 1, y0: 0.12, y1: 0.98 }
@@ -213,6 +214,33 @@ async function drawPlacedItem(ctx: CanvasRenderingContext2D, placed: PlacedItem)
   ctx.restore()
 }
 
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value))
+}
+
+function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) resolve(blob)
+      else reject(new Error('PNG 파일을 만들 수 없어요.'))
+    }, 'image/png')
+  })
+}
+
+function cropCanvas(source: HTMLCanvasElement, frame: PrintFrame): HTMLCanvasElement {
+  const cropX = clamp(Math.round(frame.x), 0, BASE_WIDTH - 1)
+  const cropY = clamp(Math.round(frame.y), 0, BASE_HEIGHT - 1)
+  const cropW = clamp(Math.round(frame.width), 1, BASE_WIDTH - cropX)
+  const cropH = clamp(Math.round(frame.height), 1, BASE_HEIGHT - cropY)
+  const cropped = document.createElement('canvas')
+  cropped.width = cropW
+  cropped.height = cropH
+  const croppedCtx = cropped.getContext('2d')
+  if (!croppedCtx) throw new Error('잘라낸 캔버스를 만들 수 없어요.')
+  croppedCtx.drawImage(source, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH)
+  return cropped
+}
+
 export async function renderPrintImage(state: PrintRenderState): Promise<Blob> {
   const canvas = document.createElement('canvas')
   canvas.width = BASE_WIDTH
@@ -240,12 +268,7 @@ export async function renderPrintImage(state: PrintRenderState): Promise<Blob> {
     }
   }
 
-  return new Promise((resolve, reject) => {
-    canvas.toBlob((blob) => {
-      if (blob) resolve(blob)
-      else reject(new Error('PNG 파일을 만들 수 없어요.'))
-    }, 'image/png')
-  })
+  return canvasToBlob(state.printFrame ? cropCanvas(canvas, state.printFrame) : canvas)
 }
 
 export function downloadBlob(blob: Blob, fileName: string) {

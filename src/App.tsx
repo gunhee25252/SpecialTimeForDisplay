@@ -8,6 +8,7 @@ import WorldCup from './stages/WorldCup'
 import Result from './stages/Result'
 import Budget from './stages/Budget'
 import Decorate from './stages/Decorate'
+import FrameConfirm from './stages/FrameConfirm'
 import Complete from './stages/Complete'
 
 // 단일 페이지 + stage 상태로 화면 전환. 전환 연출은 TransitionController가 얹는다.
@@ -38,6 +39,8 @@ function StageView({ stage }: { stage: Stage }) {
       return <Budget />
     case 'decorate':
       return <Decorate />
+    case 'frameConfirm':
+      return <FrameConfirm />
     case 'complete':
       return <Complete />
     default:

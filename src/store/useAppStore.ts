@@ -22,9 +22,16 @@ import {
   type CharacterKey,
 } from '../data/characters'
 
-export type Stage = 'intro' | 'playerSelect' | 'worldcup' | 'result' | 'budget' | 'decorate' | 'complete'
+export type Stage = 'intro' | 'playerSelect' | 'worldcup' | 'result' | 'budget' | 'decorate' | 'frameConfirm' | 'complete'
 
 export type PlayerCount = 1 | 2
+export type PrintFrameRatio = '9:16' | '4:6' | '1:1' | '16:9'
+export interface PrintFrame {
+  x: number
+  y: number
+  width: number
+  height: number
+}
 
 // 축별 두 극의 점수 누적. 키는 PoleCode.
 export type AxisScores = Record<AxisKey, Record<string, number>>
@@ -106,6 +113,8 @@ interface AppState {
   spent: number
   canvasBackgroundId: string | null // decorate 캔버스 배경(배경 아이템 id)
   characters: CharactersState // 고정 배치되는 신랑·신부
+  printFrameRatio: PrintFrameRatio
+  printFrame: PrintFrame | null
 
   // actions
   setStage: (stage: Stage) => void
@@ -126,6 +135,8 @@ interface AppState {
   moveCharacter: (who: CharacterKey, x: number, y: number) => void // 인물 위치 이동
   bringCharacterToFront: (who: CharacterKey) => void
   setCanvasBackground: (itemId: string | null) => void // 배경 선택(예산 무관)
+  setPrintFrameRatio: (ratio: PrintFrameRatio) => void
+  setPrintFrame: (frame: PrintFrame) => void
   reset: () => void
 }
 
@@ -215,6 +226,8 @@ const initialState = {
   spent: 0,
   canvasBackgroundId: null as string | null,
   characters: makeCharacters(),
+  printFrameRatio: '9:16' as PrintFrameRatio,
+  printFrame: null as PrintFrame | null,
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -240,6 +253,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       spent: 0,
       canvasBackgroundId: null,
       characters: makeCharacters(),
+      printFrameRatio: '9:16',
+      printFrame: null,
     })),
 
   choose: (round, side) => {
@@ -435,6 +450,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     }),
 
   setCanvasBackground: (itemId) => set({ canvasBackgroundId: itemId }),
+  setPrintFrameRatio: (ratio) => set({ printFrameRatio: ratio }),
+  setPrintFrame: (frame) => set({ printFrame: frame }),
 
   reset: () => {
     placeCounter = 0

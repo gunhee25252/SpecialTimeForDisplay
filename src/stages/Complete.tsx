@@ -23,6 +23,7 @@ export default function Complete() {
   const placedItems = useAppStore((s) => s.placedItems)
   const canvasBackgroundId = useAppStore((s) => s.canvasBackgroundId)
   const characters = useAppStore((s) => s.characters)
+  const printFrame = useAppStore((s) => s.printFrame)
   const reset = useAppStore((s) => s.reset)
   const [printId, setPrintId] = useState(() => getNextPrintId())
   const [isSaving, setIsSaving] = useState(false)
@@ -46,6 +47,7 @@ export default function Complete() {
       canvasBackgroundId,
       characters,
       placedItems,
+      printFrame,
     })
       .then((blob) => {
         if (cancelled) return
@@ -60,7 +62,7 @@ export default function Complete() {
       cancelled = true
       if (objectUrl) URL.revokeObjectURL(objectUrl)
     }
-  }, [budget, canvasBackgroundId, characters, placedItems, printId, spent])
+  }, [budget, canvasBackgroundId, characters, placedItems, printFrame, printId, spent])
 
   useEffect(() => {
     if (printStatus === 'printing') {
@@ -86,6 +88,7 @@ export default function Complete() {
         canvasBackgroundId,
         characters,
         placedItems,
+        printFrame,
       })
       await savePrintFiles(imageBlob, printSpec)
 
