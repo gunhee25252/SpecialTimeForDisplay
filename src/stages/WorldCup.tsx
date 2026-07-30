@@ -1,5 +1,5 @@
 import { useAppStore } from '../store/useAppStore'
-import { WORLDCUP_ROUNDS, type Choice } from '../data/worldcupRounds'
+import { getWorldCupRounds, type Choice } from '../data/worldcupRounds'
 import StageLayout from '../components/StageLayout'
 import PlayerIndicator from '../components/PlayerIndicator'
 import { PLAYER_LABELS } from '../config/players'
@@ -11,8 +11,9 @@ export default function WorldCup() {
   const playerCount = useAppStore((s) => s.playerCount)
   const currentPlayer = useAppStore((s) => s.currentPlayer)
 
-  const round = WORLDCUP_ROUNDS[roundIndex]
-  const total = WORLDCUP_ROUNDS.length
+  const rounds = getWorldCupRounds(currentPlayer)
+  const round = rounds[roundIndex]
+  const total = rounds.length
   const isDuo = playerCount === 2
 
   // 방어: 라운드 데이터가 비었을 때.

@@ -6,7 +6,7 @@ import {
   type AxisKey,
   type PoleCode,
 } from '../data/axes'
-import { WORLDCUP_ROUNDS, type Round } from '../data/worldcupRounds'
+import { getWorldCupRounds, type Round } from '../data/worldcupRounds'
 import { findTypeByCode } from '../data/types16'
 import { drawBudgetResult } from '../data/budgetTiers'
 import { findItem } from '../data/items'
@@ -277,7 +277,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
     // 다음 라운드로, 마지막이면 현재 플레이어 유형 산출 후 예산 뽑기로.
     const nextIndex = get().roundIndex + 1
-    if (nextIndex >= WORLDCUP_ROUNDS.length) {
+    if (nextIndex >= getWorldCupRounds(get().currentPlayer).length) {
       get().computeResult()
       set({ stage: 'budget' })
     } else {
