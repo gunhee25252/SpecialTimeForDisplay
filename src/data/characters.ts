@@ -57,9 +57,6 @@ export const DEFAULT_EXPR_ID = 'face00'
 export const DEFAULT_HAIR_ID = 'none'
 export const DEFAULT_HAIR_COLOR_ID = 'natural'
 export const DEFAULT_OUTFIT_ID = 'body'
-const HAIR_PRICE = 500_000
-const HAIR_COLOR_PRICE = 500_000
-const OUTFIT_PRICE = 1_000_000
 
 const GROOM_HAIR_IDS = [
   'man_hair_00',
@@ -133,24 +130,120 @@ const BRIDE_OUTFIT_IDS = [
   'dress09',
 ]
 
-function makeHairOption(id: string, label: string, index: number, folder?: string, hasMask = false): HairOption {
+const GROOM_HAIR_PRICES: Record<string, number> = {
+  man_hair_00: 200_000,
+  man_hair_01: 200_000,
+  man_hair_02: 300_000,
+  man_hair_03: 200_000,
+  man_hair_04: 200_000,
+  man_hair_05: 200_000,
+  man_hair_06: 300_000,
+  man_hair_07: 200_000,
+  man_hair_08: 300_000,
+  man_hair_09: 300_000,
+  man_hair_10: 300_000,
+  man_hair_12: 100_000,
+  man_hair_13: 200_000,
+  man_hair_14: 400_000,
+  man_hair_15: 200_000,
+  man_hair_16: 300_000,
+  man_hair_17: 300_000,
+  man_hair_18: 200_000,
+  man_hair_19: 200_000,
+}
+
+const BRIDE_HAIR_PRICES: Record<string, number> = {
+  woman_hair_00: 300_000,
+  woman_hair_01: 500_000,
+  woman_hair_02: 400_000,
+  woman_hair_03: 200_000,
+  woman_hair_04: 300_000,
+  woman_hair_05: 300_000,
+  woman_hair_06: 300_000,
+  woman_hair_07: 200_000,
+  woman_hair_08: 400_000,
+  woman_hair_09: 400_000,
+  woman_hair_10: 600_000,
+  woman_hair_11: 400_000,
+  woman_hair_12: 500_000,
+  woman_hair_13: 600_000,
+  woman_hair_14: 500_000,
+  woman_hair_15: 700_000,
+  woman_hair_16: 400_000,
+  woman_hair_17: 400_000,
+  woman_hair_18: 400_000,
+  woman_hair_19: 300_000,
+}
+
+const GROOM_OUTFIT_PRICES: Record<string, number> = {
+  suit00: 1_200_000,
+  suit01: 900_000,
+  suit02: 400_000,
+  suit03: 200_000,
+  suit04: 300_000,
+  suit05: 400_000,
+  suit06: 1_000_000,
+  suit07: 1_200_000,
+  suit08: 1_100_000,
+  suit09: 1_300_000,
+  suit10: 1_100_000,
+  suit11: 1_000_000,
+}
+
+const BRIDE_OUTFIT_PRICES: Record<string, number> = {
+  dress00: 2_000_000,
+  dress01: 2_800_000,
+  dress02: 300_000,
+  dress03: 400_000,
+  dress04: 200_000,
+  dress05: 400_000,
+  dress06: 700_000,
+  dress07: 800_000,
+  dress08: 1_000_000,
+  dress09: 1_300_000,
+}
+
+function makeHairOption(id: string, index: number, price: number, folder?: string, hasMask = false): HairOption {
   const path = folder ? `images/characters/${folder}/${id}.png` : `images/characters/${id}.png`
   return {
     id,
-    name: `${label} 헤어 ${index + 1}`,
+    name: `${index + 1}번`,
     image: assetUrl(path),
     maskImage: hasMask ? assetUrl(path.replace('.png', '_m.png')) : null,
-    price: HAIR_PRICE,
+    price,
   }
 }
 
-function makeOutfitOption(id: string, label: string, index: number, folder: string): OutfitOption {
+function makeOutfitOption(id: string, label: string, index: number, folder: string, price: number): OutfitOption {
   return {
     id,
     name: `${label} ${index + 1}`,
     image: assetUrl(`images/characters/${folder}/${id}.png`),
-    price: OUTFIT_PRICE,
+    price,
   }
+}
+
+function makeSortedHairOptions(
+  ids: string[],
+  prices: Record<string, number>,
+  folder: string,
+): HairOption[] {
+  return ids
+    .map((id, index) => makeHairOption(id, index, prices[id], folder, true))
+    .sort((a, b) => a.price - b.price)
+    .map((hair, index) => ({ ...hair, name: `${index + 1}번` }))
+}
+
+function makeSortedOutfitOptions(
+  ids: string[],
+  prices: Record<string, number>,
+  label: string,
+  folder: string,
+): OutfitOption[] {
+  return ids
+    .map((id, index) => makeOutfitOption(id, label, index, folder, prices[id]))
+    .sort((a, b) => a.price - b.price)
+    .map((outfit, index) => ({ ...outfit, name: `${label} ${index + 1}` }))
 }
 
 // 고정 등장 인물 2명(삭제/변경 불가). 몸/머리는 공유하고, 헤어와 표정만 각자.
@@ -162,12 +255,12 @@ export const CHARACTERS: { key: CharacterKey; label: string }[] = [
 
 export const HAIR_OPTIONS: Record<CharacterKey, HairOption[]> = {
   groom: [
-    { id: DEFAULT_HAIR_ID, name: '헤어 없음', image: null, price: 0 },
-    ...GROOM_HAIR_IDS.map((id, index) => makeHairOption(id, '신랑', index, 'man_hair', true)),
+    { id: DEFAULT_HAIR_ID, name: '없음', image: null, price: 0 },
+    ...makeSortedHairOptions(GROOM_HAIR_IDS, GROOM_HAIR_PRICES, 'man_hair'),
   ],
   bride: [
-    { id: DEFAULT_HAIR_ID, name: '헤어 없음', image: null, price: 0 },
-    ...BRIDE_HAIR_IDS.map((id, index) => makeHairOption(id, '신부', index, 'woman_hair', true)),
+    { id: DEFAULT_HAIR_ID, name: '없음', image: null, price: 0 },
+    ...makeSortedHairOptions(BRIDE_HAIR_IDS, BRIDE_HAIR_PRICES, 'woman_hair'),
   ],
 }
 
@@ -178,95 +271,95 @@ export const HAIR_COLOR_OPTIONS: HairColorOption[] = [
     name: '브라운',
     swatch: '#7a4a2a',
     filter: 'sepia(0.85) saturate(1.8) hue-rotate(340deg) brightness(0.82)',
-    price: HAIR_COLOR_PRICE,
+    price: 200_000,
   },
   {
     id: 'blonde',
     name: '블론드',
     swatch: '#d8aa52',
     filter: 'sepia(1) saturate(2.4) hue-rotate(350deg) brightness(1.18)',
-    price: HAIR_COLOR_PRICE,
+    price: 400_000,
   },
   {
     id: 'ash',
     name: '애쉬',
     swatch: '#8b9299',
     filter: 'grayscale(1) brightness(1.28) contrast(0.82)',
-    price: HAIR_COLOR_PRICE,
+    price: 400_000,
   },
   {
     id: 'pink',
     name: '핑크',
     swatch: '#d77a9d',
     filter: 'sepia(1) saturate(2.4) hue-rotate(285deg) brightness(1.08)',
-    price: HAIR_COLOR_PRICE,
+    price: 400_000,
   },
   {
     id: 'blue',
     name: '블루',
     swatch: '#4f80c7',
     filter: 'sepia(1) saturate(2.5) hue-rotate(175deg) brightness(0.95)',
-    price: HAIR_COLOR_PRICE,
+    price: 400_000,
   },
   {
     id: 'choco',
     name: '초코',
     swatch: '#4a2f25',
     filter: 'sepia(0.85) saturate(1.45) hue-rotate(335deg) brightness(0.62)',
-    price: HAIR_COLOR_PRICE,
+    price: 200_000,
   },
   {
     id: 'copper',
     name: '카퍼',
     swatch: '#b76534',
     filter: 'sepia(1) saturate(2.6) hue-rotate(330deg) brightness(1.02)',
-    price: HAIR_COLOR_PRICE,
+    price: 300_000,
   },
   {
     id: 'wine',
     name: '와인',
     swatch: '#7c2538',
     filter: 'sepia(0.85) saturate(2.4) hue-rotate(295deg) brightness(0.72)',
-    price: HAIR_COLOR_PRICE,
+    price: 300_000,
   },
   {
     id: 'lavender',
     name: '라벤더',
     swatch: '#a78bd6',
     filter: 'sepia(0.8) saturate(2.2) hue-rotate(215deg) brightness(1.12)',
-    price: HAIR_COLOR_PRICE,
+    price: 500_000,
   },
   {
     id: 'mint',
     name: '민트',
     swatch: '#7fcfbc',
     filter: 'sepia(0.9) saturate(1.9) hue-rotate(115deg) brightness(1.12)',
-    price: HAIR_COLOR_PRICE,
+    price: 500_000,
   },
   {
     id: 'navy',
     name: '네이비',
     swatch: '#28395f',
     filter: 'sepia(0.75) saturate(2.4) hue-rotate(180deg) brightness(0.62)',
-    price: HAIR_COLOR_PRICE,
+    price: 400_000,
   },
   {
     id: 'white',
     name: '화이트',
     swatch: '#e7e2da',
     filter: 'grayscale(1) brightness(1.72) contrast(0.72)',
-    price: HAIR_COLOR_PRICE,
+    price: 600_000,
   },
-]
+].sort((a, b) => a.price - b.price)
 
 export const OUTFIT_OPTIONS: Record<CharacterKey, OutfitOption[]> = {
   groom: [
-    { id: DEFAULT_OUTFIT_ID, name: '기본 의상', image: CHARACTER_BODY, price: 0 },
-    ...GROOM_OUTFIT_IDS.map((id, index) => makeOutfitOption(id, '정장', index, 'man_clothes')),
+    { id: DEFAULT_OUTFIT_ID, name: '기본', image: CHARACTER_BODY, price: 0 },
+    ...makeSortedOutfitOptions(GROOM_OUTFIT_IDS, GROOM_OUTFIT_PRICES, '신랑 옷', 'man_clothes'),
   ],
   bride: [
-    { id: DEFAULT_OUTFIT_ID, name: '기본 의상', image: CHARACTER_BODY, price: 0 },
-    ...BRIDE_OUTFIT_IDS.map((id, index) => makeOutfitOption(id, '드레스', index, 'woman_clothes')),
+    { id: DEFAULT_OUTFIT_ID, name: '기본', image: CHARACTER_BODY, price: 0 },
+    ...makeSortedOutfitOptions(BRIDE_OUTFIT_IDS, BRIDE_OUTFIT_PRICES, '신부 옷', 'woman_clothes'),
   ],
 }
 

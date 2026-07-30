@@ -1,4 +1,4 @@
-import { BASE_HEIGHT, BASE_WIDTH } from '../data/constants'
+import { SCENE_HEIGHT, SCENE_WIDTH } from '../data/constants'
 import { findItem } from '../data/items'
 import {
   CHARACTER_BODY,
@@ -125,8 +125,8 @@ async function drawMaskedImage(
 ) {
   const [img, mask] = await Promise.all([loadImage(src), loadImage(maskSrc)])
   const layer = document.createElement('canvas')
-  layer.width = BASE_WIDTH
-  layer.height = BASE_HEIGHT
+  layer.width = SCENE_WIDTH
+  layer.height = SCENE_HEIGHT
   const layerCtx = layer.getContext('2d')
   if (!layerCtx) return
 
@@ -142,13 +142,13 @@ async function drawMaskedImage(
 
 function drawEmptyBackground(ctx: CanvasRenderingContext2D) {
   ctx.fillStyle = '#fafafa'
-  ctx.fillRect(0, 0, BASE_WIDTH, BASE_HEIGHT)
+  ctx.fillRect(0, 0, SCENE_WIDTH, SCENE_HEIGHT)
   ctx.fillStyle = '#f4f4f5'
-  for (let y = -BASE_HEIGHT; y < BASE_HEIGHT; y += 48) {
+  for (let y = -SCENE_HEIGHT; y < SCENE_HEIGHT; y += 48) {
     ctx.save()
     ctx.translate(0, y)
     ctx.rotate(Math.PI / 4)
-    ctx.fillRect(0, 0, 24, BASE_HEIGHT * 2)
+    ctx.fillRect(0, 0, 24, SCENE_HEIGHT * 2)
     ctx.restore()
   }
 }
@@ -162,7 +162,7 @@ async function drawCharacter(ctx: CanvasRenderingContext2D, key: 'groom' | 'brid
   const outfit = findOutfit(key, cs.outfitId ?? DEFAULT_OUTFIT_ID)
   const isDefaultOutfit = (cs.outfitId ?? DEFAULT_OUTFIT_ID) === DEFAULT_OUTFIT_ID
   const hasHairColor = hairColor?.id !== DEFAULT_HAIR_COLOR_ID
-  const figureW = BASE_WIDTH * FIGURE_W_RATIO
+  const figureW = SCENE_WIDTH * FIGURE_W_RATIO
   const figureH = figureW * FIGURE_H_OVER_W
   const imgX = cs.x + (IMG_L_PCT / 100) * figureW
   const imgY = cs.y + (IMG_T_PCT / 100) * figureH
@@ -230,10 +230,10 @@ function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
 }
 
 function cropCanvas(source: HTMLCanvasElement, frame: PrintFrame): HTMLCanvasElement {
-  const cropX = clamp(Math.round(frame.x), 0, BASE_WIDTH - 1)
-  const cropY = clamp(Math.round(frame.y), 0, BASE_HEIGHT - 1)
-  const cropW = clamp(Math.round(frame.width), 1, BASE_WIDTH - cropX)
-  const cropH = clamp(Math.round(frame.height), 1, BASE_HEIGHT - cropY)
+  const cropX = clamp(Math.round(frame.x), 0, SCENE_WIDTH - 1)
+  const cropY = clamp(Math.round(frame.y), 0, SCENE_HEIGHT - 1)
+  const cropW = clamp(Math.round(frame.width), 1, SCENE_WIDTH - cropX)
+  const cropH = clamp(Math.round(frame.height), 1, SCENE_HEIGHT - cropY)
   const cropped = document.createElement('canvas')
   cropped.width = cropW
   cropped.height = cropH
@@ -245,14 +245,14 @@ function cropCanvas(source: HTMLCanvasElement, frame: PrintFrame): HTMLCanvasEle
 
 export async function renderPrintImage(state: PrintRenderState): Promise<Blob> {
   const canvas = document.createElement('canvas')
-  canvas.width = BASE_WIDTH
-  canvas.height = BASE_HEIGHT
+  canvas.width = SCENE_WIDTH
+  canvas.height = SCENE_HEIGHT
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('캔버스를 만들 수 없어요.')
 
   const background = state.canvasBackgroundId ? findItem(state.canvasBackgroundId) : undefined
   if (background?.image) {
-    await drawImage(ctx, background.image, 0, 0, BASE_WIDTH, BASE_HEIGHT)
+    await drawImage(ctx, background.image, 0, 0, SCENE_WIDTH, SCENE_HEIGHT)
   } else {
     drawEmptyBackground(ctx)
   }

@@ -52,3 +52,25 @@ body {
   border-radius: 9999px;
   background: #f472b6;
 }
+
+.equipment-scrollbar {
+  scrollbar-gutter: stable;
+  scrollbar-color: #f472b6 #fdf2f8;
+  scrollbar-width: thin;
+}
+
+.equipment-scrollbar::-webkit-scrollbar {
+  display: block;
+  width: 10px;
+}
+
+.equipment-scrollbar::-webkit-scrollbar-track {
+  border-radius: 9999px;
+  background: #fdf2f8;
+}
+
+.equipment-scrollbar::-webkit-scrollbar-thumb {
+  border: 2px solid #fdf2f8;
+  border-radius: 9999px;
+  background: #f472b6;
+}

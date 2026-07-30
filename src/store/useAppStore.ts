@@ -134,7 +134,7 @@ interface AppState {
   setCharacterOutfit: (who: CharacterKey, outfitId: string) => boolean // 의상 교체(가격차 반영, 초과면 false)
   moveCharacter: (who: CharacterKey, x: number, y: number) => void // 인물 위치 이동
   bringCharacterToFront: (who: CharacterKey) => void
-  setCanvasBackground: (itemId: string | null) => void // 배경 선택(예산 무관)
+  setCanvasBackground: (itemId: string | null) => boolean
   setPrintFrameRatio: (ratio: PrintFrameRatio) => void
   setPrintFrame: (frame: PrintFrame) => void
   reset: () => void
@@ -226,7 +226,7 @@ const initialState = {
   spent: 0,
   canvasBackgroundId: null as string | null,
   characters: makeCharacters(),
-  printFrameRatio: '9:16' as PrintFrameRatio,
+  printFrameRatio: '4:6' as PrintFrameRatio,
   printFrame: null as PrintFrame | null,
 }
 
@@ -253,7 +253,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       spent: 0,
       canvasBackgroundId: null,
       characters: makeCharacters(),
-      printFrameRatio: '9:16',
+      printFrameRatio: '4:6',
       printFrame: null,
     })),
 
@@ -449,7 +449,18 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
     }),
 
-  setCanvasBackground: (itemId) => set({ canvasBackgroundId: itemId }),
+  setCanvasBackground: (itemId) => {
+    const { canvasBackgroundId, spent, budget } = get()
+    const currentPrice = canvasBackgroundId ? findItem(canvasBackgroundId)?.price ?? 0 : 0
+    const nextPrice = itemId ? findItem(itemId)?.price ?? 0 : 0
+    const delta = nextPrice - currentPrice
+    if (budget !== null && spent + delta > budget) return false
+    set({
+      canvasBackgroundId: itemId,
+      spent: Math.max(0, spent + delta),
+    })
+    return true
+  },
   setPrintFrameRatio: (ratio) => set({ printFrameRatio: ratio }),
   setPrintFrame: (frame) => set({ printFrame: frame }),
 

@@ -6,3 +6,7 @@ export const IDLE_TIMEOUT_MS = 300_000
 // 기준 키오스크 해상도 (세로 9:16). 레이아웃은 이 비율을 기준으로 맞춘다.
 export const BASE_WIDTH = 1080
 export const BASE_HEIGHT = 1920
+
+// The decorate scene shares one 2:3 coordinate system from editing through print.
+export const SCENE_WIDTH = 1080
+export const SCENE_HEIGHT = 1620

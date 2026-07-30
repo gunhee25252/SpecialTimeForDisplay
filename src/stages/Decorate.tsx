@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback, useLayoutEffect } from 'react'
+import { useRef, useState, useCallback, useLayoutEffect, useMemo } from 'react'
 import { useAppStore } from '../store/useAppStore'
 import { ITEMS, findItem, type BackgroundGroup, type DecorItem, type ItemCategory } from '../data/items'
 import {
@@ -26,6 +26,11 @@ import {
 import StageLayout from '../components/StageLayout'
 import Button from '../components/Button'
 import { formatWon } from '../utils/format'
+import { SCENE_HEIGHT, SCENE_WIDTH } from '../data/constants'
+import {
+  getBackgroundRecommendations,
+  type BackgroundRecommendation,
+} from '../utils/backgroundRecommendations'
 
 // 상점 탭: 실제 배치 아이템(itemCat) 또는 인물 표정(who) 중 하나.
 interface ShopTab {
@@ -37,6 +42,20 @@ interface ShopTab {
 }
 type CharacterPart = NonNullable<ShopTab['characterPart']>
 type ObjectPart = Exclude<ItemCategory, 'background'>
+type EquipmentCharacterPart = 'face' | 'hair' | 'hairColor' | 'outfit'
+
+interface EquipmentEntry {
+  key: string
+  kind: 'background' | 'character' | 'placed'
+  label: string
+  name: string
+  price: number
+  image?: string | null
+  swatch?: string
+  who?: CharacterKey
+  part?: EquipmentCharacterPart
+  instanceId?: string
+}
 
 const MAIN_TABS: ShopTab[] = [
   { key: 'background', label: '배경', itemCat: 'background' },
@@ -62,6 +81,12 @@ const BACKGROUND_PART_TABS: { key: BackgroundGroup; label: string }[] = [
   { key: 'indoor', label: '실내' },
   { key: 'outdoor', label: '야외' },
 ]
+
+const ITEM_CATEGORY_LABELS: Record<Exclude<ItemCategory, 'background'>, string> = {
+  object: '오브제',
+  sticker: '스티커',
+  text: '문구',
+}
 
 // 원본 1000×1400 프레임에서 실제로 쓸 영역. base 실루엣(측정: x0.31~0.69, y0.21~0.79)에
 // 넉넉히 여백을 둬서, 표정 별·머리·드레스처럼 몸 밖으로 나가는 요소가 잘리지 않게 한다.
@@ -119,9 +144,30 @@ export default function Decorate() {
   const canvasBackgroundId = useAppStore((s) => s.canvasBackgroundId)
   const setCanvasBackground = useAppStore((s) => s.setCanvasBackground)
   const setStage = useAppStore((s) => s.setStage)
+  const resultCode = useAppStore((s) => s.resultCode)
+  const axisScores = useAppStore((s) => s.axisScores)
+  const playerCount = useAppStore((s) => s.playerCount)
+
+  const backgroundRecommendations = useMemo(
+    () => getBackgroundRecommendations(resultCode, axisScores),
+    [axisScores, resultCode],
+  )
+  const recommendationById = useMemo(
+    () =>
+      new Map<string, BackgroundRecommendation>(
+        backgroundRecommendations.map((recommendation) => [
+          recommendation.item.id,
+          recommendation,
+        ]),
+      ),
+    [backgroundRecommendations],
+  )
+  const firstRecommendedGroup =
+    backgroundRecommendations[0]?.item.backgroundGroup ?? 'indoor'
 
   const [activeMainTabKey, setActiveMainTabKey] = useState<string>(MAIN_TABS[0].key)
-  const [activeBackgroundPart, setActiveBackgroundPart] = useState<BackgroundGroup>('indoor')
+  const [activeBackgroundPart, setActiveBackgroundPart] =
+    useState<BackgroundGroup>(firstRecommendedGroup)
   const [activeCharacterParts, setActiveCharacterParts] = useState<Record<CharacterKey, CharacterPart>>({
     groom: 'hair',
     bride: 'hair',
@@ -131,11 +177,15 @@ export default function Decorate() {
   const [selectedChar, setSelectedChar] = useState<CharacterKey | null>(null)
   const [warning, setWarning] = useState<string | null>(null)
 
+  const canvasViewportRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLDivElement>(null)
+  const hasInitializedBackgroundRef = useRef(false)
+  const [canvasTransform, setCanvasTransform] = useState({ scale: 1, left: 0, top: 0 })
   const dragRef = useRef<{ kind: 'item' | 'char'; key: string; offsetX: number; offsetY: number } | null>(null)
 
   const remaining = budget === null ? null : budget - spent
   const background = canvasBackgroundId ? findItem(canvasBackgroundId) : undefined
+  const backgroundPrice = background?.price ?? 0
   const activeMainTab = MAIN_TABS.find((t) => t.key === activeMainTabKey) ?? MAIN_TABS[0]
   const activeCharacterPart = activeMainTab.who ? activeCharacterParts[activeMainTab.who] : 'hair'
   const activeMainTabIndex = Math.max(0, MAIN_TABS.findIndex((t) => t.key === activeMainTab.key))
@@ -157,23 +207,148 @@ export default function Decorate() {
           itemCat: activeObjectPart,
         }
       : activeMainTab
+  const visibleItems = ITEMS.filter(
+    (item) =>
+      item.category === activeTab.itemCat &&
+      (item.category !== 'background' ||
+        item.backgroundGroup === activeBackgroundPart),
+  ).sort((a, b) => a.price - b.price)
+  const equipmentEntries = useMemo<EquipmentEntry[]>(() => {
+    const entries: EquipmentEntry[] = []
+
+    if (background) {
+      entries.push({
+        key: 'background',
+        kind: 'background',
+        label: '배경',
+        name: background.name,
+        price: background.price,
+        image: background.image,
+      })
+    }
+
+    for (const character of CHARACTERS) {
+      const state = characters[character.key]
+      const hair = findHair(character.key, state.hairId)
+      const hairColor = findHairColor(state.hairColorId)
+      const expression = findExpr(state.exprId)
+      const outfit = findOutfit(character.key, state.outfitId)
+
+      if (hair && hair.id !== DEFAULT_HAIR_ID) {
+        entries.push({
+          key: `${character.key}-hair`,
+          kind: 'character',
+          label: `${character.label} 헤어`,
+          name: hair.name,
+          price: hair.price,
+          image: hair.image,
+          who: character.key,
+          part: 'hair',
+        })
+      }
+      if (hairColor && hairColor.id !== DEFAULT_HAIR_COLOR_ID) {
+        entries.push({
+          key: `${character.key}-hair-color`,
+          kind: 'character',
+          label: `${character.label} 염색`,
+          name: hairColor.name,
+          price: hairColor.price,
+          swatch: hairColor.swatch,
+          who: character.key,
+          part: 'hairColor',
+        })
+      }
+      if (expression && expression.id !== DEFAULT_EXPR_ID) {
+        entries.push({
+          key: `${character.key}-face`,
+          kind: 'character',
+          label: `${character.label} 표정`,
+          name: expression.name,
+          price: expression.price,
+          image: expression.image,
+          who: character.key,
+          part: 'face',
+        })
+      }
+      if (outfit && outfit.id !== DEFAULT_OUTFIT_ID) {
+        entries.push({
+          key: `${character.key}-outfit`,
+          kind: 'character',
+          label: `${character.label} 의상`,
+          name: outfit.name,
+          price: outfit.price,
+          image: outfit.image,
+          who: character.key,
+          part: 'outfit',
+        })
+      }
+    }
+
+    for (const placed of placedItems) {
+      const item = findItem(placed.itemId)
+      if (!item || item.category === 'background') continue
+      entries.push({
+        key: placed.instanceId,
+        kind: 'placed',
+        label: ITEM_CATEGORY_LABELS[item.category],
+        name: item.name,
+        price: item.price,
+        image: item.image,
+        swatch: item.image ? undefined : item.thumbnail,
+        instanceId: placed.instanceId,
+      })
+    }
+
+    return entries
+  }, [background, characters, placedItems])
+
+  // 첫 꾸미기 진입에서는 가장 잘 맞는 배경으로 바로 시작한다.
+  useLayoutEffect(() => {
+    if (hasInitializedBackgroundRef.current) return
+    hasInitializedBackgroundRef.current = true
+    if (canvasBackgroundId) return
+    const canAfford = (item: DecorItem) => budget === null || spent + item.price <= budget
+    const recommended = backgroundRecommendations.map((entry) => entry.item).find(canAfford)
+    const fallback = ITEMS.filter((item) => item.category === 'background' && canAfford(item))
+      .sort((a, b) => a.price - b.price)[0]
+    const initialBackground = recommended ?? fallback
+    if (!initialBackground || !setCanvasBackground(initialBackground.id)) return
+    if (initialBackground.backgroundGroup) setActiveBackgroundPart(initialBackground.backgroundGroup)
+  }, [backgroundRecommendations, budget, canvasBackgroundId, setCanvasBackground, spent])
 
   // 진입 시 인물 기본 위치 초기화(신랑 왼쪽·신부 오른쪽, 하단 중앙).
   useLayoutEffect(() => {
-    const el = canvasRef.current
-    if (!el) return
-    const cw = el.offsetWidth
-    const ch = el.offsetHeight
-    const charW = cw * FIGURE_W_RATIO
-    const charH = charW * FIGURE_H_OVER_W
-    const y = ch - charH - cw * 0.03
-    const gap = cw * 0.04
-    const startX = cw / 2 - (charW * 2 + gap) / 2
-    const chars = useAppStore.getState().characters
-    if (chars.groom.x === null) moveCharacter('groom', startX, y)
-    if (chars.bride.x === null) moveCharacter('bride', startX + charW + gap, y)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    const viewport = canvasViewportRef.current
+    if (!viewport) return
+
+    const updateCanvas = () => {
+      const viewportWidth = viewport.offsetWidth
+      const viewportHeight = viewport.offsetHeight
+      const scale = Math.min(viewportWidth / SCENE_WIDTH, viewportHeight / SCENE_HEIGHT)
+      const left = 0
+      const top = Math.max(0, (viewportHeight - SCENE_HEIGHT * scale) / 2)
+
+      setCanvasTransform((current) =>
+        current.scale === scale && current.left === left && current.top === top
+          ? current
+          : { scale, left, top },
+      )
+
+      const charW = SCENE_WIDTH * FIGURE_W_RATIO
+      const charH = charW * FIGURE_H_OVER_W
+      const y = SCENE_HEIGHT - charH - SCENE_WIDTH * 0.03
+      const gap = SCENE_WIDTH * 0.04
+      const startX = SCENE_WIDTH / 2 - (charW * 2 + gap) / 2
+      const chars = useAppStore.getState().characters
+      if (chars.groom.x === null) moveCharacter('groom', startX, y)
+      if (chars.bride.x === null) moveCharacter('bride', startX + charW + gap, y)
+    }
+
+    updateCanvas()
+    const observer = new ResizeObserver(updateCanvas)
+    observer.observe(viewport)
+    return () => observer.disconnect()
+  }, [moveCharacter])
 
   const warn = (msg: string) => {
     setWarning(msg)
@@ -192,15 +367,16 @@ export default function Decorate() {
   // 상점 아이템 탭: 배경은 캔버스 배경으로 설정, 나머지는 캔버스에 배치.
   const handleTapItem = (item: DecorItem) => {
     if (item.category === 'background') {
-      setCanvasBackground(item.id)
+      if (!setCanvasBackground(item.id)) {
+        warn('예산이 부족해서 이 배경으로 바꿀 수 없어요.')
+        return
+      }
+      if (item.backgroundGroup) setActiveBackgroundPart(item.backgroundGroup)
       return
     }
-    const el = canvasRef.current
-    const cw = el?.offsetWidth ?? 600
-    const ch = el?.offsetHeight ?? 800
     const jitter = (placedItems.length % 5) * 24
-    const x = cw / 2 - item.defaultWidth / 2 + jitter
-    const y = ch / 2 - item.defaultHeight / 2 + jitter
+    const x = SCENE_WIDTH / 2 - item.defaultWidth / 2 + jitter
+    const y = SCENE_HEIGHT / 2 - item.defaultHeight / 2 + jitter
     const instanceId = placeItem(item.id, x, y)
     if (!instanceId) {
       warn('예산을 초과해서 배치할 수 없어요.')
@@ -208,6 +384,16 @@ export default function Decorate() {
     }
     setSelectedId(instanceId)
     setSelectedChar(null)
+  }
+
+  const handleRecommendationTap = (recommendation: BackgroundRecommendation) => {
+    if (!setCanvasBackground(recommendation.item.id)) {
+      warn('예산이 부족해서 이 배경으로 바꿀 수 없어요.')
+      return
+    }
+    if (recommendation.item.backgroundGroup) {
+      setActiveBackgroundPart(recommendation.item.backgroundGroup)
+    }
   }
 
   const handleMainTabClick = (tab: ShopTab) => {
@@ -251,12 +437,30 @@ export default function Decorate() {
     dragRef.current = null
   }
 
+  const handleRemoveEquipment = (entry: EquipmentEntry) => {
+    if (entry.kind === 'background') {
+      setCanvasBackground(null)
+      return
+    }
+    if (entry.kind === 'placed' && entry.instanceId) {
+      removeItem(entry.instanceId)
+      if (selectedId === entry.instanceId) setSelectedId(null)
+      return
+    }
+    if (entry.kind !== 'character' || !entry.who || !entry.part) return
+
+    if (entry.part === 'hair') setCharacterHair(entry.who, DEFAULT_HAIR_ID)
+    else if (entry.part === 'hairColor') setCharacterHairColor(entry.who, DEFAULT_HAIR_COLOR_ID)
+    else if (entry.part === 'face') setCharacterExpr(entry.who, DEFAULT_EXPR_ID)
+    else setCharacterOutfit(entry.who, DEFAULT_OUTFIT_ID)
+  }
+
   return (
     <StageLayout>
       <div className="flex h-full flex-col gap-4">
         {/* 예산 바 */}
         <div className="rounded-2xl bg-white px-5 py-4 shadow-sm">
-          <div className="flex items-center justify-between text-lg">
+          <div className="flex items-center justify-between text-xl font-semibold">
             <span className="text-gray-500">예산 {budget === null ? '-' : formatWon(budget)}</span>
             <span className="text-gray-500">
               사용 <span className="font-bold text-brand-500">{formatWon(spent)}</span>
@@ -265,29 +469,42 @@ export default function Decorate() {
               남음 {remaining === null ? '-' : formatWon(Math.max(0, remaining))}
             </span>
           </div>
-          {warning && <p className="mt-2 text-center text-red-500">{warning}</p>}
+          {warning && <p className="mt-2 text-center text-lg font-bold text-red-500">{warning}</p>}
         </div>
 
-        {/* 캔버스 */}
-        <div
-          ref={canvasRef}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerDown={() => {
-            setSelectedId(null)
-            setSelectedChar(null)
-          }}
-          className="relative flex-1 overflow-hidden rounded-2xl border-2 border-brand-100 bg-[repeating-linear-gradient(45deg,#fafafa,#fafafa_12px,#f4f4f5_12px,#f4f4f5_24px)]"
-        >
-          {/* 배경 이미지 */}
-          {background?.image && (
-            <img
-              src={background.image}
-              alt={background.name}
-              className="pointer-events-none absolute inset-0 h-full w-full object-cover"
-              draggable={false}
-            />
-          )}
+        {/* 전체 배경 캔버스 + 장비 목록 */}
+        <div className="flex min-h-0 flex-1 gap-3">
+          <div
+            ref={canvasViewportRef}
+            className="relative min-h-0 min-w-0 flex-1 overflow-hidden rounded-2xl bg-[repeating-linear-gradient(45deg,#fafafa,#fafafa_12px,#f4f4f5_12px,#f4f4f5_24px)]"
+          >
+            <div
+              ref={canvasRef}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              onPointerDown={() => {
+                setSelectedId(null)
+                setSelectedChar(null)
+              }}
+              className="absolute overflow-hidden"
+              style={{
+                left: canvasTransform.left,
+                top: canvasTransform.top,
+                width: SCENE_WIDTH,
+                height: SCENE_HEIGHT,
+                transform: `scale(${canvasTransform.scale})`,
+                transformOrigin: 'top left',
+              }}
+            >
+            {/* 배경 이미지 */}
+            {background?.image && (
+              <img
+                src={background.image}
+                alt={background.name}
+                className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+                draggable={false}
+              />
+            )}
 
           {/* 인물: 신랑·신부 (삭제/교체 불가, 드래그로 위치 이동 가능) */}
           {CHARACTERS.map((c) => {
@@ -400,7 +617,7 @@ export default function Decorate() {
               <div
                 key={p.instanceId}
                 onPointerDown={(e) => handlePointerDownItem(e, p.instanceId, p.x, p.y)}
-                className={`absolute flex items-center justify-center text-center text-xs text-white/90 ${
+                className={`absolute flex items-center justify-center text-center text-base font-semibold text-white/90 ${
                   isSelected ? 'ring-4 ring-brand-400' : ''
                 }`}
                 style={{
@@ -439,6 +656,66 @@ export default function Decorate() {
               </div>
             )
           })}
+            </div>
+            <div className="pointer-events-none absolute inset-0 z-[9999] rounded-2xl border-2 border-brand-100" />
+          </div>
+
+          <aside className="flex w-[23%] min-w-[168px] flex-col overflow-hidden rounded-2xl border-2 border-brand-100 bg-white shadow-sm">
+            <div className="flex shrink-0 items-center justify-between border-b border-brand-100 px-2.5 py-3">
+              <h2 className="text-lg font-black text-gray-800">구매 목록</h2>
+              <span className="text-sm font-bold text-brand-500">{equipmentEntries.length}개</span>
+            </div>
+            <div className="equipment-scrollbar min-h-0 flex-1 overflow-y-scroll px-2">
+              {equipmentEntries.length === 0 ? (
+                <div className="flex h-full items-center justify-center px-4 text-center text-base font-semibold text-gray-400">
+                  선택한 장비가 없습니다
+                </div>
+              ) : (
+                equipmentEntries.map((entry) => (
+                  <div
+                    key={entry.key}
+                    className="grid min-h-[68px] grid-cols-[2.25rem_minmax(0,1fr)_2rem] items-center gap-1 border-b border-gray-100 py-2 last:border-b-0"
+                  >
+                    <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-md bg-brand-50">
+                      {entry.image ? (
+                        <img
+                          src={entry.image}
+                          alt=""
+                          className="h-full w-full object-contain"
+                          draggable={false}
+                        />
+                      ) : (
+                        <span
+                          className="h-7 w-7 rounded-md border border-black/5"
+                          style={{ backgroundColor: entry.swatch ?? '#f3f4f6' }}
+                        />
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <span className="block truncate text-sm font-bold text-gray-400">{entry.label}</span>
+                      <span className="block truncate text-base font-black text-gray-800">{entry.name}</span>
+                      <span className="block truncate text-sm font-bold text-brand-500">
+                        {entry.price === 0 ? '무료' : formatWon(entry.price)}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveEquipment(entry)}
+                      className="flex h-8 w-8 items-center justify-center rounded-full bg-red-50 text-xl font-bold leading-none text-red-500 active:bg-red-100"
+                      aria-label={`${entry.name} 빼기`}
+                      title="장비에서 빼기"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+            <div className="flex shrink-0 items-center justify-between border-t border-brand-100 px-2.5 py-3 text-sm font-bold">
+              <span className="text-gray-500">사용 합계</span>
+              <span className="text-brand-500">{formatWon(spent)}</span>
+            </div>
+          </aside>
         </div>
 
         {/* 상점 */}
@@ -449,7 +726,7 @@ export default function Decorate() {
               <button
                 key={t.key}
                 onClick={() => handleMainTabClick(t)}
-                className={`select-none rounded-xl py-2 text-base font-medium ${
+                className={`select-none rounded-xl py-2 text-lg font-bold ${
                   t.key === activeMainTabKey ? 'bg-brand-500 text-white' : 'bg-brand-50 text-brand-500'
                 }`}
               >
@@ -464,7 +741,7 @@ export default function Decorate() {
                   <button
                     key={t.key}
                     onClick={() => handleCharacterPartClick(activeMainTab.who!, t.key)}
-                    className={`select-none rounded-md py-1.5 text-sm font-semibold transition ${
+                    className={`select-none rounded-md py-1.5 text-base font-bold transition ${
                       t.key === activeCharacterPart
                         ? 'bg-white text-gray-900 shadow-sm'
                         : 'text-gray-500 active:bg-white/70'
@@ -480,7 +757,7 @@ export default function Decorate() {
                   <button
                     key={t.key}
                     onClick={() => setActiveObjectPart(t.key)}
-                    className={`select-none rounded-md py-1.5 text-sm font-semibold transition ${
+                    className={`select-none rounded-md py-1.5 text-base font-bold transition ${
                       t.key === activeObjectPart
                         ? 'bg-white text-gray-900 shadow-sm'
                         : 'text-gray-500 active:bg-white/70'
@@ -496,7 +773,7 @@ export default function Decorate() {
                   <button
                     key={t.key}
                     onClick={() => setActiveBackgroundPart(t.key)}
-                    className={`select-none rounded-md py-1.5 text-sm font-semibold transition ${
+                    className={`select-none rounded-md py-1.5 text-base font-bold transition ${
                       t.key === activeBackgroundPart
                         ? 'bg-white text-gray-900 shadow-sm'
                         : 'text-gray-500 active:bg-white/70'
@@ -509,6 +786,51 @@ export default function Decorate() {
             ) : (
               <div aria-hidden="true" className="h-8 w-full" />
             )}
+          </div>
+
+          <div className="mb-3 h-[118px] shrink-0">
+            <p className="mb-1 px-1 text-xl font-black leading-tight text-gray-700">
+              {playerCount === 2
+                ? '두 분의 합친 취향에 어울리는 배경'
+                : '당신의 취향에 어울리는 배경'}
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {backgroundRecommendations.map((recommendation) => {
+                const selected = recommendation.item.id === canvasBackgroundId
+                const delta = recommendation.item.price - backgroundPrice
+                const affordable = budget === null || spent + delta <= budget
+                return (
+                  <button
+                    key={recommendation.item.id}
+                    onClick={() => handleRecommendationTap(recommendation)}
+                    disabled={!affordable && !selected}
+                    className={`grid h-20 min-w-0 select-none grid-cols-[3.25rem_minmax(0,1fr)] items-center gap-2 rounded-lg border-2 p-1.5 text-left ${
+                      selected
+                        ? 'border-brand-500 bg-brand-50'
+                        : 'border-brand-100 bg-white active:bg-brand-50 disabled:opacity-40'
+                    }`}
+                  >
+                    <img
+                      src={recommendation.item.image}
+                      alt={recommendation.item.name}
+                      className="h-16 w-[3.25rem] rounded-md object-cover"
+                      draggable={false}
+                    />
+                    <span className="min-w-0">
+                      <span className="block truncate text-base font-black leading-tight text-brand-500">
+                        {recommendation.label}
+                      </span>
+                      <span className="block truncate text-lg font-bold leading-tight text-gray-800">
+                        {recommendation.item.name}
+                      </span>
+                      <span className="block truncate text-sm leading-tight text-gray-500">
+                        {recommendation.reason} · {formatWon(recommendation.item.price)}
+                      </span>
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
           </div>
 
           {/* 표정 탭: 해당 인물의 표정 교체 */}
@@ -527,7 +849,7 @@ export default function Decorate() {
                       if (!setCharacterExpr(who, ex.id)) warn('예산을 초과해서 바꿀 수 없어요.')
                     }}
                     disabled={!affordable && !isCur}
-                    className={`flex w-24 shrink-0 select-none flex-col items-center gap-1 rounded-xl border-2 p-2 active:bg-brand-50 disabled:opacity-40 ${
+                    className={`flex w-24 shrink-0 select-none flex-col items-center gap-1 rounded-xl border-2 p-1.5 active:bg-brand-50 disabled:opacity-40 ${
                       isCur ? 'border-brand-500 bg-brand-50' : 'border-brand-100'
                     }`}
                   >
@@ -540,8 +862,8 @@ export default function Decorate() {
                         draggable={false}
                       />
                     </span>
-                    <span className="w-full truncate text-center text-sm text-gray-700">{ex.name}</span>
-                    <span className="w-full truncate text-center text-xs text-gray-400">
+                    <span className="w-full truncate text-center text-base font-semibold text-gray-700">{ex.name}</span>
+                    <span className="w-full truncate text-center text-sm text-gray-400">
                       {ex.price === 0 ? '무료' : formatWon(ex.price)}
                     </span>
                   </button>
@@ -579,11 +901,11 @@ export default function Decorate() {
                       if (!setCharacterHair(who, hair.id)) warn('예산을 초과해서 바꿀 수 없어요.')
                     }}
                     disabled={!affordable && !isCur}
-                    className={`flex w-24 shrink-0 select-none flex-col items-center gap-1 rounded-xl border-2 p-2 active:bg-brand-50 disabled:opacity-40 ${
+                    className={`flex w-24 shrink-0 select-none flex-col items-center gap-1 rounded-xl border-2 p-1.5 active:bg-brand-50 disabled:opacity-40 ${
                       isCur ? 'border-brand-500 bg-brand-50' : 'border-brand-100'
                     }`}
                   >
-                    <span className="relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-lg bg-brand-50 text-xs font-bold text-brand-300">
+                    <span className="relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-lg bg-brand-50 text-sm font-bold text-brand-300">
                       {hair.image ? (
                         <>
                           <img
@@ -607,8 +929,8 @@ export default function Decorate() {
                         '없음'
                       )}
                     </span>
-                    <span className="w-full truncate text-center text-sm text-gray-700">{hair.name}</span>
-                    <span className="w-full truncate text-center text-xs text-gray-400">
+                    <span className="w-full truncate text-center text-base font-semibold text-gray-700">{hair.name}</span>
+                    <span className="w-full truncate text-center text-sm text-gray-400">
                       {hair.price === 0 ? '무료' : formatWon(hair.price)}
                     </span>
                   </button>
@@ -630,7 +952,7 @@ export default function Decorate() {
                       if (!setCharacterHairColor(who, color.id)) warn('예산을 초과해서 바꿀 수 없어요.')
                     }}
                     disabled={!affordable && !isCur}
-                    className={`flex w-24 shrink-0 select-none flex-col items-center gap-1 rounded-xl border-2 p-2 active:bg-brand-50 disabled:opacity-40 ${
+                    className={`flex w-24 shrink-0 select-none flex-col items-center gap-1 rounded-xl border-2 p-1.5 active:bg-brand-50 disabled:opacity-40 ${
                       isCur ? 'border-brand-500 bg-brand-50' : 'border-brand-100'
                     }`}
                   >
@@ -640,8 +962,8 @@ export default function Decorate() {
                         style={{ backgroundColor: color.swatch }}
                       />
                     </span>
-                    <span className="w-full truncate text-center text-sm text-gray-700">{color.name}</span>
-                    <span className="w-full truncate text-center text-xs text-gray-400">
+                    <span className="w-full truncate text-center text-base font-semibold text-gray-700">{color.name}</span>
+                    <span className="w-full truncate text-center text-sm text-gray-400">
                       {color.price === 0 ? '무료' : formatWon(color.price)}
                     </span>
                   </button>
@@ -663,7 +985,7 @@ export default function Decorate() {
                       if (!setCharacterOutfit(who, outfit.id)) warn('예산을 초과해서 바꿀 수 없어요.')
                     }}
                     disabled={!affordable && !isCur}
-                    className={`flex w-24 shrink-0 select-none flex-col items-center gap-1 rounded-xl border-2 p-2 active:bg-brand-50 disabled:opacity-40 ${
+                    className={`flex w-24 shrink-0 select-none flex-col items-center gap-1 rounded-xl border-2 p-1.5 active:bg-brand-50 disabled:opacity-40 ${
                       isCur ? 'border-brand-500 bg-brand-50' : 'border-brand-100'
                     }`}
                   >
@@ -676,8 +998,8 @@ export default function Decorate() {
                         draggable={false}
                       />
                     </span>
-                    <span className="w-full truncate text-center text-sm text-gray-700">{outfit.name}</span>
-                    <span className="w-full truncate text-center text-xs text-gray-400">
+                    <span className="w-full truncate text-center text-base font-semibold text-gray-700">{outfit.name}</span>
+                    <span className="w-full truncate text-center text-sm text-gray-400">
                       {outfit.price === 0 ? '무료' : formatWon(outfit.price)}
                     </span>
                   </button>
@@ -687,29 +1009,35 @@ export default function Decorate() {
           ) : (
             // 배치 아이템 탭
             <ShopScrollRow key={activeTab.key}>
-              {ITEMS.filter((i) =>
-                i.category === activeTab.itemCat &&
-                (i.category !== 'background' || i.backgroundGroup === activeBackgroundPart),
-              ).map((item) => {
+              {visibleItems.map((item) => {
                 const isBg = item.category === 'background'
-                const affordable = isBg || budget === null || spent + item.price <= budget
+                const delta = isBg ? item.price - backgroundPrice : item.price
+                const affordable = budget === null || spent + delta <= budget
                 const selected = isBg && item.id === canvasBackgroundId
+                const recommendation = recommendationById.get(item.id)
                 return (
                   <button
                     key={item.id}
                     onClick={() => handleTapItem(item)}
                     disabled={!affordable}
-                    className={`flex w-28 shrink-0 select-none flex-col items-center gap-1 rounded-xl border-2 p-2 active:bg-brand-50 disabled:opacity-40 ${
+                    className={`flex w-28 shrink-0 select-none flex-col items-center gap-1 rounded-xl border-2 p-1.5 active:bg-brand-50 disabled:opacity-40 ${
                       selected ? 'border-brand-500 bg-brand-50' : 'border-brand-100'
                     }`}
                   >
                     {item.image ? (
-                      <img
-                        src={item.image}
-                        alt={item.name}
-                        className={`h-16 w-16 rounded-lg ${isBg ? 'object-cover' : 'object-contain'}`}
-                        draggable={false}
-                      />
+                      <span className="relative h-16 w-16">
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          className={`h-16 w-16 rounded-lg ${isBg ? 'object-cover' : 'object-contain'}`}
+                          draggable={false}
+                        />
+                        {recommendation && (
+                          <span className="absolute left-1 top-1 rounded bg-brand-500 px-1.5 py-0.5 text-xs font-black text-white">
+                            추천
+                          </span>
+                        )}
+                      </span>
                     ) : (
                       <span
                         className="h-16 w-16"
@@ -719,8 +1047,12 @@ export default function Decorate() {
                         }}
                       />
                     )}
-                    <span className="w-full truncate text-center text-sm text-gray-700">{item.name}</span>
-                    <span className="w-full truncate text-center text-xs text-gray-400">
+                    <span className="w-full truncate text-center text-base font-semibold text-gray-700">{item.name}</span>
+                    <span
+                      className={`w-full truncate text-center text-sm ${
+                        recommendation ? 'font-bold text-brand-500' : 'text-gray-400'
+                      }`}
+                    >
                       {item.price === 0 ? '무료' : formatWon(item.price)}
                     </span>
                   </button>

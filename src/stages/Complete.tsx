@@ -35,6 +35,9 @@ export default function Complete() {
   const type = resultCode ? findTypeByCode(resultCode) : undefined
   const isDuo = playerCount === 2
   const remaining = Math.max(0, (budget ?? 0) - spent)
+  const previewRatio = printFrame ? printFrame.width / printFrame.height : 2 / 3
+  const previewWidth = 630
+  const previewHeight = Math.min(1121, previewWidth / previewRatio)
   const printSpec = useMemo(
     () => ({ ...calculatePrintSpec(printId, budget, spent), frameRatio: printFrameRatio, frame: printFrame }),
     [budget, printFrame, printFrameRatio, printId, spent],
@@ -137,7 +140,7 @@ export default function Complete() {
         <div className="flex w-full flex-col items-center justify-center gap-4">
           <div
             className="flex shrink-0 items-center justify-center overflow-hidden rounded-2xl border-4 border-white bg-white shadow-sm"
-            style={{ width: 630, height: 1121 }}
+            style={{ width: previewWidth, height: previewHeight }}
           >
             {previewUrl ? (
               <img

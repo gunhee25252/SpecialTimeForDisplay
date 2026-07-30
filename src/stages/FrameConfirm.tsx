@@ -3,16 +3,17 @@ import { useAppStore, type PrintFrame, type PrintFrameRatio } from '../store/use
 import StageLayout from '../components/StageLayout'
 import Button from '../components/Button'
 import { renderPrintImage } from '../utils/print'
+import { SCENE_HEIGHT, SCENE_WIDTH } from '../data/constants'
 
 const FRAME_OPTIONS: { ratio: PrintFrameRatio; label: string; description: string; value: number }[] = [
   { ratio: '9:16', label: '세로형', description: '기본 화면 비율', value: 9 / 16 },
-  { ratio: '4:6', label: '사진형', description: '일반 인화 비율', value: 4 / 6 },
+  { ratio: '4:6', label: '사진형', description: '배경 전체 비율', value: 4 / 6 },
   { ratio: '1:1', label: '정사각형', description: '정방형 출력', value: 1 },
   { ratio: '16:9', label: '가로형', description: '와이드 출력', value: 16 / 9 },
 ]
 
 const PREVIEW_W = 500
-const PREVIEW_H = 889
+const PREVIEW_H = 750
 const MIN_FRAME_SIZE = 90
 
 type DragState =
@@ -67,10 +68,10 @@ function resizeFrame(frame: PrintFrame, corner: ResizeCorner, pointerX: number, 
 
 function toCanvasFrame(frame: PrintFrame): PrintFrame {
   return {
-    x: Math.round((frame.x / PREVIEW_W) * 1080),
-    y: Math.round((frame.y / PREVIEW_H) * 1920),
-    width: Math.round((frame.width / PREVIEW_W) * 1080),
-    height: Math.round((frame.height / PREVIEW_H) * 1920),
+    x: Math.round((frame.x / PREVIEW_W) * SCENE_WIDTH),
+    y: Math.round((frame.y / PREVIEW_H) * SCENE_HEIGHT),
+    width: Math.round((frame.width / PREVIEW_W) * SCENE_WIDTH),
+    height: Math.round((frame.height / PREVIEW_H) * SCENE_HEIGHT),
   }
 }
 
