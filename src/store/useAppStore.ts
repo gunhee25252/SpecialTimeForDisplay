@@ -50,6 +50,7 @@ export interface PlayerResult {
 export interface PlacedItem {
   instanceId: string
   itemId: string
+  scale: number
   x: number
   y: number
   z: number // 순서(쌓임)
@@ -126,6 +127,7 @@ interface AppState {
   nextAfterBudget: () => void // 예산 확정 후 흐름 진행(다음 사람 / 결과)
   placeItem: (itemId: string, x: number, y: number) => string | null // 예산 초과면 null
   moveItem: (instanceId: string, x: number, y: number) => void
+  setItemScale: (instanceId: string, scale: number) => void
   bringItemToFront: (instanceId: string) => void
   removeItem: (instanceId: string) => void
   setCharacterExpr: (who: CharacterKey, exprId: string) => boolean // 표정 교체(가격차 반영, 초과면 false)
@@ -204,6 +206,12 @@ function computeCode(axisScores: AxisScores): string {
 
 // 다음 배치 z값과 고유 instanceId 생성을 위한 단조 증가 카운터.
 let placeCounter = 0
+const MIN_ITEM_SCALE = 0.5
+const MAX_ITEM_SCALE = 2
+
+function clampItemScale(scale: number): number {
+  return Math.min(MAX_ITEM_SCALE, Math.max(MIN_ITEM_SCALE, Math.round(scale * 10) / 10))
+}
 
 function nextZ(placedItems: PlacedItem[], characters: CharactersState): number {
   const itemZ = placedItems.map((p) => p.z)
@@ -351,6 +359,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     const placed: PlacedItem = {
       instanceId: `p${placeCounter}`,
       itemId,
+      scale: 1,
       x,
       y,
       z: nextZ(placedItems, characters),
@@ -364,6 +373,24 @@ export const useAppStore = create<AppState>((set, get) => ({
       placedItems: state.placedItems.map((p) =>
         p.instanceId === instanceId ? { ...p, x, y } : p,
       ),
+    })),
+
+  setItemScale: (instanceId, requestedScale) =>
+    set((state) => ({
+      placedItems: state.placedItems.map((p) => {
+        if (p.instanceId !== instanceId) return p
+        const item = findItem(p.itemId)
+        if (!item) return p
+        const currentScale = p.scale ?? 1
+        const scale = clampItemScale(requestedScale)
+        if (scale === currentScale) return p
+        return {
+          ...p,
+          x: p.x - (item.defaultWidth * (scale - currentScale)) / 2,
+          y: p.y - (item.defaultHeight * (scale - currentScale)) / 2,
+          scale,
+        }
+      }),
     })),
 
   bringItemToFront: (instanceId) =>

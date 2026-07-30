@@ -37,6 +37,11 @@ const PROP_IMAGES = {
 // thumbnail: 이미지가 없을 때 쓰는 CSS 색상값. image: 있으면 실제 이미지로 렌더.
 export type ItemCategory = 'background' | 'object' | 'sticker' | 'text'
 export type BackgroundGroup = 'indoor' | 'outdoor'
+export type ObjectShopGroup =
+  | 'props'
+  | 'stickers'
+  | 'presetText'
+  | 'letterBalloons'
 
 export interface DecorItem {
   id: string
@@ -49,8 +54,25 @@ export interface DecorItem {
   defaultWidth: number
   defaultHeight: number
   shape?: 'rect' | 'circle'
+  renderStyle?: 'weddingPhrase' | 'letterShapeBalloon'
+  text?: string
+  objectGroup?: ObjectShopGroup
   backgroundGroup?: BackgroundGroup
   tasteCode?: string
+}
+
+export function getWeddingPhraseFontRatio(text: string): number {
+  const visualUnits = Array.from(text).reduce((sum, character) => {
+    if (/\s/.test(character)) return sum + 0.35
+    if (/[A-Za-z0-9]/.test(character)) return sum + 0.45
+    if (character === '&') return sum + 0.65
+    const codePoint = character.codePointAt(0) ?? 0
+    if (codePoint >= 0xac00 && codePoint <= 0xd7a3) return sum + 0.72
+    return sum + 0.55
+  }, 0)
+
+  const maximumRatio = visualUnits <= 2.5 ? 0.15 : 0.11
+  return Math.min(maximumRatio, 0.44 / Math.max(1, visualUnits))
 }
 
 export const ITEM_CATEGORIES: { key: ItemCategory; label: string }[] = [
@@ -59,6 +81,69 @@ export const ITEM_CATEGORIES: { key: ItemCategory; label: string }[] = [
   { key: 'sticker', label: '스티커' },
   { key: 'text', label: '문구' },
 ]
+
+const LETTER_BALLOON_COLORS = [
+  '#ef6f9a',
+  '#f08a6b',
+  '#d9ad3f',
+  '#55ad92',
+  '#5b93df',
+  '#9676d1',
+]
+
+const LETTER_SHAPE_BALLOONS: DecorItem[] = Array.from({ length: 26 }, (_, index) => {
+  const letter = String.fromCharCode(65 + index)
+  return {
+    id: `tx-letter-balloon-${letter.toLowerCase()}`,
+    category: 'text',
+    name: `${letter} 글자 풍선`,
+    price: 200_000,
+    thumbnail: LETTER_BALLOON_COLORS[index % LETTER_BALLOON_COLORS.length],
+    defaultWidth: 108,
+    defaultHeight: 108,
+    shape: 'rect',
+    renderStyle: 'letterShapeBalloon',
+    text: letter,
+    objectGroup: 'letterBalloons',
+  }
+})
+
+const WEDDING_PHRASE_DEFINITIONS = [
+  { id: 'i-do', text: 'I DO', price: 200_000, color: '#d95f8d' },
+  { id: 'we-do', text: 'WE DO', price: 200_000, color: '#4f86c6' },
+  { id: 'you-and-me', text: 'YOU & ME', price: 300_000, color: '#8b6bb1' },
+  { id: 'mr-and-mrs', text: 'MR & MRS', price: 300_000, color: '#4d8f7a' },
+  { id: 'just-married', text: 'JUST MARRIED', price: 400_000, color: '#cf647c' },
+  { id: 'our-wedding-day', text: 'OUR WEDDING DAY', price: 400_000, color: '#6675b8' },
+  { id: 'save-the-date', text: 'SAVE THE DATE', price: 500_000, color: '#a87832' },
+  { id: 'best-day-ever', text: 'BEST DAY EVER', price: 500_000, color: '#b05779' },
+  { id: 'love-always', text: 'LOVE ALWAYS', price: 500_000, color: '#367f87' },
+  { id: 'together-forever', text: 'TOGETHER FOREVER', price: 600_000, color: '#7a63a6' },
+  { id: 'happily-ever-after', text: 'HAPPILY EVER AFTER', price: 600_000, color: '#b36d3b' },
+  { id: 'forever-starts-here', text: 'FOREVER STARTS HERE', price: 700_000, color: '#486f9f' },
+  { id: 'we-are-getting-married', text: '우리 결혼해요', price: 400_000, color: '#d95f8d' },
+  { id: 'we-are-married', text: '결혼합니다', price: 400_000, color: '#4f86c6' },
+  { id: 'from-today-forever', text: '오늘부터 평생', price: 500_000, color: '#8b6bb1' },
+  { id: 'together-for-life', text: '평생 함께할게요', price: 500_000, color: '#4d8f7a' },
+  { id: 'happy-together', text: '함께라서 행복해', price: 500_000, color: '#cf647c' },
+  { id: 'happily-for-a-long-time', text: '오래오래 행복하게', price: 600_000, color: '#6675b8' },
+] as const
+
+const WEDDING_PHRASES: DecorItem[] = WEDDING_PHRASE_DEFINITIONS.map(
+  ({ id, text, price, color }) => ({
+    id: `tx-wedding-${id}`,
+    category: 'text',
+    name: text,
+    price,
+    thumbnail: color,
+    defaultWidth: text.length <= 5 ? 180 : text.length <= 12 ? 240 : 300,
+    defaultHeight: 90,
+    shape: 'rect',
+    renderStyle: 'weddingPhrase',
+    text,
+    objectGroup: 'presetText',
+  }),
+)
 
 export const ITEMS: DecorItem[] = [
   // 배경 — 탭하면 차액을 정산하고 캔버스 전체 배경으로 설정한다.
@@ -84,21 +169,22 @@ export const ITEMS: DecorItem[] = [
   { id: 'bg-type15', category: 'background', name: '달빛 클리프', price: 12_000_000, thumbnail: '#505966', image: BG_IMAGES.type15, defaultWidth: 1080, defaultHeight: 1620, backgroundGroup: 'outdoor', tasteCode: 'OUT-DARK-SIMPLE-MONO' },
   { id: 'bg-type16', category: 'background', name: '노을 비치', price: 10_000_000, thumbnail: '#705396', image: BG_IMAGES.type16, defaultWidth: 1080, defaultHeight: 1620, backgroundGroup: 'outdoor', tasteCode: 'OUT-DARK-SIMPLE-CHROMA' },
 
-  // 오브제/스티커/문구 — Phase 1 더미(색 블록/도형)
-  { id: 'prop00', category: 'object', name: '로즈 3단 케이크', price: 1_000_000, thumbnail: '#e7c8a0', image: PROP_IMAGES.prop00, defaultWidth: 202, defaultHeight: 286, shape: 'rect' },
-  { id: 'prop01', category: 'object', name: '핑크 하트 케이크', price: 1_000_000, thumbnail: '#e7c8a0', image: PROP_IMAGES.prop01, defaultWidth: 186, defaultHeight: 246, shape: 'rect' },
-  { id: 'prop02', category: 'object', name: '라벤더 하트 케이크', price: 1_000_000, thumbnail: '#e7c8a0', image: PROP_IMAGES.prop02, defaultWidth: 187, defaultHeight: 249, shape: 'rect' },
-  { id: 'prop03', category: 'object', name: '세이지 하트 케이크', price: 1_000_000, thumbnail: '#e7c8a0', image: PROP_IMAGES.prop03, defaultWidth: 186, defaultHeight: 251, shape: 'rect' },
-  { id: 'prop04', category: 'object', name: '블루 하트 케이크', price: 1_000_000, thumbnail: '#e7c8a0', image: PROP_IMAGES.prop04, defaultWidth: 195, defaultHeight: 260, shape: 'rect' },
-  { id: 'obj-arch', category: 'object', name: '아치', price: 3_000_000, thumbnail: '#e7c8a0', defaultWidth: 160, defaultHeight: 160, shape: 'rect' },
-  { id: 'obj-table', category: 'object', name: '테이블', price: 2_500_000, thumbnail: '#c9a27a', defaultWidth: 180, defaultHeight: 120, shape: 'rect' },
+  // 오브제/스티커
+  { id: 'prop00', category: 'object', name: '로즈 3단 케이크', price: 1_000_000, thumbnail: '#e7c8a0', image: PROP_IMAGES.prop00, defaultWidth: 202, defaultHeight: 286, shape: 'rect', objectGroup: 'props' },
+  { id: 'prop01', category: 'object', name: '핑크 하트 케이크', price: 1_000_000, thumbnail: '#e7c8a0', image: PROP_IMAGES.prop01, defaultWidth: 186, defaultHeight: 246, shape: 'rect', objectGroup: 'props' },
+  { id: 'prop02', category: 'object', name: '라벤더 하트 케이크', price: 1_000_000, thumbnail: '#e7c8a0', image: PROP_IMAGES.prop02, defaultWidth: 187, defaultHeight: 249, shape: 'rect', objectGroup: 'props' },
+  { id: 'prop03', category: 'object', name: '세이지 하트 케이크', price: 1_000_000, thumbnail: '#e7c8a0', image: PROP_IMAGES.prop03, defaultWidth: 186, defaultHeight: 251, shape: 'rect', objectGroup: 'props' },
+  { id: 'prop04', category: 'object', name: '블루 하트 케이크', price: 1_000_000, thumbnail: '#e7c8a0', image: PROP_IMAGES.prop04, defaultWidth: 195, defaultHeight: 260, shape: 'rect', objectGroup: 'props' },
+  { id: 'obj-arch', category: 'object', name: '아치', price: 3_000_000, thumbnail: '#e7c8a0', defaultWidth: 160, defaultHeight: 160, shape: 'rect', objectGroup: 'props' },
+  { id: 'obj-table', category: 'object', name: '테이블', price: 2_500_000, thumbnail: '#c9a27a', defaultWidth: 180, defaultHeight: 120, shape: 'rect', objectGroup: 'props' },
 
-  { id: 'st-flower', category: 'sticker', name: '꽃', price: 800_000, thumbnail: '#f2a9c4', defaultWidth: 100, defaultHeight: 100, shape: 'circle' },
-  { id: 'st-ring', category: 'sticker', name: '링', price: 1_200_000, thumbnail: '#e9d27a', defaultWidth: 90, defaultHeight: 90, shape: 'circle' },
-  { id: 'st-heart', category: 'sticker', name: '하트', price: 600_000, thumbnail: '#f08a8a', defaultWidth: 90, defaultHeight: 90, shape: 'circle' },
+  { id: 'st-flower', category: 'sticker', name: '꽃', price: 800_000, thumbnail: '#f2a9c4', defaultWidth: 100, defaultHeight: 100, shape: 'circle', objectGroup: 'stickers' },
+  { id: 'st-ring', category: 'sticker', name: '링', price: 1_200_000, thumbnail: '#e9d27a', defaultWidth: 90, defaultHeight: 90, shape: 'circle', objectGroup: 'stickers' },
+  { id: 'st-heart', category: 'sticker', name: '하트', price: 600_000, thumbnail: '#f08a8a', defaultWidth: 90, defaultHeight: 90, shape: 'circle', objectGroup: 'stickers' },
 
-  { id: 'tx-justmarried', category: 'text', name: 'JUST MARRIED', price: 500_000, thumbnail: '#333333', defaultWidth: 200, defaultHeight: 60, shape: 'rect' },
-  { id: 'tx-date', category: 'text', name: '날짜', price: 400_000, thumbnail: '#555555', defaultWidth: 160, defaultHeight: 60, shape: 'rect' },
+  // 문구 — 자주 쓰이는 웨딩 사인과 글자 자체가 풍선인 버전을 제공한다.
+  ...WEDDING_PHRASES,
+  ...LETTER_SHAPE_BALLOONS,
 ]
 
 export function findItem(id: string): DecorItem | undefined {

@@ -1,6 +1,14 @@
 import { useRef, useState, useCallback, useLayoutEffect, useMemo } from 'react'
 import { useAppStore } from '../store/useAppStore'
-import { ITEMS, findItem, type BackgroundGroup, type DecorItem, type ItemCategory } from '../data/items'
+import {
+  ITEMS,
+  findItem,
+  getWeddingPhraseFontRatio,
+  type BackgroundGroup,
+  type DecorItem,
+  type ItemCategory,
+  type ObjectShopGroup,
+} from '../data/items'
 import {
   CHARACTER_BODY,
   CHARACTER_HEAD,
@@ -41,7 +49,7 @@ interface ShopTab {
   characterPart?: 'face' | 'hair' | 'hairColor' | 'outfit'
 }
 type CharacterPart = NonNullable<ShopTab['characterPart']>
-type ObjectPart = Exclude<ItemCategory, 'background'>
+type ObjectPart = ObjectShopGroup
 type EquipmentCharacterPart = 'face' | 'hair' | 'hairColor' | 'outfit'
 
 interface EquipmentEntry {
@@ -52,6 +60,8 @@ interface EquipmentEntry {
   price: number
   image?: string | null
   swatch?: string
+  renderStyle?: DecorItem['renderStyle']
+  text?: string
   who?: CharacterKey
   part?: EquipmentCharacterPart
   instanceId?: string
@@ -71,10 +81,11 @@ const CHARACTER_PART_TABS: { key: CharacterPart; label: string }[] = [
   { key: 'outfit', label: '의상' },
 ]
 
-const OBJECT_PART_TABS: { key: ObjectPart; label: string }[] = [
-  { key: 'object', label: '오브제' },
-  { key: 'sticker', label: '스티커' },
-  { key: 'text', label: '문구' },
+const OBJECT_PART_TABS: { key: ObjectPart; label: string; itemCat: ItemCategory }[] = [
+  { key: 'props', label: '오브제', itemCat: 'object' },
+  { key: 'stickers', label: '스티커', itemCat: 'sticker' },
+  { key: 'presetText', label: '웨딩 문구', itemCat: 'text' },
+  { key: 'letterBalloons', label: '글자 풍선', itemCat: 'text' },
 ]
 
 const BACKGROUND_PART_TABS: { key: BackgroundGroup; label: string }[] = [
@@ -104,6 +115,24 @@ const FIGURE_W_RATIO = 400 / 1080
 const FIGURE_ASPECT_W = CW_FRAC * 1000
 const FIGURE_ASPECT_H = CH_FRAC * 1400
 const FIGURE_H_OVER_W = FIGURE_ASPECT_H / FIGURE_ASPECT_W
+const FIGURE_WIDTH = SCENE_WIDTH * FIGURE_W_RATIO
+const FIGURE_HEIGHT = FIGURE_WIDTH * FIGURE_H_OVER_W
+const CHARACTER_MIN_VISIBLE_RATIO = 0.6
+const CHARACTER_MIN_VISIBLE_WIDTH = FIGURE_WIDTH * CHARACTER_MIN_VISIBLE_RATIO
+const CHARACTER_MIN_VISIBLE_HEIGHT = FIGURE_HEIGHT * CHARACTER_MIN_VISIBLE_RATIO
+
+function clampCharacterPosition(x: number, y: number) {
+  return {
+    x: Math.min(
+      SCENE_WIDTH - CHARACTER_MIN_VISIBLE_WIDTH,
+      Math.max(-FIGURE_WIDTH + CHARACTER_MIN_VISIBLE_WIDTH, x),
+    ),
+    y: Math.min(
+      SCENE_HEIGHT - CHARACTER_MIN_VISIBLE_HEIGHT,
+      Math.max(-FIGURE_HEIGHT + CHARACTER_MIN_VISIBLE_HEIGHT, y),
+    ),
+  }
+}
 
 // 캐릭터 파츠·표정 이미지를 잘라낸 박스에 채우는 공용 스타일.
 const CHAR_IMG_STYLE: React.CSSProperties = {
@@ -125,6 +154,93 @@ function ShopScrollRow({ children }: { children: React.ReactNode }) {
   )
 }
 
+function WeddingPhrase({
+  text,
+  color,
+  className = '',
+}: {
+  text: string
+  color: string
+  className?: string
+}) {
+  const fontSize = `${getWeddingPhraseFontRatio(text) * 100}cqw`
+
+  return (
+    <span
+      aria-hidden="true"
+      className={`pointer-events-none relative block ${className}`}
+      style={{ containerType: 'inline-size' }}
+    >
+      <span
+        className="absolute inset-[3%] grid grid-cols-[0.65em_minmax(0,1fr)_0.65em] items-center gap-[0.1em] overflow-hidden rounded-lg border-[3px] bg-white/90 px-[2%] font-black leading-none shadow-md"
+        style={{
+          borderColor: color,
+          color,
+          fontSize,
+          textShadow: '0 1px 1px rgba(255,255,255,0.9)',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        <span className="flex justify-center text-[0.55em] opacity-55">♥</span>
+        <span className="min-w-0 text-center">{text}</span>
+        <span className="flex justify-center text-[0.55em] opacity-55">♥</span>
+      </span>
+    </span>
+  )
+}
+
+function LetterShapeBalloon({
+  letter,
+  color,
+  className = '',
+}: {
+  letter: string
+  color: string
+  className?: string
+}) {
+  const letterStyle: React.CSSProperties = {
+    color,
+    fontFamily: "'Arial Rounded MT Bold', 'Arial Black', sans-serif",
+    fontSize: '74cqw',
+    fontWeight: 900,
+    lineHeight: 1,
+    WebkitTextStroke: '2.2cqw rgba(0,0,0,0.12)',
+    paintOrder: 'stroke fill',
+    textShadow:
+      '1.6cqw 0 rgba(255,255,255,0.32), -1.6cqw 0 rgba(0,0,0,0.08), 0 3cqw 3cqw rgba(0,0,0,0.18)',
+  }
+
+  return (
+    <span
+      aria-hidden="true"
+      className={`pointer-events-none relative block ${className}`}
+      style={{ containerType: 'inline-size' }}
+    >
+      <span className="absolute left-1/2 top-[72%] h-[28%] w-px -translate-x-1/2 bg-gray-500/70" />
+      <span
+        className="absolute left-1/2 top-[67%] h-[8%] w-[9%] -translate-x-1/2 rounded-b-full border border-black/10"
+        style={{ backgroundColor: color }}
+      />
+      <span className="absolute inset-x-0 top-[-3%] flex h-[75%] items-center justify-center">
+        <span style={letterStyle}>{letter}</span>
+      </span>
+      <span className="absolute inset-x-0 top-[-4%] flex h-[75%] items-center justify-center opacity-55">
+        <span
+          style={{
+            ...letterStyle,
+            color: 'transparent',
+            WebkitTextStroke: '1.1cqw rgba(255,255,255,0.65)',
+            textShadow: 'none',
+            transform: 'translate(-0.8cqw, -0.8cqw)',
+          }}
+        >
+          {letter}
+        </span>
+      </span>
+    </span>
+  )
+}
+
 // 5) decorate — 신랑·신부 고정 배치 + 배경/표정/아이템 꾸미기.
 export default function Decorate() {
   const placedItems = useAppStore((s) => s.placedItems)
@@ -132,6 +248,7 @@ export default function Decorate() {
   const budget = useAppStore((s) => s.budget)
   const placeItem = useAppStore((s) => s.placeItem)
   const moveItem = useAppStore((s) => s.moveItem)
+  const setItemScale = useAppStore((s) => s.setItemScale)
   const bringItemToFront = useAppStore((s) => s.bringItemToFront)
   const removeItem = useAppStore((s) => s.removeItem)
   const characters = useAppStore((s) => s.characters)
@@ -172,7 +289,7 @@ export default function Decorate() {
     groom: 'hair',
     bride: 'hair',
   })
-  const [activeObjectPart, setActiveObjectPart] = useState<ObjectPart>('object')
+  const [activeObjectPart, setActiveObjectPart] = useState<ObjectPart>('props')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [selectedChar, setSelectedChar] = useState<CharacterKey | null>(null)
   const [warning, setWarning] = useState<string | null>(null)
@@ -188,6 +305,9 @@ export default function Decorate() {
   const backgroundPrice = background?.price ?? 0
   const activeMainTab = MAIN_TABS.find((t) => t.key === activeMainTabKey) ?? MAIN_TABS[0]
   const activeCharacterPart = activeMainTab.who ? activeCharacterParts[activeMainTab.who] : 'hair'
+  const activeObjectTab =
+    OBJECT_PART_TABS.find((tab) => tab.key === activeObjectPart) ??
+    OBJECT_PART_TABS[0]
   const activeMainTabIndex = Math.max(0, MAIN_TABS.findIndex((t) => t.key === activeMainTab.key))
   const subTabWidthPct = 58
   const subTabCenterPct = ((activeMainTabIndex + 0.5) / MAIN_TABS.length) * 100
@@ -203,15 +323,17 @@ export default function Decorate() {
     : activeMainTab.key === 'objects'
       ? {
           key: `objects-${activeObjectPart}`,
-          label: OBJECT_PART_TABS.find((t) => t.key === activeObjectPart)?.label ?? '',
-          itemCat: activeObjectPart,
+          label: activeObjectTab.label,
+          itemCat: activeObjectTab.itemCat,
         }
       : activeMainTab
   const visibleItems = ITEMS.filter(
     (item) =>
       item.category === activeTab.itemCat &&
       (item.category !== 'background' ||
-        item.backgroundGroup === activeBackgroundPart),
+        item.backgroundGroup === activeBackgroundPart) &&
+      (activeMainTab.key !== 'objects' ||
+        item.objectGroup === activeObjectPart),
   ).sort((a, b) => a.price - b.price)
   const equipmentEntries = useMemo<EquipmentEntry[]>(() => {
     const entries: EquipmentEntry[] = []
@@ -295,6 +417,8 @@ export default function Decorate() {
         price: item.price,
         image: item.image,
         swatch: item.image ? undefined : item.thumbnail,
+        renderStyle: item.renderStyle,
+        text: item.text,
         instanceId: placed.instanceId,
       })
     }
@@ -334,14 +458,12 @@ export default function Decorate() {
           : { scale, left, top },
       )
 
-      const charW = SCENE_WIDTH * FIGURE_W_RATIO
-      const charH = charW * FIGURE_H_OVER_W
-      const y = SCENE_HEIGHT - charH - SCENE_WIDTH * 0.03
+      const y = SCENE_HEIGHT - FIGURE_HEIGHT - SCENE_WIDTH * 0.03
       const gap = SCENE_WIDTH * 0.04
-      const startX = SCENE_WIDTH / 2 - (charW * 2 + gap) / 2
+      const startX = SCENE_WIDTH / 2 - (FIGURE_WIDTH * 2 + gap) / 2
       const chars = useAppStore.getState().characters
       if (chars.groom.x === null) moveCharacter('groom', startX, y)
-      if (chars.bride.x === null) moveCharacter('bride', startX + charW + gap, y)
+      if (chars.bride.x === null) moveCharacter('bride', startX + FIGURE_WIDTH + gap, y)
     }
 
     updateCanvas()
@@ -430,7 +552,10 @@ export default function Decorate() {
     if (!drag) return
     const { x, y } = toCanvasCoords(e.clientX, e.clientY)
     if (drag.kind === 'item') moveItem(drag.key, x - drag.offsetX, y - drag.offsetY)
-    else moveCharacter(drag.key as CharacterKey, x - drag.offsetX, y - drag.offsetY)
+    else {
+      const position = clampCharacterPosition(x - drag.offsetX, y - drag.offsetY)
+      moveCharacter(drag.key as CharacterKey, position.x, position.y)
+    }
   }
 
   const handlePointerUp = () => {
@@ -613,6 +738,7 @@ export default function Decorate() {
             const item = findItem(p.itemId)
             if (!item) return null
             const isSelected = p.instanceId === selectedId
+            const itemScale = p.scale ?? 1
             return (
               <div
                 key={p.instanceId}
@@ -623,10 +749,15 @@ export default function Decorate() {
                 style={{
                   left: p.x,
                   top: p.y,
-                  width: item.defaultWidth,
-                  height: item.defaultHeight,
+                  width: item.defaultWidth * itemScale,
+                  height: item.defaultHeight * itemScale,
                   zIndex: p.z,
-                  backgroundColor: item.image ? 'transparent' : item.thumbnail,
+                  backgroundColor:
+                    item.image ||
+                    item.renderStyle === 'weddingPhrase' ||
+                    item.renderStyle === 'letterShapeBalloon'
+                      ? 'transparent'
+                      : item.thumbnail,
                   borderRadius: item.shape === 'circle' ? '9999px' : '12px',
                   touchAction: 'none',
                 }}
@@ -638,20 +769,80 @@ export default function Decorate() {
                     className="pointer-events-none h-full w-full object-contain drop-shadow"
                     draggable={false}
                   />
+                ) : item.renderStyle === 'weddingPhrase' ? (
+                  <WeddingPhrase
+                    text={item.text ?? ''}
+                    color={item.thumbnail}
+                    className="h-full w-full"
+                  />
+                ) : item.renderStyle === 'letterShapeBalloon' ? (
+                  <LetterShapeBalloon
+                    letter={item.text ?? ''}
+                    color={item.thumbnail}
+                    className="h-full w-full"
+                  />
                 ) : (
                   <span className="pointer-events-none px-1">{item.name}</span>
                 )}
                 {isSelected && (
-                  <button
-                    onPointerDown={(e) => {
-                      e.stopPropagation()
-                      removeItem(p.instanceId)
-                      setSelectedId(null)
-                    }}
-                    className="absolute -right-3 -top-3 flex h-9 w-9 items-center justify-center rounded-full bg-red-500 text-base font-bold text-white shadow"
-                  >
-                    ✕
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      aria-label="크게"
+                      title="크게"
+                      disabled={itemScale >= 2}
+                      onPointerDown={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        setItemScale(p.instanceId, itemScale + 0.1)
+                      }}
+                      className="absolute -left-3 -top-3 flex h-9 w-9 items-center justify-center rounded-full bg-brand-500 text-2xl font-black text-white shadow-md disabled:bg-gray-300"
+                    >
+                      +
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="작게"
+                      title="작게"
+                      disabled={itemScale <= 0.5}
+                      onPointerDown={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        setItemScale(p.instanceId, itemScale - 0.1)
+                      }}
+                      className="absolute -bottom-3 -left-3 flex h-9 w-9 items-center justify-center rounded-full bg-brand-500 text-2xl font-black text-white shadow-md disabled:bg-gray-300"
+                    >
+                      −
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="크기 초기화"
+                      title="크기 초기화"
+                      disabled={itemScale === 1}
+                      onPointerDown={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        setItemScale(p.instanceId, 1)
+                      }}
+                      className="absolute -bottom-3 -right-3 flex h-9 w-9 items-center justify-center rounded-full bg-white text-xl font-black text-brand-600 shadow-md ring-2 ring-brand-400 disabled:text-gray-300 disabled:ring-gray-300"
+                    >
+                      ↺
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="삭제"
+                      title="삭제"
+                      onPointerDown={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        removeItem(p.instanceId)
+                        setSelectedId(null)
+                      }}
+                      className="absolute -right-3 -top-3 flex h-9 w-9 items-center justify-center rounded-full bg-red-500 text-base font-bold text-white shadow-md"
+                    >
+                      ✕
+                    </button>
+                  </>
                 )}
               </div>
             )
@@ -683,6 +874,18 @@ export default function Decorate() {
                           alt=""
                           className="h-full w-full object-contain"
                           draggable={false}
+                        />
+                      ) : entry.renderStyle === 'weddingPhrase' ? (
+                        <WeddingPhrase
+                          text={entry.text ?? ''}
+                          color={entry.swatch ?? '#ef6f9a'}
+                          className="h-full w-full"
+                        />
+                      ) : entry.renderStyle === 'letterShapeBalloon' ? (
+                        <LetterShapeBalloon
+                          letter={entry.text ?? ''}
+                          color={entry.swatch ?? '#ef6f9a'}
+                          className="h-full w-full"
                         />
                       ) : (
                         <span
@@ -752,7 +955,7 @@ export default function Decorate() {
                 ))}
               </div>
             ) : activeMainTab.key === 'objects' ? (
-              <div className="grid w-full grid-cols-3 gap-1">
+              <div className="grid w-full grid-cols-4 gap-1">
                 {OBJECT_PART_TABS.map((t) => (
                   <button
                     key={t.key}
@@ -1038,6 +1241,18 @@ export default function Decorate() {
                           </span>
                         )}
                       </span>
+                    ) : item.renderStyle === 'weddingPhrase' ? (
+                      <WeddingPhrase
+                        text={item.text ?? ''}
+                        color={item.thumbnail}
+                        className="h-16 w-16"
+                      />
+                    ) : item.renderStyle === 'letterShapeBalloon' ? (
+                      <LetterShapeBalloon
+                        letter={item.text ?? ''}
+                        color={item.thumbnail}
+                        className="h-16 w-16"
+                      />
                     ) : (
                       <span
                         className="h-16 w-16"

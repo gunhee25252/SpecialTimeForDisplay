@@ -1,5 +1,5 @@
 import { SCENE_HEIGHT, SCENE_WIDTH } from '../data/constants'
-import { findItem } from '../data/items'
+import { findItem, getWeddingPhraseFontRatio } from '../data/items'
 import {
   CHARACTER_BODY,
   CHARACTER_HEAD,
@@ -193,26 +193,163 @@ async function drawCharacter(ctx: CanvasRenderingContext2D, key: 'groom' | 'brid
   ctx.restore()
 }
 
+function drawWeddingPhrase(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  color: string,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+) {
+  const centerX = x + width / 2
+  const centerY = y + height / 2
+  const insetX = width * 0.03
+  const insetY = height * 0.03
+  const fontRatio = getWeddingPhraseFontRatio(text)
+  const fontSize = Math.max(12, Math.round(width * fontRatio))
+
+  ctx.save()
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.16)'
+  ctx.shadowBlur = Math.max(4, width * 0.025)
+  ctx.shadowOffsetY = Math.max(2, height * 0.04)
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.92)'
+  ctx.strokeStyle = color
+  ctx.lineWidth = Math.max(3, width * 0.012)
+  ctx.beginPath()
+  ctx.roundRect(
+    x + insetX,
+    y + insetY,
+    width - insetX * 2,
+    height - insetY * 2,
+    Math.min(14, height * 0.14),
+  )
+  ctx.fill()
+  ctx.stroke()
+
+  ctx.shadowColor = 'transparent'
+  ctx.fillStyle = color
+  ctx.font = `900 ${fontSize}px sans-serif`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(text, centerX, centerY, width * 0.58)
+
+  ctx.globalAlpha = 0.55
+  ctx.font = `900 ${Math.round(fontSize * 0.65)}px sans-serif`
+  ctx.fillText('♥', x + width * 0.09, centerY)
+  ctx.fillText('♥', x + width * 0.91, centerY)
+  ctx.restore()
+}
+
+function drawLetterShapeBalloon(
+  ctx: CanvasRenderingContext2D,
+  letter: string,
+  color: string,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+) {
+  const centerX = x + width / 2
+  const textY = y + height * 0.34
+  const maxTextWidth = width * 0.9
+
+  ctx.save()
+  ctx.strokeStyle = 'rgba(75, 85, 99, 0.7)'
+  ctx.lineWidth = Math.max(1, width * 0.012)
+  ctx.beginPath()
+  ctx.moveTo(centerX, y + height * 0.72)
+  ctx.lineTo(centerX, y + height)
+  ctx.stroke()
+
+  ctx.fillStyle = color
+  ctx.strokeStyle = 'rgba(0, 0, 0, 0.12)'
+  ctx.lineWidth = Math.max(2, width * 0.045)
+  ctx.lineJoin = 'round'
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.18)'
+  ctx.shadowBlur = width * 0.03
+  ctx.shadowOffsetY = width * 0.025
+  ctx.font = `900 ${Math.round(width * 0.74)}px "Arial Rounded MT Bold", "Arial Black", sans-serif`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.strokeText(letter, centerX, textY, maxTextWidth)
+  ctx.fillText(letter, centerX, textY, maxTextWidth)
+
+  ctx.shadowColor = 'transparent'
+  ctx.globalAlpha = 0.55
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)'
+  ctx.lineWidth = Math.max(1, width * 0.012)
+  ctx.strokeText(
+    letter,
+    centerX - width * 0.008,
+    textY - height * 0.008,
+    maxTextWidth,
+  )
+  ctx.globalAlpha = 1
+
+  ctx.fillStyle = color
+  ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)'
+  ctx.lineWidth = Math.max(1, width * 0.01)
+  ctx.beginPath()
+  ctx.roundRect(
+    centerX - width * 0.045,
+    y + height * 0.67,
+    width * 0.09,
+    height * 0.08,
+    width * 0.02,
+  )
+  ctx.fill()
+  ctx.stroke()
+  ctx.restore()
+}
+
 async function drawPlacedItem(ctx: CanvasRenderingContext2D, placed: PlacedItem) {
   const item = findItem(placed.itemId)
   if (!item) return
+  const scale = placed.scale ?? 1
+  const width = item.defaultWidth * scale
+  const height = item.defaultHeight * scale
 
   if (item.image) {
-    await drawImage(ctx, item.image, placed.x, placed.y, item.defaultWidth, item.defaultHeight)
+    await drawImage(ctx, item.image, placed.x, placed.y, width, height)
+    return
+  }
+  if (item.renderStyle === 'weddingPhrase') {
+    drawWeddingPhrase(
+      ctx,
+      item.text ?? '',
+      item.thumbnail,
+      placed.x,
+      placed.y,
+      width,
+      height,
+    )
+    return
+  }
+  if (item.renderStyle === 'letterShapeBalloon') {
+    drawLetterShapeBalloon(
+      ctx,
+      item.text ?? '',
+      item.thumbnail,
+      placed.x,
+      placed.y,
+      width,
+      height,
+    )
     return
   }
 
   ctx.save()
   ctx.fillStyle = item.thumbnail
-  const radius = item.shape === 'circle' ? Math.min(item.defaultWidth, item.defaultHeight) / 2 : 12
+  const radius = item.shape === 'circle' ? Math.min(width, height) / 2 : 12 * scale
   ctx.beginPath()
-  ctx.roundRect(placed.x, placed.y, item.defaultWidth, item.defaultHeight, radius)
+  ctx.roundRect(placed.x, placed.y, width, height, radius)
   ctx.fill()
   ctx.fillStyle = 'rgba(255,255,255,0.9)'
-  ctx.font = '700 16px sans-serif'
+  ctx.font = `700 ${16 * scale}px sans-serif`
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  ctx.fillText(item.name, placed.x + item.defaultWidth / 2, placed.y + item.defaultHeight / 2)
+  ctx.fillText(item.name, placed.x + width / 2, placed.y + height / 2)
   ctx.restore()
 }
 
