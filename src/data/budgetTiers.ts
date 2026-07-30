@@ -21,6 +21,7 @@ export const BUDGET_ROUND_UNIT = 100_000
 // 카운트업 시작 금액(가장 낮은 티어 하한). "낮은 금액부터" 올라가며 뽑는다.
 export const MIN_BUDGET_AMOUNT = Math.min(...BUDGET_TIERS.map((t) => t.min))
 export const MAX_BUDGET_AMOUNT = Math.max(...BUDGET_TIERS.map((t) => t.max))
+export const SOLO_MIN_BUDGET_AMOUNT = 10_000_000
 
 export interface BudgetDrawResult {
   tierId: string
@@ -29,7 +30,7 @@ export interface BudgetDrawResult {
 }
 
 // ① weight 가중치로 티어 1개 추첨 → ② min~max 랜덤 금액 → ③ 10만원 단위 반올림.
-export function drawBudgetResult(): BudgetDrawResult {
+export function drawBudgetResult(minimumAmount = MIN_BUDGET_AMOUNT): BudgetDrawResult {
   const totalWeight = BUDGET_TIERS.reduce((sum, t) => sum + t.weight, 0)
   let r = Math.random() * totalWeight
   let tier = BUDGET_TIERS[BUDGET_TIERS.length - 1]
@@ -41,9 +42,10 @@ export function drawBudgetResult(): BudgetDrawResult {
     r -= t.weight
   }
 
-  const raw = tier.min + Math.random() * (tier.max - tier.min)
+  const drawMin = Math.min(tier.max, Math.max(tier.min, minimumAmount))
+  const raw = drawMin + Math.random() * (tier.max - drawMin)
   const rounded = Math.round(raw / BUDGET_ROUND_UNIT) * BUDGET_ROUND_UNIT
-  const amount = Math.min(tier.max, Math.max(tier.min, rounded))
+  const amount = Math.min(tier.max, Math.max(drawMin, rounded))
 
   return { tierId: tier.id, tierLabel: tier.label, amount }
 }

@@ -1,0 +1,14 @@
+{
+  "printId": 7,
+  "imageFile": "print-007.png",
+  "copies": 1,
+  "grayscale": false,
+  "size": "a4",
+  "frameRatio": "4:6",
+  "frame": {
+    "x": 190,
+    "y": 295,
+    "width": 697,
+    "height": 1045
+  }
+}

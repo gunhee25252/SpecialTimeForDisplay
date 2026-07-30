@@ -116,7 +116,7 @@ export default function Complete() {
           <div className="w-full rounded-3xl border-4 border-brand-200 bg-white px-10 py-20 shadow-sm">
             <p className="text-7xl font-black text-brand-500">인쇄 중입니다</p>
             <p className="mt-10 text-4xl font-bold text-gray-800">
-              사진을 받으러 프린터 쪽으로 이동해 주세요.
+              사진이 바로 여기에서 나옵니다. 잠시만 기다려 주세요.
             </p>
             <p className="mt-8 text-3xl font-semibold text-gray-500">
               10초 후 처음 화면으로 돌아갑니다.

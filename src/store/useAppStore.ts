@@ -8,7 +8,11 @@ import {
 } from '../data/axes'
 import { getWorldCupRounds, type Round } from '../data/worldcupRounds'
 import { findTypeByCode } from '../data/types16'
-import { drawBudgetResult } from '../data/budgetTiers'
+import {
+  drawBudgetResult,
+  MIN_BUDGET_AMOUNT,
+  SOLO_MIN_BUDGET_AMOUNT,
+} from '../data/budgetTiers'
 import { findItem } from '../data/items'
 import {
   DEFAULT_EXPR_ID,
@@ -308,10 +312,11 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   drawBudget: () => {
-    const { currentPlayer, players } = get()
+    const { currentPlayer, playerCount, players } = get()
     // 플레이어당 1회 확정 — 이미 뽑았으면 무시(다시 뽑기 없음).
     if (players[currentPlayer]?.budget != null) return
-    const { tierId, tierLabel, amount } = drawBudgetResult()
+    const minimumAmount = playerCount === 1 ? SOLO_MIN_BUDGET_AMOUNT : MIN_BUDGET_AMOUNT
+    const { tierId, tierLabel, amount } = drawBudgetResult(minimumAmount)
     const updated = players.map((p, i) =>
       i === currentPlayer ? { ...p, budget: amount, tierId, tierLabel } : p,
     )
