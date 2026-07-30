@@ -165,7 +165,7 @@ function InfoRow({
       >
         {value}
       </p>
-      <p className="text-center font-semibold text-gray-400" style={{ fontSize: '21px' }}>
+      <p className="text-center font-bold text-gray-600" style={{ fontSize: '25px' }}>
         {caption}
       </p>
     </div>
@@ -229,10 +229,10 @@ function AxisGauge({
       </div>
 
       <div className="text-center">
-        <p className="font-black leading-none text-brand-500" style={{ fontSize: '36px' }}>
+        <p className="font-black leading-none text-brand-500" style={{ fontSize: '44px' }}>
           {isBalanced ? '50:50' : `${result.winnerPercent}%`}
         </p>
-        <p className="mt-2 font-black leading-none text-gray-400" style={{ fontSize: '17px' }}>
+        <p className="mt-2 font-black leading-none text-gray-500" style={{ fontSize: '21px' }}>
           {result.winner.label}
         </p>
       </div>
