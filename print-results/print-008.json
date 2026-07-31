@@ -1,0 +1,14 @@
+{
+  "printId": 8,
+  "imageFile": "print-008.png",
+  "copies": 1,
+  "grayscale": false,
+  "size": "a4",
+  "frameRatio": "1:1",
+  "frame": {
+    "x": 0,
+    "y": 237,
+    "width": 1080,
+    "height": 1080
+  }
+}

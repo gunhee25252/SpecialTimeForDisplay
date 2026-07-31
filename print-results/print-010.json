@@ -1,0 +1,18 @@
+{
+  "printId": 10,
+  "imageFile": "print-010.png",
+  "copies": 1,
+  "grayscale": true,
+  "size": "4x6",
+  "sheetRatio": "2:3",
+  "pixelWidth": 1200,
+  "pixelHeight": 1800,
+  "dpi": 300,
+  "frameRatio": "1:1",
+  "frame": {
+    "x": 141,
+    "y": 748,
+    "width": 802,
+    "height": 802
+  }
+}

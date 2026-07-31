@@ -8,6 +8,7 @@ import {
   calculatePrintSpec,
   commitPrintId,
   getNextPrintId,
+  isLandscapePrintFrame,
   renderPrintImage,
   savePrintFiles,
 } from '../utils/print'
@@ -35,13 +36,13 @@ export default function Complete() {
   const type = resultCode ? findTypeByCode(resultCode) : undefined
   const isDuo = playerCount === 2
   const remaining = Math.max(0, (budget ?? 0) - spent)
-  const previewRatio = printFrame ? printFrame.width / printFrame.height : 2 / 3
-  const previewWidth = 630
-  const previewHeight = Math.min(1121, previewWidth / previewRatio)
   const printSpec = useMemo(
-    () => ({ ...calculatePrintSpec(printId, budget, spent), frameRatio: printFrameRatio, frame: printFrame }),
+    () => ({ ...calculatePrintSpec(printId, budget, spent, printFrameRatio), frame: printFrame }),
     [budget, printFrame, printFrameRatio, printId, spent],
   )
+  const previewRatio = isLandscapePrintFrame(printFrameRatio) ? 3 / 2 : 2 / 3
+  const previewWidth = 630
+  const previewHeight = Math.min(1121, previewWidth / previewRatio)
 
   useEffect(() => {
     let cancelled = false
@@ -55,6 +56,9 @@ export default function Complete() {
       characters,
       placedItems,
       printFrame,
+      printFrameRatio,
+      prepareForPrint: true,
+      grayscale: printSpec.grayscale,
     })
       .then((blob) => {
         if (cancelled) return
@@ -69,7 +73,7 @@ export default function Complete() {
       cancelled = true
       if (objectUrl) URL.revokeObjectURL(objectUrl)
     }
-  }, [budget, canvasBackgroundId, characters, placedItems, printFrame, printId, spent])
+  }, [budget, canvasBackgroundId, characters, placedItems, printFrame, printFrameRatio, printId, printSpec.grayscale, spent])
 
   useEffect(() => {
     if (printStatus === 'printing') {
@@ -96,6 +100,10 @@ export default function Complete() {
         characters,
         placedItems,
         printFrame,
+        printFrameRatio,
+        prepareForPrint: true,
+        grayscale: printSpec.grayscale,
+        rotateLandscapeForOutput: true,
       })
       await savePrintFiles(imageBlob, printSpec)
 
@@ -157,7 +165,8 @@ export default function Complete() {
 
           <div className="w-full rounded-2xl bg-white px-8 py-4 shadow-sm">
             <p className="text-lg font-semibold text-gray-800">
-              출력 정보: {printSpec.grayscale ? '흑백' : '컬러'} / {printSpec.size} / {printSpec.copies}장
+              출력 정보: {printSpec.grayscale ? '흑백' : '컬러'} / 사진 {printFrameRatio}
+              {printSpec.rotationDegrees === 90 ? ' / 가로 인화' : ' / 세로 인화'}
             </p>
             <p className="mt-2 text-base text-gray-500">
               남은 예산 {formatWon(remaining)}

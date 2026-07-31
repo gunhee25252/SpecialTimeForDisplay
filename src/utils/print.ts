@@ -23,6 +23,11 @@ export interface PrintSpec {
   copies: number
   grayscale: boolean
   size: PrintSize
+  sheetRatio: '2:3' | '3:2'
+  pixelWidth: number
+  pixelHeight: number
+  dpi: number
+  rotationDegrees: 0 | 90
   frameRatio?: PrintFrameRatio
   frame?: PrintFrame | null
 }
@@ -35,6 +40,10 @@ export interface PrintRenderState {
   characters: CharactersState
   placedItems: PlacedItem[]
   printFrame?: PrintFrame | null
+  printFrameRatio?: PrintFrameRatio
+  prepareForPrint?: boolean
+  grayscale?: boolean
+  rotateLandscapeForOutput?: boolean
 }
 
 const CONTENT = { x0: 0, x1: 1, y0: 0.12, y1: 0.98 }
@@ -48,6 +57,20 @@ const FIGURE_W_RATIO = 400 / 1080
 const FIGURE_ASPECT_W = CW_FRAC * 1000
 const FIGURE_ASPECT_H = CH_FRAC * 1400
 const FIGURE_H_OVER_W = FIGURE_ASPECT_H / FIGURE_ASPECT_W
+const PRINT_SHEET_WIDTH = 1200
+const PRINT_SHEET_HEIGHT = 1800
+const PRINT_DPI = 300
+
+export function isLandscapePrintFrame(frameRatio: PrintFrameRatio) {
+  return frameRatio === '1:1' || frameRatio === '16:9'
+}
+
+function printSheetDimensions(frameRatio: PrintFrameRatio) {
+  const landscape = isLandscapePrintFrame(frameRatio)
+  return landscape
+    ? { width: PRINT_SHEET_HEIGHT, height: PRINT_SHEET_WIDTH }
+    : { width: PRINT_SHEET_WIDTH, height: PRINT_SHEET_HEIGHT }
+}
 
 function padPrintId(printId: number): string {
   return String(printId).padStart(3, '0')
@@ -67,25 +90,27 @@ export function commitPrintId(printId: number) {
   window.localStorage.setItem('special-time-print-id', String(printId))
 }
 
-export function calculatePrintSpec(printId: number, budget: number | null, spent: number): PrintSpec {
+export function calculatePrintSpec(
+  printId: number,
+  budget: number | null,
+  spent: number,
+  frameRatio: PrintFrameRatio = '4:6',
+): PrintSpec {
   const remaining = Math.max(0, (budget ?? 0) - spent)
-
-  if (remaining < 1_000_000) {
-    return { printId, imageFile: makePrintFileName(printId, 'png'), copies: 1, grayscale: true, size: '4x6' }
+  const rotationDegrees = isLandscapePrintFrame(frameRatio) ? 90 : 0
+  return {
+    printId,
+    imageFile: makePrintFileName(printId, 'png'),
+    copies: 1,
+    grayscale: remaining < 10_000_000,
+    size: '4x6',
+    sheetRatio: '2:3',
+    pixelWidth: PRINT_SHEET_WIDTH,
+    pixelHeight: PRINT_SHEET_HEIGHT,
+    dpi: PRINT_DPI,
+    rotationDegrees,
+    frameRatio,
   }
-  if (remaining < 2_000_000) {
-    return { printId, imageFile: makePrintFileName(printId, 'png'), copies: 1, grayscale: false, size: '4x6' }
-  }
-  if (remaining < 4_000_000) {
-    return { printId, imageFile: makePrintFileName(printId, 'png'), copies: 2, grayscale: false, size: '4x6' }
-  }
-  if (remaining < 8_000_000) {
-    return { printId, imageFile: makePrintFileName(printId, 'png'), copies: 1, grayscale: false, size: '5x7' }
-  }
-  if (remaining < 15_000_000) {
-    return { printId, imageFile: makePrintFileName(printId, 'png'), copies: 2, grayscale: false, size: '5x7' }
-  }
-  return { printId, imageFile: makePrintFileName(printId, 'png'), copies: 1, grayscale: false, size: 'a4' }
 }
 
 function loadImage(src: string): Promise<HTMLImageElement> {
@@ -380,6 +405,67 @@ function cropCanvas(source: HTMLCanvasElement, frame: PrintFrame): HTMLCanvasEle
   return cropped
 }
 
+const PRINT_SHEET_MARGIN = 60
+
+function applyGrayscale(canvas: HTMLCanvasElement) {
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('흑백 이미지를 만들 수 없어요.')
+  const image = ctx.getImageData(0, 0, canvas.width, canvas.height)
+  const pixels = image.data
+  for (let index = 0; index < pixels.length; index += 4) {
+    const luminance = Math.round(
+      pixels[index] * 0.2126 + pixels[index + 1] * 0.7152 + pixels[index + 2] * 0.0722,
+    )
+    pixels[index] = luminance
+    pixels[index + 1] = luminance
+    pixels[index + 2] = luminance
+  }
+  ctx.putImageData(image, 0, 0)
+}
+
+function composePrintSheet(
+  content: HTMLCanvasElement,
+  grayscale: boolean,
+  frameRatio: PrintFrameRatio,
+): HTMLCanvasElement {
+  const dimensions = printSheetDimensions(frameRatio)
+  const sheet = document.createElement('canvas')
+  sheet.width = dimensions.width
+  sheet.height = dimensions.height
+  const ctx = sheet.getContext('2d')
+  if (!ctx) throw new Error('2:3 인화지를 만들 수 없어요.')
+
+  ctx.fillStyle = '#ffffff'
+  ctx.fillRect(0, 0, sheet.width, sheet.height)
+
+  const availableWidth = sheet.width - PRINT_SHEET_MARGIN * 2
+  const availableHeight = sheet.height - PRINT_SHEET_MARGIN * 2
+  const scale = Math.min(availableWidth / content.width, availableHeight / content.height)
+  const width = Math.round(content.width * scale)
+  const height = Math.round(content.height * scale)
+  const x = Math.round((sheet.width - width) / 2)
+  const y = Math.round((sheet.height - height) / 2)
+
+  ctx.imageSmoothingEnabled = true
+  ctx.imageSmoothingQuality = 'high'
+  ctx.drawImage(content, x, y, width, height)
+
+  if (grayscale) applyGrayscale(sheet)
+  return sheet
+}
+
+function rotateClockwise(source: HTMLCanvasElement): HTMLCanvasElement {
+  const rotated = document.createElement('canvas')
+  rotated.width = source.height
+  rotated.height = source.width
+  const ctx = rotated.getContext('2d')
+  if (!ctx) throw new Error('가로형 인화 이미지를 회전할 수 없어요.')
+  ctx.translate(rotated.width, 0)
+  ctx.rotate(Math.PI / 2)
+  ctx.drawImage(source, 0, 0)
+  return rotated
+}
+
 export async function renderPrintImage(state: PrintRenderState): Promise<Blob> {
   const canvas = document.createElement('canvas')
   canvas.width = SCENE_WIDTH
@@ -407,7 +493,18 @@ export async function renderPrintImage(state: PrintRenderState): Promise<Blob> {
     }
   }
 
-  return canvasToBlob(state.printFrame ? cropCanvas(canvas, state.printFrame) : canvas)
+  const framed = state.printFrame ? cropCanvas(canvas, state.printFrame) : canvas
+  let output = state.prepareForPrint
+    ? composePrintSheet(framed, state.grayscale ?? false, state.printFrameRatio ?? '4:6')
+    : framed
+  if (
+    state.prepareForPrint &&
+    state.rotateLandscapeForOutput &&
+    isLandscapePrintFrame(state.printFrameRatio ?? '4:6')
+  ) {
+    output = rotateClockwise(output)
+  }
+  return canvasToBlob(output)
 }
 
 export function downloadBlob(blob: Blob, fileName: string) {
