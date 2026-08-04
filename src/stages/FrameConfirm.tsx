@@ -75,6 +75,15 @@ function toCanvasFrame(frame: PrintFrame): PrintFrame {
   }
 }
 
+function toPreviewFrame(frame: PrintFrame): PrintFrame {
+  return constrainFrame({
+    x: (frame.x / SCENE_WIDTH) * PREVIEW_W,
+    y: (frame.y / SCENE_HEIGHT) * PREVIEW_H,
+    width: (frame.width / SCENE_WIDTH) * PREVIEW_W,
+    height: (frame.height / SCENE_HEIGHT) * PREVIEW_H,
+  })
+}
+
 export default function FrameConfirm() {
   const budget = useAppStore((s) => s.budget)
   const spent = useAppStore((s) => s.spent)
@@ -82,11 +91,14 @@ export default function FrameConfirm() {
   const canvasBackgroundId = useAppStore((s) => s.canvasBackgroundId)
   const characters = useAppStore((s) => s.characters)
   const printFrameRatio = useAppStore((s) => s.printFrameRatio)
+  const savedPrintFrame = useAppStore((s) => s.printFrame)
   const setPrintFrameRatio = useAppStore((s) => s.setPrintFrameRatio)
   const setPrintFrame = useAppStore((s) => s.setPrintFrame)
   const setStage = useAppStore((s) => s.setStage)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const [frame, setFrame] = useState<PrintFrame>(() => defaultFrame(printFrameRatio))
+  const [frame, setFrame] = useState<PrintFrame>(() =>
+    savedPrintFrame ? toPreviewFrame(savedPrintFrame) : defaultFrame(printFrameRatio),
+  )
   const previewRef = useRef<HTMLDivElement>(null)
   const dragRef = useRef<DragState | null>(null)
 

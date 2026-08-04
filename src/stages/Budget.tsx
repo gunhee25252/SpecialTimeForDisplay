@@ -10,6 +10,8 @@ import { useCountUp } from '../hooks/useCountUp'
 import { budgetRollDuration, useBudgetRoll } from '../hooks/useBudgetRoll'
 import PlayerIndicator from '../components/PlayerIndicator'
 import { PLAYER_LABELS } from '../config/players'
+import { useSound } from '../hooks/useSound'
+import { EFFECT_VOLUMES } from '../config/sounds'
 
 type Phase = 'idle' | 'spinning' | 'revealed' | 'summing'
 
@@ -26,6 +28,7 @@ export default function Budget() {
   const players = useAppStore((s) => s.players)
   const drawBudget = useAppStore((s) => s.drawBudget)
   const nextAfterBudget = useAppStore((s) => s.nextAfterBudget)
+  const { play, stop } = useSound()
 
   const [phase, setPhase] = useState<Phase>('idle')
   const [drawn, setDrawn] = useState<Drawn | null>(null)
@@ -59,6 +62,8 @@ export default function Budget() {
 
   const handleSettled = () => {
     clearTimer()
+    stop('drumRoll')
+    play('tada', { volume: EFFECT_VOLUMES.tada })
     setPhase('revealed')
     // 티어별 차등 연출: 드림 웨딩은 골드 플래시 + 컨페티.
     const p = useAppStore.getState().players[currentPlayer]
@@ -77,6 +82,7 @@ export default function Budget() {
     setShowGold(false)
     setPhase('spinning')
     clearTimer()
+    play('drumRoll', { loop: true, volume: EFFECT_VOLUMES.drumRoll })
     timerRef.current = window.setTimeout(
       handleSettled,
       budgetRollDuration(p.budget, BUDGET_DRAW.rollStageDurationMs),

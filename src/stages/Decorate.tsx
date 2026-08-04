@@ -1,5 +1,5 @@
 import { useRef, useState, useCallback, useLayoutEffect, useMemo } from 'react'
-import { useAppStore } from '../store/useAppStore'
+import { useAppStore, type PrintFrame, type PrintFrameRatio } from '../store/useAppStore'
 import {
   ITEMS,
   findItem,
@@ -120,6 +120,83 @@ const FIGURE_HEIGHT = FIGURE_WIDTH * FIGURE_H_OVER_W
 const CHARACTER_MIN_VISIBLE_RATIO = 0.4
 const CHARACTER_MIN_VISIBLE_WIDTH = FIGURE_WIDTH * CHARACTER_MIN_VISIBLE_RATIO
 const CHARACTER_MIN_VISIBLE_HEIGHT = FIGURE_HEIGHT * CHARACTER_MIN_VISIBLE_RATIO
+const MIN_PRINT_FRAME_SIZE = SCENE_WIDTH * 0.18
+
+const PRINT_FRAME_OPTIONS: { ratio: PrintFrameRatio; label: string; ratioLabel: string; value: number }[] = [
+  { ratio: '9:16', label: '세로', ratioLabel: '9:16', value: 9 / 16 },
+  { ratio: '4:6', label: '사진', ratioLabel: '4:6', value: 4 / 6 },
+  { ratio: '1:1', label: '정사각', ratioLabel: '1:1', value: 1 },
+  { ratio: '16:9', label: '가로', ratioLabel: '16:9', value: 16 / 9 },
+]
+
+type FrameResizeCorner = 'nw' | 'ne' | 'sw' | 'se'
+type FrameDragState =
+  | { kind: 'move'; offsetX: number; offsetY: number }
+  | {
+      kind: 'resize'
+      corner: FrameResizeCorner
+      startX: number
+      startY: number
+      frame: PrintFrame
+    }
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value))
+}
+
+function printFrameRatioValue(ratio: PrintFrameRatio) {
+  return PRINT_FRAME_OPTIONS.find((option) => option.ratio === ratio)?.value ?? 4 / 6
+}
+
+function defaultPrintFrame(ratio: PrintFrameRatio): PrintFrame {
+  const value = printFrameRatioValue(ratio)
+  const sceneRatio = SCENE_WIDTH / SCENE_HEIGHT
+  if (value > sceneRatio) {
+    const height = SCENE_WIDTH / value
+    return { x: 0, y: (SCENE_HEIGHT - height) / 2, width: SCENE_WIDTH, height }
+  }
+  const width = SCENE_HEIGHT * value
+  return { x: (SCENE_WIDTH - width) / 2, y: 0, width, height: SCENE_HEIGHT }
+}
+
+function movePrintFrame(frame: PrintFrame, x: number, y: number): PrintFrame {
+  return {
+    ...frame,
+    x: clamp(x, 0, SCENE_WIDTH - frame.width),
+    y: clamp(y, 0, SCENE_HEIGHT - frame.height),
+  }
+}
+
+function resizePrintFrame(
+  frame: PrintFrame,
+  corner: FrameResizeCorner,
+  startX: number,
+  startY: number,
+  pointerX: number,
+  pointerY: number,
+  ratio: number,
+): PrintFrame {
+  const fixedX = corner.includes('w') ? frame.x + frame.width : frame.x
+  const fixedY = corner.includes('n') ? frame.y + frame.height : frame.y
+  const widthDelta = corner.includes('w') ? startX - pointerX : pointerX - startX
+  const heightDeltaAsWidth = (corner.includes('n') ? startY - pointerY : pointerY - startY) * ratio
+  const resizeDelta =
+    Math.abs(widthDelta) >= Math.abs(heightDeltaAsWidth) ? widthDelta : heightDeltaAsWidth
+  const maxWidth = corner.includes('w') ? fixedX : SCENE_WIDTH - fixedX
+  const maxHeight = corner.includes('n') ? fixedY : SCENE_HEIGHT - fixedY
+  const width = clamp(
+    frame.width + resizeDelta,
+    MIN_PRINT_FRAME_SIZE,
+    Math.min(maxWidth, maxHeight * ratio),
+  )
+  const height = width / ratio
+  return {
+    x: corner.includes('w') ? fixedX - width : fixedX,
+    y: corner.includes('n') ? fixedY - height : fixedY,
+    width,
+    height,
+  }
+}
 
 function clampCharacterPosition(x: number, y: number) {
   return {
@@ -260,6 +337,10 @@ export default function Decorate() {
   const bringCharacterToFront = useAppStore((s) => s.bringCharacterToFront)
   const canvasBackgroundId = useAppStore((s) => s.canvasBackgroundId)
   const setCanvasBackground = useAppStore((s) => s.setCanvasBackground)
+  const printFrameRatio = useAppStore((s) => s.printFrameRatio)
+  const printFrame = useAppStore((s) => s.printFrame)
+  const setPrintFrameRatio = useAppStore((s) => s.setPrintFrameRatio)
+  const setPrintFrame = useAppStore((s) => s.setPrintFrame)
   const setStage = useAppStore((s) => s.setStage)
   const resultCode = useAppStore((s) => s.resultCode)
   const axisScores = useAppStore((s) => s.axisScores)
@@ -293,12 +374,14 @@ export default function Decorate() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [selectedChar, setSelectedChar] = useState<CharacterKey | null>(null)
   const [warning, setWarning] = useState<string | null>(null)
+  const [isFrameEditing, setIsFrameEditing] = useState(false)
 
   const canvasViewportRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLDivElement>(null)
   const hasInitializedBackgroundRef = useRef(false)
   const [canvasTransform, setCanvasTransform] = useState({ scale: 1, left: 0, top: 0 })
   const dragRef = useRef<{ kind: 'item' | 'char'; key: string; offsetX: number; offsetY: number } | null>(null)
+  const frameDragRef = useRef<FrameDragState | null>(null)
 
   const remaining = budget === null ? null : budget - spent
   const background = canvasBackgroundId ? findItem(canvasBackgroundId) : undefined
@@ -308,6 +391,7 @@ export default function Decorate() {
   const activeObjectTab =
     OBJECT_PART_TABS.find((tab) => tab.key === activeObjectPart) ??
     OBJECT_PART_TABS[0]
+  const activePrintFrame = printFrame ?? defaultPrintFrame(printFrameRatio)
   const activeMainTabIndex = Math.max(0, MAIN_TABS.findIndex((t) => t.key === activeMainTab.key))
   const subTabWidthPct = 58
   const subTabCenterPct = ((activeMainTabIndex + 0.5) / MAIN_TABS.length) * 100
@@ -527,6 +611,7 @@ export default function Decorate() {
   }
 
   const handlePointerDownItem = (e: React.PointerEvent, instanceId: string, px: number, py: number) => {
+    if (isFrameEditing) return
     e.stopPropagation()
     setSelectedId(instanceId)
     setSelectedChar(null)
@@ -538,6 +623,7 @@ export default function Decorate() {
 
   // 인물 드래그(삭제 불가, 위치만 이동) + 선택 표시
   const handlePointerDownChar = (e: React.PointerEvent, who: CharacterKey, px: number, py: number) => {
+    if (isFrameEditing) return
     e.stopPropagation()
     setSelectedChar(who)
     setSelectedId(null)
@@ -548,6 +634,26 @@ export default function Decorate() {
   }
 
   const handlePointerMove = (e: React.PointerEvent) => {
+    const frameDrag = frameDragRef.current
+    if (frameDrag) {
+      const { x, y } = toCanvasCoords(e.clientX, e.clientY)
+      if (frameDrag.kind === 'move') {
+        setPrintFrame(movePrintFrame(activePrintFrame, x - frameDrag.offsetX, y - frameDrag.offsetY))
+      } else {
+        setPrintFrame(
+          resizePrintFrame(
+            frameDrag.frame,
+            frameDrag.corner,
+            frameDrag.startX,
+            frameDrag.startY,
+            x,
+            y,
+            printFrameRatioValue(printFrameRatio),
+          ),
+        )
+      }
+      return
+    }
     const drag = dragRef.current
     if (!drag) return
     const { x, y } = toCanvasCoords(e.clientX, e.clientY)
@@ -560,6 +666,52 @@ export default function Decorate() {
 
   const handlePointerUp = () => {
     dragRef.current = null
+    frameDragRef.current = null
+  }
+
+  const beginFrameEditing = () => {
+    if (!printFrame) setPrintFrame(activePrintFrame)
+    setSelectedId(null)
+    setSelectedChar(null)
+    dragRef.current = null
+    setIsFrameEditing(true)
+  }
+
+  const finishFrameEditing = () => {
+    frameDragRef.current = null
+    setIsFrameEditing(false)
+  }
+
+  const updatePrintFrameRatio = (ratio: PrintFrameRatio) => {
+    setPrintFrameRatio(ratio)
+    setPrintFrame(defaultPrintFrame(ratio))
+  }
+
+  const startFrameMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isFrameEditing) return
+    e.preventDefault()
+    e.stopPropagation()
+    const point = toCanvasCoords(e.clientX, e.clientY)
+    frameDragRef.current = {
+      kind: 'move',
+      offsetX: point.x - activePrintFrame.x,
+      offsetY: point.y - activePrintFrame.y,
+    }
+    e.currentTarget.setPointerCapture(e.pointerId)
+  }
+
+  const startFrameResize = (corner: FrameResizeCorner) => (e: React.PointerEvent<HTMLButtonElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const point = toCanvasCoords(e.clientX, e.clientY)
+    frameDragRef.current = {
+      kind: 'resize',
+      corner,
+      startX: point.x,
+      startY: point.y,
+      frame: activePrintFrame,
+    }
+    e.currentTarget.setPointerCapture(e.pointerId)
   }
 
   const handleRemoveEquipment = (entry: EquipmentEntry) => {
@@ -617,6 +769,7 @@ export default function Decorate() {
                 top: canvasTransform.top,
                 width: SCENE_WIDTH,
                 height: SCENE_HEIGHT,
+                backgroundColor: '#ffffff',
                 transform: `scale(${canvasTransform.scale})`,
                 transformOrigin: 'top left',
               }}
@@ -847,7 +1000,78 @@ export default function Decorate() {
               </div>
             )
           })}
+
+              <div
+                aria-label="인쇄 프레임"
+                onPointerDown={startFrameMove}
+                className={`absolute box-border touch-none ${
+                  isFrameEditing
+                    ? 'border-[6px] border-white ring-4 ring-brand-400'
+                    : 'pointer-events-none border-4 border-white/90 ring-2 ring-brand-300'
+                }`}
+                style={{
+                  left: activePrintFrame.x,
+                  top: activePrintFrame.y,
+                  width: activePrintFrame.width,
+                  height: activePrintFrame.height,
+                  zIndex: 9998,
+                  boxShadow: `0 0 0 9999px rgba(15, 23, 42, ${isFrameEditing ? 0.4 : 0.14})`,
+                }}
+              >
+                {isFrameEditing &&
+                  (['nw', 'ne', 'sw', 'se'] as const).map((corner) => (
+                    <button
+                      key={corner}
+                      type="button"
+                      aria-label={`${corner} 모서리로 프레임 크기 조절`}
+                      onPointerDown={startFrameResize(corner)}
+                      className={`absolute h-14 w-14 rounded-full border-[6px] border-white bg-brand-500 shadow-md ${
+                        corner.includes('n') ? 'top-3' : 'bottom-3'
+                      } ${corner.includes('w') ? 'left-3' : 'right-3'}`}
+                    />
+                  ))}
+              </div>
             </div>
+
+            {isFrameEditing && (
+              <div className="absolute left-4 top-4 z-[10001] flex overflow-hidden rounded-lg border-2 border-white bg-white shadow-md">
+                {PRINT_FRAME_OPTIONS.map((option) => (
+                  <button
+                    key={option.ratio}
+                    type="button"
+                    onClick={() => updatePrintFrameRatio(option.ratio)}
+                    className={`flex min-w-16 flex-col items-center justify-center px-3 py-2 font-black ${
+                      printFrameRatio === option.ratio
+                        ? 'bg-brand-500 text-white'
+                        : 'bg-white text-gray-600 active:bg-brand-50'
+                    }`}
+                  >
+                    <span className="text-base">{option.label}</span>
+                    <span
+                      className={`text-sm ${
+                        printFrameRatio === option.ratio ? 'text-white/85' : 'text-gray-400'
+                      }`}
+                    >
+                      {option.ratioLabel}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <button
+              type="button"
+              aria-pressed={isFrameEditing}
+              onClick={isFrameEditing ? finishFrameEditing : beginFrameEditing}
+              className={`absolute right-4 top-4 z-[10001] min-w-32 rounded-lg px-5 py-3 text-lg font-black shadow-md ${
+                isFrameEditing
+                  ? 'bg-brand-500 text-white active:bg-brand-600'
+                  : 'bg-white text-brand-600 ring-2 ring-brand-300 active:bg-brand-50'
+              }`}
+            >
+              {isFrameEditing ? '조정 완료' : '프레임 조정'}
+            </button>
+
             <div className="pointer-events-none absolute inset-0 z-[9999] rounded-2xl border-2 border-brand-100" />
           </div>
 
@@ -1212,6 +1436,24 @@ export default function Decorate() {
           ) : (
             // 배치 아이템 탭
             <ShopScrollRow key={activeTab.key}>
+              {activeTab.itemCat === 'background' && (
+                <button
+                  type="button"
+                  aria-pressed={canvasBackgroundId === null}
+                  onClick={() => setCanvasBackground(null)}
+                  className={`flex w-28 shrink-0 select-none flex-col items-center gap-1 rounded-xl border-2 p-1.5 active:bg-brand-50 ${
+                    canvasBackgroundId === null
+                      ? 'border-brand-500 bg-brand-50'
+                      : 'border-brand-100'
+                  }`}
+                >
+                  <span className="h-16 w-16 rounded-lg border-2 border-gray-200 bg-white" />
+                  <span className="w-full truncate text-center text-base font-semibold text-gray-700">
+                    흰색 배경
+                  </span>
+                  <span className="w-full truncate text-center text-sm text-gray-400">무료</span>
+                </button>
+              )}
               {visibleItems.map((item) => {
                 const isBg = item.category === 'background'
                 const delta = isBg ? item.price - backgroundPrice : item.price

@@ -1,6 +1,6 @@
-import { useCallback } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { create } from 'zustand'
-import { SOUNDS, SOUND_DEFAULT_MUTED, type SoundName } from '../config/sounds'
+import { EFFECT_VOLUMES, SOUNDS, SOUND_DEFAULT_MUTED, type SoundName } from '../config/sounds'
 
 // 음소거 상태 전역 스토어. 기본값 mute=true.
 interface SoundState {
@@ -15,21 +15,52 @@ export const useSoundStore = create<SoundState>((set) => ({
   toggleMuted: () => set((s) => ({ muted: !s.muted })),
 }))
 
-// 사운드 재생 훅. mute면 아무것도 하지 않고, placeholder 파일이 없으면 조용히 무시.
+interface PlaySoundOptions {
+  loop?: boolean
+  volume?: number
+}
+
+// 사운드 재생 훅. 반복음은 이름별로 추적해 원하는 순간 정확히 멈춘다.
 export function useSound() {
   const muted = useSoundStore((s) => s.muted)
+  const activeRef = useRef<Partial<Record<SoundName, HTMLAudioElement>>>({})
+
+  const stop = useCallback((name: SoundName) => {
+    const audio = activeRef.current[name]
+    if (!audio) return
+    audio.pause()
+    audio.currentTime = 0
+    delete activeRef.current[name]
+  }, [])
+
   const play = useCallback(
-    (name: SoundName) => {
+    (name: SoundName, options?: PlaySoundOptions) => {
       if (muted) return
       try {
+        if (options?.loop) stop(name)
         const audio = new Audio(SOUNDS[name])
-        audio.volume = 0.8
+        audio.loop = options?.loop ?? false
+        audio.volume = options?.volume ?? EFFECT_VOLUMES.default
+        if (options?.loop) activeRef.current[name] = audio
         void audio.play().catch(() => {})
       } catch {
         /* placeholder 음원 없음 — 무시 */
       }
     },
-    [muted],
+    [muted, stop],
   )
-  return { play, muted }
+
+  useEffect(() => {
+    if (!muted) return
+    Object.keys(activeRef.current).forEach((name) => stop(name as SoundName))
+  }, [muted, stop])
+
+  useEffect(
+    () => () => {
+      Object.keys(activeRef.current).forEach((name) => stop(name as SoundName))
+    },
+    [stop],
+  )
+
+  return { play, stop, muted }
 }

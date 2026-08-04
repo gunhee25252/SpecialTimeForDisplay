@@ -166,16 +166,8 @@ async function drawMaskedImage(
 }
 
 function drawEmptyBackground(ctx: CanvasRenderingContext2D) {
-  ctx.fillStyle = '#fafafa'
+  ctx.fillStyle = '#ffffff'
   ctx.fillRect(0, 0, SCENE_WIDTH, SCENE_HEIGHT)
-  ctx.fillStyle = '#f4f4f5'
-  for (let y = -SCENE_HEIGHT; y < SCENE_HEIGHT; y += 48) {
-    ctx.save()
-    ctx.translate(0, y)
-    ctx.rotate(Math.PI / 4)
-    ctx.fillRect(0, 0, 24, SCENE_HEIGHT * 2)
-    ctx.restore()
-  }
 }
 
 async function drawCharacter(ctx: CanvasRenderingContext2D, key: 'groom' | 'bride', cs: CharactersState['groom']) {

@@ -1,17 +1,10 @@
 import { useMemo } from 'react'
 import { useAppStore } from '../store/useAppStore'
 import { findTypeByCode } from '../data/types16'
-import { AXES, type AxisKey } from '../data/axes'
+import { AXES } from '../data/axes'
 import { formatWon } from '../utils/format'
 import StageLayout from '../components/StageLayout'
 import Button from '../components/Button'
-
-const AXIS_NOTE: Record<AxisKey, string> = {
-  space: '장소',
-  tone: '빛',
-  deco: '연출',
-  color: '색',
-}
 
 export default function Result() {
   const resultCode = useAppStore((s) => s.resultCode)
@@ -61,37 +54,58 @@ export default function Result() {
         style={{ gridTemplateRows: 'minmax(0, 1fr) minmax(0, 1fr) 7rem' }}
       >
         <section
-          className="flex min-h-0 flex-col overflow-hidden rounded-[1.75rem] bg-white px-10 text-center shadow-sm"
+          className="relative flex min-h-0 flex-col overflow-hidden rounded-[1.75rem] bg-white px-10 text-center shadow-sm"
         >
-          <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-4">
-            <p
-              className="font-black leading-none text-brand-500"
-              style={{ fontSize: '56px' }}
-            >
-              {resultTitle}
-            </p>
-            <h2
-              className="mt-5 font-black leading-none text-gray-800"
-              style={{ fontSize: '68px' }}
-            >
-              {type ? type.name : '유형 없음'}
-            </h2>
-            <p
-              className="mx-auto mt-6 max-w-[900px] font-semibold leading-[1.45] text-gray-600"
-              style={{ fontSize: '26px' }}
-            >
-              {type
-                ? descriptionLines.map((sentence, index) => (
-                    <span key={`${type.typeId}-${index}`} className="block">
-                      {sentence}
-                    </span>
-                  ))
-                : '코드에 해당하는 유형을 찾지 못했습니다.'}
-            </p>
+          {type && (
+            <>
+              <img
+                src={`/images/result-types/type${type.typeId}.png`}
+                alt=""
+                aria-hidden="true"
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+              <div className="absolute inset-0 bg-white/70" aria-hidden="true" />
+            </>
+          )}
+
+          <div
+            className="relative z-10 flex min-h-0 flex-1 items-center justify-center"
+            style={{ transform: 'translateY(50px)' }}
+          >
+            <div className="w-full max-w-[880px] rounded-[1.25rem] border-4 border-brand-100 bg-white/80 px-6 py-8">
+              <p
+                className="font-black leading-none text-brand-500"
+                style={{ fontSize: '46px' }}
+              >
+                {resultTitle}
+              </p>
+              <h2
+                className="mt-5 whitespace-nowrap font-black leading-[1.08] text-gray-800"
+                style={{ fontSize: '60px' }}
+              >
+                {type ? type.name : '유형 없음'}
+              </h2>
+
+              <p
+                className="mx-auto mt-5 w-full max-w-[940px] font-semibold leading-[1.45] text-gray-600"
+                style={{ fontSize: '25px' }}
+              >
+                {type
+                  ? descriptionLines.map((sentence, index) => (
+                      <span
+                        key={`${type.typeId}-${index}`}
+                        className="block whitespace-nowrap"
+                      >
+                        {sentence}
+                      </span>
+                    ))
+                  : '코드에 해당하는 유형을 찾지 못했습니다.'}
+              </p>
+            </div>
           </div>
 
           <div
-            className="flex shrink-0 flex-col gap-6"
+            className="relative z-10 flex shrink-0 flex-col gap-6"
             style={{ paddingTop: '24px', paddingBottom: '40px' }}
           >
             <InfoRow
@@ -150,7 +164,7 @@ function InfoRow({
 }) {
   return (
     <div
-      className="grid min-h-0 shrink-0 items-center rounded-[1.25rem] border-4 border-brand-100 px-7 text-center"
+      className="grid min-h-0 shrink-0 items-center rounded-[1.25rem] border-4 border-brand-100 bg-white/80 px-7 text-center"
       style={{
         height: '96px',
         gridTemplateColumns: '16rem minmax(0, 1fr) 15rem',
@@ -187,54 +201,61 @@ function AxisGauge({
   }
 }) {
   const isBalanced = result.gap === 0
+  const isLeftWinner = result.winner.code === result.left.code
 
   return (
     <div
-      className="grid h-full min-h-0 items-center gap-5 rounded-2xl bg-brand-50 px-6 py-2"
-      style={{ gridTemplateColumns: '9rem minmax(0, 1fr) 8rem' }}
+      className="grid h-full min-h-0 items-center gap-6 rounded-2xl bg-brand-50 px-6 py-2"
+      style={{ gridTemplateColumns: '8.5rem minmax(0, 1fr)' }}
     >
-      <div className="text-center">
-        <p className="font-black leading-none text-gray-800" style={{ fontSize: '28px' }}>
+      <div className="flex h-[72%] flex-col items-center justify-center border-r-2 border-brand-200 pr-6 text-center">
+        <p className="font-black leading-none text-gray-800" style={{ fontSize: '34px' }}>
           {result.axis.label}
-        </p>
-        <p className="mt-2 font-bold leading-none text-gray-400" style={{ fontSize: '17px' }}>
-          {AXIS_NOTE[result.axis.key]}
         </p>
       </div>
 
       <div className="min-w-0">
         <div
-          className="mb-3 flex items-center justify-between font-bold text-gray-600"
-          style={{ fontSize: '21px' }}
+          className="mb-2 grid items-center font-bold text-gray-600"
+          style={{ fontSize: '26px', gridTemplateColumns: '1fr auto 1fr' }}
         >
-          <span>{result.left.label}</span>
-          <span>{result.right.label}</span>
+          <span className="flex items-center gap-2 justify-self-start" style={{ color: '#168e84' }}>
+            <span className="h-4 w-4 rounded-sm bg-[#66d9cc]" aria-hidden="true" />
+            {result.left.label}
+          </span>
+          <span
+            className="px-5 font-black leading-none"
+            style={{
+              fontSize: '36px',
+              color: isBalanced ? '#111827' : isLeftWinner ? '#168e84' : '#db5676',
+            }}
+          >
+            {isBalanced ? '50:50' : `${result.winnerPercent}%`}
+          </span>
+          <span className="flex items-center gap-2 justify-self-end" style={{ color: '#db5676' }}>
+            {result.right.label}
+            <span className="h-4 w-4 rounded-sm bg-[#ff9eb5]" aria-hidden="true" />
+          </span>
         </div>
         <div
-          className="overflow-hidden rounded-full"
-          style={{
-            height: '22px',
-            backgroundColor: '#ffffff',
-            boxShadow: '0 0 0 2px #dbeaff',
-          }}
+          className="flex overflow-hidden rounded-full"
+          style={{ height: '22px', backgroundColor: '#ffffff', boxShadow: '0 0 0 2px #dfe5e7' }}
         >
           <div
-            className="h-full rounded-full transition-all duration-500"
+            className="h-full transition-all duration-500"
             style={{
               width: `${result.leftPercent}%`,
-              backgroundColor: '#5a9ef7',
+              backgroundColor: '#66d9cc',
+            }}
+          />
+          <div
+            className="h-full transition-all duration-500"
+            style={{
+              width: `${result.rightPercent}%`,
+              backgroundColor: '#ff9eb5',
             }}
           />
         </div>
-      </div>
-
-      <div className="text-center">
-        <p className="font-black leading-none text-brand-500" style={{ fontSize: '44px' }}>
-          {isBalanced ? '50:50' : `${result.winnerPercent}%`}
-        </p>
-        <p className="mt-2 font-black leading-none text-gray-500" style={{ fontSize: '21px' }}>
-          {result.winner.label}
-        </p>
       </div>
     </div>
   )
