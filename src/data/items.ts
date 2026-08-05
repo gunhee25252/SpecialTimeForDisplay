@@ -38,6 +38,11 @@ const PROP_IMAGES = {
   prop09: assetUrl('images/props/prop09.png'),
   prop10: assetUrl('images/props/prop10.png'),
   prop11: assetUrl('images/props/prop11.png'),
+  prop12: assetUrl('images/props/prop12.png'),
+  prop13: assetUrl('images/props/prop13.png'),
+  prop14: assetUrl('images/props/prop14.png'),
+  prop15: assetUrl('images/props/prop15.png'),
+  prop16: assetUrl('images/props/prop16.png'),
 }
 
 const STICKER_IMAGES = {
@@ -197,18 +202,23 @@ export const ITEMS: DecorItem[] = [
   { id: 'bg-type16', category: 'background', name: '노을 비치', price: 10_000_000, thumbnail: '#705396', image: BG_IMAGES.type16, defaultWidth: 1080, defaultHeight: 1620, backgroundGroup: 'outdoor', tasteCode: 'OUT-DARK-SIMPLE-CHROMA' },
 
   // 오브제: 공간에 실제로 놓이는 물건. 가격 오름차순으로 표시한다.
-  { id: 'prop06', category: 'object', name: '촛대 세트', price: 700_000, thumbnail: '#e8b94b', image: PROP_IMAGES.prop06, defaultWidth: 145, defaultHeight: 243, shape: 'rect', objectGroup: 'props' },
+  { id: 'prop06', category: 'object', name: '촛대 세트', price: 500_000, thumbnail: '#e8b94b', image: PROP_IMAGES.prop06, defaultWidth: 145, defaultHeight: 243, shape: 'rect', objectGroup: 'props' },
   { id: 'prop05', category: 'object', name: '장미 화병', price: 800_000, thumbnail: '#e999a4', image: PROP_IMAGES.prop05, defaultWidth: 180, defaultHeight: 214, shape: 'rect', objectGroup: 'props' },
-  { id: 'prop00', category: 'object', name: '로즈 3단 케이크', price: 1_000_000, thumbnail: '#e7c8a0', image: PROP_IMAGES.prop00, defaultWidth: 202, defaultHeight: 286, shape: 'rect', objectGroup: 'props' },
-  { id: 'prop01', category: 'object', name: '핑크 하트 케이크', price: 1_000_000, thumbnail: '#e7c8a0', image: PROP_IMAGES.prop01, defaultWidth: 186, defaultHeight: 246, shape: 'rect', objectGroup: 'props' },
-  { id: 'prop02', category: 'object', name: '라벤더 하트 케이크', price: 1_000_000, thumbnail: '#e7c8a0', image: PROP_IMAGES.prop02, defaultWidth: 187, defaultHeight: 249, shape: 'rect', objectGroup: 'props' },
-  { id: 'prop03', category: 'object', name: '세이지 하트 케이크', price: 1_000_000, thumbnail: '#e7c8a0', image: PROP_IMAGES.prop03, defaultWidth: 186, defaultHeight: 251, shape: 'rect', objectGroup: 'props' },
-  { id: 'prop04', category: 'object', name: '블루 하트 케이크', price: 1_000_000, thumbnail: '#e7c8a0', image: PROP_IMAGES.prop04, defaultWidth: 195, defaultHeight: 260, shape: 'rect', objectGroup: 'props' },
-  { id: 'prop07', category: 'object', name: '샴페인 테이블', price: 1_500_000, thumbnail: '#ead6ad', image: PROP_IMAGES.prop07, defaultWidth: 250, defaultHeight: 274, shape: 'rect', objectGroup: 'props' },
-  { id: 'prop08', category: 'object', name: '웰컴 보드', price: 2_000_000, thumbnail: '#e7c8a0', image: PROP_IMAGES.prop08, defaultWidth: 240, defaultHeight: 416, shape: 'rect', objectGroup: 'props' },
-  { id: 'prop09', category: 'object', name: '하트 풍선', price: 2_500_000, thumbnail: '#edb3c3', image: PROP_IMAGES.prop09, defaultWidth: 260, defaultHeight: 433, shape: 'rect', objectGroup: 'props' },
-  { id: 'prop10', category: 'object', name: '웨딩 소파', price: 3_500_000, thumbnail: '#edb4ba', image: PROP_IMAGES.prop10, defaultWidth: 450, defaultHeight: 340, shape: 'rect', objectGroup: 'props' },
-  { id: 'prop11', category: 'object', name: '플라워 아치', price: 5_000_000, thumbnail: '#e899a4', image: PROP_IMAGES.prop11, defaultWidth: 650, defaultHeight: 769, shape: 'rect', objectGroup: 'props' },
+  { id: 'prop01', category: 'object', name: '핑크 하트 케이크', price: 1_100_000, thumbnail: '#e7c8a0', image: PROP_IMAGES.prop01, defaultWidth: 186, defaultHeight: 246, shape: 'rect', objectGroup: 'props' },
+  { id: 'prop02', category: 'object', name: '라벤더 하트 케이크', price: 1_300_000, thumbnail: '#e7c8a0', image: PROP_IMAGES.prop02, defaultWidth: 187, defaultHeight: 249, shape: 'rect', objectGroup: 'props' },
+  { id: 'prop03', category: 'object', name: '세이지 하트 케이크', price: 1_500_000, thumbnail: '#e7c8a0', image: PROP_IMAGES.prop03, defaultWidth: 186, defaultHeight: 251, shape: 'rect', objectGroup: 'props' },
+  { id: 'prop04', category: 'object', name: '블루 하트 케이크', price: 1_700_000, thumbnail: '#e7c8a0', image: PROP_IMAGES.prop04, defaultWidth: 195, defaultHeight: 260, shape: 'rect', objectGroup: 'props' },
+  { id: 'prop00', category: 'object', name: '로즈 3단 케이크', price: 2_200_000, thumbnail: '#e7c8a0', image: PROP_IMAGES.prop00, defaultWidth: 202, defaultHeight: 286, shape: 'rect', objectGroup: 'props' },
+  { id: 'prop08', category: 'object', name: '웰컴 보드', price: 2_800_000, thumbnail: '#e7c8a0', image: PROP_IMAGES.prop08, defaultWidth: 240, defaultHeight: 416, shape: 'rect', objectGroup: 'props' },
+  { id: 'prop09', category: 'object', name: '하트 풍선', price: 3_500_000, thumbnail: '#edb3c3', image: PROP_IMAGES.prop09, defaultWidth: 260, defaultHeight: 433, shape: 'rect', objectGroup: 'props' },
+  { id: 'prop07', category: 'object', name: '샴페인 테이블', price: 4_500_000, thumbnail: '#ead6ad', image: PROP_IMAGES.prop07, defaultWidth: 250, defaultHeight: 274, shape: 'rect', objectGroup: 'props' },
+  { id: 'prop10', category: 'object', name: '웨딩 소파', price: 8_000_000, thumbnail: '#edb4ba', image: PROP_IMAGES.prop10, defaultWidth: 450, defaultHeight: 340, shape: 'rect', objectGroup: 'props' },
+  { id: 'prop11', category: 'object', name: '플라워 아치', price: 13_000_000, thumbnail: '#e899a4', image: PROP_IMAGES.prop11, defaultWidth: 650, defaultHeight: 769, shape: 'rect', objectGroup: 'props' },
+  { id: 'prop12', category: 'object', name: '샴페인 타워', price: 20_000_000, thumbnail: '#e8c675', image: PROP_IMAGES.prop12, defaultWidth: 300, defaultHeight: 460, shape: 'rect', objectGroup: 'props' },
+  { id: 'prop13', category: 'object', name: '그랜드 피아노', price: 35_000_000, thumbnail: '#e8d2a8', image: PROP_IMAGES.prop13, defaultWidth: 500, defaultHeight: 520, shape: 'rect', objectGroup: 'props' },
+  { id: 'prop14', category: 'object', name: '크리스털 분수', price: 50_000_000, thumbnail: '#9edee4', image: PROP_IMAGES.prop14, defaultWidth: 430, defaultHeight: 500, shape: 'rect', objectGroup: 'props' },
+  { id: 'prop15', category: 'object', name: '클래식 웨딩카', price: 70_000_000, thumbnail: '#e8c98e', image: PROP_IMAGES.prop15, defaultWidth: 660, defaultHeight: 400, shape: 'rect', objectGroup: 'props' },
+  { id: 'prop16', category: 'object', name: '로열 플라워 아치', price: 100_000_000, thumbnail: '#edb1b8', image: PROP_IMAGES.prop16, defaultWidth: 760, defaultHeight: 806, shape: 'rect', objectGroup: 'props' },
 
   // 스티커: 공간과 무관하게 사진 위에 붙이는 평면 장식.
   { id: 'sticker00', category: 'sticker', name: '핑크 하트', price: 200_000, thumbnail: '#f5a6b5', image: STICKER_IMAGES.sticker00, defaultWidth: 120, defaultHeight: 107, shape: 'rect', objectGroup: 'stickers' },
