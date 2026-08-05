@@ -183,8 +183,10 @@ export default function FrameConfirm() {
     <StageLayout>
       <div className="flex flex-1 flex-col items-center justify-center gap-6 text-center">
         <div>
-          <p className="text-4xl font-black text-gray-800">사진 프레임 확인</p>
-          <p className="mt-2 text-lg text-gray-500">사각형을 움직이고 모서리를 잡아 크기를 조절해 주세요.</p>
+          <p className="text-5xl font-black text-gray-800">사진 프레임 확인</p>
+          <p className="mt-4 text-2xl font-bold text-gray-600">
+            사각형을 움직이고 모서리를 잡아 크기를 조절해 주세요.
+          </p>
         </div>
 
         <div
@@ -225,27 +227,35 @@ export default function FrameConfirm() {
           </div>
         </div>
 
-        <div className="grid w-full grid-cols-5 gap-3">
+        <div className="grid w-full grid-cols-2 gap-4">
           {FRAME_OPTIONS.map((option) => (
             <button
               key={option.ratio}
               onClick={() => updatePreset(option.ratio)}
-              className={`rounded-2xl border-4 px-4 py-5 text-center transition ${
+              className={`flex min-h-[170px] items-center justify-center gap-8 rounded-2xl border-4 px-8 py-7 text-left transition ${
                 option.ratio === printFrameRatio
                   ? 'border-brand-500 bg-white text-gray-900 shadow-sm'
                   : 'border-brand-100 bg-white/70 text-gray-500'
               }`}
             >
-              <span className="block text-2xl font-bold">{option.label}</span>
-              <span className="mt-1 block text-base">{option.ratio}</span>
-              <span className="mt-1 block text-sm">{option.description}</span>
+              <span
+                aria-hidden="true"
+                className={`block shrink-0 border-[5px] border-current bg-brand-50 shadow-inner ${
+                  option.ratio === '2:3' ? 'h-24 w-16' : 'h-16 w-24'
+                }`}
+              />
+              <span className="block min-w-0">
+                <span className="block text-2xl font-bold">{option.label}</span>
+                <span className="mt-1 block text-lg font-semibold">{option.ratio}</span>
+                <span className="mt-2 block text-base">{option.description}</span>
+              </span>
             </button>
           ))}
         </div>
 
         <div className="flex w-full gap-3">
           <Button variant="secondary" onClick={() => setStage('decorate')} className="flex-1">
-            다시 조정
+            다시 꾸미기
           </Button>
           <Button onClick={confirmFrame} className="flex-1">
             이대로 인쇄하기

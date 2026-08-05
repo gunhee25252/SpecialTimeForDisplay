@@ -105,7 +105,6 @@ const BRIDE_HAIR_IDS = [
 
 const GROOM_OUTFIT_IDS = [
   'suit00',
-  'suit01',
   'suit02',
   'suit03',
   'suit04',
@@ -116,6 +115,10 @@ const GROOM_OUTFIT_IDS = [
   'suit09',
   'suit10',
   'suit11',
+  'suit12',
+  'suit13',
+  'suit14',
+  'suit15',
 ]
 const BRIDE_OUTFIT_IDS = [
   'dress00',
@@ -180,35 +183,38 @@ const BRIDE_HAIR_PRICES: Record<string, number> = {
 }
 
 const GROOM_OUTFIT_PRICES: Record<string, number> = {
-  suit00: 1_200_000,
-  suit01: 900_000,
-  suit02: 400_000,
+  suit00: 1_500_000,
+  suit02: 500_000,
   suit03: 200_000,
   suit04: 300_000,
   suit05: 400_000,
-  suit06: 1_000_000,
+  suit06: 1_600_000,
   suit07: 1_200_000,
-  suit08: 1_100_000,
-  suit09: 1_300_000,
-  suit10: 1_100_000,
+  suit08: 1_400_000,
+  suit09: 1_700_000,
+  suit10: 900_000,
   suit11: 1_000_000,
+  suit12: 1_800_000,
+  suit13: 1_100_000,
+  suit14: 1_300_000,
+  suit15: 800_000,
 }
 
 const BRIDE_OUTFIT_PRICES: Record<string, number> = {
-  dress00: 2_000_000,
-  dress01: 2_800_000,
-  dress02: 300_000,
-  dress03: 400_000,
+  dress00: 2_800_000,
+  dress01: 2_500_000,
+  dress02: 400_000,
+  dress03: 300_000,
   dress04: 200_000,
-  dress05: 400_000,
-  dress06: 700_000,
-  dress07: 800_000,
+  dress05: 500_000,
+  dress06: 800_000,
+  dress07: 700_000,
   dress08: 1_000_000,
-  dress09: 1_300_000,
-  dress10: 2_400_000,
-  dress11: 2_200_000,
-  dress12: 1_600_000,
-  dress13: 1_800_000,
+  dress09: 1_200_000,
+  dress10: 2_100_000,
+  dress11: 1_800_000,
+  dress12: 1_400_000,
+  dress13: 1_600_000,
 }
 
 function makeHairOption(id: string, index: number, price: number, folder?: string, hasMask = false): HairOption {
