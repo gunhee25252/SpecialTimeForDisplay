@@ -62,7 +62,7 @@ const PRINT_SHEET_HEIGHT = 1800
 const PRINT_DPI = 300
 
 export function isLandscapePrintFrame(frameRatio: PrintFrameRatio) {
-  return frameRatio === '1:1' || frameRatio === '16:9'
+  return frameRatio === '3:2'
 }
 
 function printSheetDimensions(frameRatio: PrintFrameRatio) {
@@ -94,7 +94,7 @@ export function calculatePrintSpec(
   printId: number,
   budget: number | null,
   spent: number,
-  frameRatio: PrintFrameRatio = '4:6',
+  frameRatio: PrintFrameRatio = '3:2',
 ): PrintSpec {
   const remaining = Math.max(0, (budget ?? 0) - spent)
   const rotationDegrees = isLandscapePrintFrame(frameRatio) ? 90 : 0
@@ -397,8 +397,6 @@ function cropCanvas(source: HTMLCanvasElement, frame: PrintFrame): HTMLCanvasEle
   return cropped
 }
 
-const PRINT_SHEET_MARGIN = 60
-
 function applyGrayscale(canvas: HTMLCanvasElement) {
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('흑백 이미지를 만들 수 없어요.')
@@ -430,9 +428,7 @@ function composePrintSheet(
   ctx.fillStyle = '#ffffff'
   ctx.fillRect(0, 0, sheet.width, sheet.height)
 
-  const availableWidth = sheet.width - PRINT_SHEET_MARGIN * 2
-  const availableHeight = sheet.height - PRINT_SHEET_MARGIN * 2
-  const scale = Math.min(availableWidth / content.width, availableHeight / content.height)
+  const scale = Math.max(sheet.width / content.width, sheet.height / content.height)
   const width = Math.round(content.width * scale)
   const height = Math.round(content.height * scale)
   const x = Math.round((sheet.width - width) / 2)
@@ -468,6 +464,9 @@ export async function renderPrintImage(state: PrintRenderState): Promise<Blob> {
   const background = state.canvasBackgroundId ? findItem(state.canvasBackgroundId) : undefined
   if (background?.image) {
     await drawImage(ctx, background.image, 0, 0, SCENE_WIDTH, SCENE_HEIGHT)
+  } else if (background) {
+    ctx.fillStyle = background.thumbnail
+    ctx.fillRect(0, 0, SCENE_WIDTH, SCENE_HEIGHT)
   } else {
     drawEmptyBackground(ctx)
   }
@@ -487,12 +486,12 @@ export async function renderPrintImage(state: PrintRenderState): Promise<Blob> {
 
   const framed = state.printFrame ? cropCanvas(canvas, state.printFrame) : canvas
   let output = state.prepareForPrint
-    ? composePrintSheet(framed, state.grayscale ?? false, state.printFrameRatio ?? '4:6')
+    ? composePrintSheet(framed, state.grayscale ?? false, state.printFrameRatio ?? '3:2')
     : framed
   if (
     state.prepareForPrint &&
     state.rotateLandscapeForOutput &&
-    isLandscapePrintFrame(state.printFrameRatio ?? '4:6')
+    isLandscapePrintFrame(state.printFrameRatio ?? '3:2')
   ) {
     output = rotateClockwise(output)
   }

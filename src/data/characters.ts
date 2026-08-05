@@ -37,18 +37,18 @@ export interface OutfitOption {
 // 표정 목록. 새 표정은 characters/expr/에 넣고 여기에 한 줄 추가.
 export const FACE_EXPRESSIONS: FaceExpr[] = [
   { id: 'face00', name: '기본', image: assetUrl('images/characters/expr/face00.png'), price: 0 },
-  { id: 'face01', name: '뾰로통', image: assetUrl('images/characters/expr/face01.png'), price: 500_000 },
-  { id: 'face02', name: '엉엉', image: assetUrl('images/characters/expr/face02.png'), price: 500_000 },
-  { id: 'face03', name: '부끄', image: assetUrl('images/characters/expr/face03.png'), price: 500_000 },
-  { id: 'face04', name: '새침', image: assetUrl('images/characters/expr/face04.png'), price: 500_000 },
-  { id: 'face05', name: '윙크', image: assetUrl('images/characters/expr/face05.png'), price: 500_000 },
-  { id: 'face06', name: '시무룩', image: assetUrl('images/characters/expr/face06.png'), price: 500_000 },
-  { id: 'face07', name: '반짝', image: assetUrl('images/characters/expr/face07.png'), price: 500_000 },
-  { id: 'face08', name: '하트', image: assetUrl('images/characters/expr/face08.png'), price: 500_000 },
-  { id: 'face09', name: '뿌듯', image: assetUrl('images/characters/expr/face09.png'), price: 500_000 },
-  { id: 'face10', name: '기대', image: assetUrl('images/characters/expr/face10.png'), price: 500_000 },
-  { id: 'face11', name: '활짝', image: assetUrl('images/characters/expr/face11.png'), price: 500_000 },
-  { id: 'face12', name: '콕', image: assetUrl('images/characters/expr/face12.png'), price: 500_000 },
+  { id: 'face01', name: '뾰로통', image: assetUrl('images/characters/expr/face01.png'), price: 0 },
+  { id: 'face02', name: '엉엉', image: assetUrl('images/characters/expr/face02.png'), price: 0 },
+  { id: 'face03', name: '부끄', image: assetUrl('images/characters/expr/face03.png'), price: 0 },
+  { id: 'face04', name: '새침', image: assetUrl('images/characters/expr/face04.png'), price: 0 },
+  { id: 'face05', name: '윙크', image: assetUrl('images/characters/expr/face05.png'), price: 0 },
+  { id: 'face06', name: '시무룩', image: assetUrl('images/characters/expr/face06.png'), price: 0 },
+  { id: 'face07', name: '반짝', image: assetUrl('images/characters/expr/face07.png'), price: 0 },
+  { id: 'face08', name: '하트', image: assetUrl('images/characters/expr/face08.png'), price: 0 },
+  { id: 'face09', name: '뿌듯', image: assetUrl('images/characters/expr/face09.png'), price: 0 },
+  { id: 'face10', name: '기대', image: assetUrl('images/characters/expr/face10.png'), price: 0 },
+  { id: 'face11', name: '활짝', image: assetUrl('images/characters/expr/face11.png'), price: 0 },
+  { id: 'face12', name: '콕', image: assetUrl('images/characters/expr/face12.png'), price: 0 },
 ]
 
 // 기본(base) 상태의 표정.
@@ -128,6 +128,10 @@ const BRIDE_OUTFIT_IDS = [
   'dress07',
   'dress08',
   'dress09',
+  'dress10',
+  'dress11',
+  'dress12',
+  'dress13',
 ]
 
 const GROOM_HAIR_PRICES: Record<string, number> = {
@@ -201,6 +205,10 @@ const BRIDE_OUTFIT_PRICES: Record<string, number> = {
   dress07: 800_000,
   dress08: 1_000_000,
   dress09: 1_300_000,
+  dress10: 2_400_000,
+  dress11: 2_200_000,
+  dress12: 1_600_000,
+  dress13: 1_800_000,
 }
 
 function makeHairOption(id: string, index: number, price: number, folder?: string, hasMask = false): HairOption {
@@ -350,16 +358,72 @@ export const HAIR_COLOR_OPTIONS: HairColorOption[] = [
     filter: 'grayscale(1) brightness(1.72) contrast(0.72)',
     price: 600_000,
   },
+  {
+    id: 'dark-ash',
+    name: '다크 애쉬',
+    swatch: '#575b62',
+    filter: 'grayscale(1) brightness(0.82) contrast(1.12)',
+    price: 300_000,
+  },
+  {
+    id: 'beige',
+    name: '베이지',
+    swatch: '#c6a47f',
+    filter: 'sepia(1) saturate(1.45) hue-rotate(345deg) brightness(1.28)',
+    price: 400_000,
+  },
+  {
+    id: 'rose-gold',
+    name: '로즈 골드',
+    swatch: '#c98278',
+    filter: 'sepia(1) saturate(2.05) hue-rotate(315deg) brightness(1.08)',
+    price: 500_000,
+  },
+  {
+    id: 'orange',
+    name: '오렌지',
+    swatch: '#d7783e',
+    filter: 'sepia(1) saturate(3) hue-rotate(325deg) brightness(1.04)',
+    price: 500_000,
+  },
+  {
+    id: 'red',
+    name: '레드',
+    swatch: '#b83f49',
+    filter: 'sepia(1) saturate(3.6) hue-rotate(300deg) brightness(0.88)',
+    price: 600_000,
+  },
+  {
+    id: 'purple',
+    name: '퍼플',
+    swatch: '#76529a',
+    filter: 'sepia(0.85) saturate(2.8) hue-rotate(210deg) brightness(0.88)',
+    price: 600_000,
+  },
+  {
+    id: 'teal',
+    name: '청록',
+    swatch: '#3f9695',
+    filter: 'sepia(1) saturate(2.6) hue-rotate(125deg) brightness(0.86)',
+    price: 700_000,
+  },
+  {
+    id: 'ice-blue',
+    name: '아이스 블루',
+    swatch: '#9bcbdc',
+    filter: 'sepia(0.75) saturate(2) hue-rotate(155deg) brightness(1.3)',
+    price: 700_000,
+  },
 ].sort((a, b) => a.price - b.price)
 
 export const OUTFIT_OPTIONS: Record<CharacterKey, OutfitOption[]> = {
   groom: [
     { id: DEFAULT_OUTFIT_ID, name: '기본', image: CHARACTER_BODY, price: 0 },
-    ...makeSortedOutfitOptions(GROOM_OUTFIT_IDS, GROOM_OUTFIT_PRICES, '신랑 옷', 'man_clothes'),
+    ...makeSortedOutfitOptions(GROOM_OUTFIT_IDS, GROOM_OUTFIT_PRICES, '옷', 'man_clothes'),
   ],
   bride: [
     { id: DEFAULT_OUTFIT_ID, name: '기본', image: CHARACTER_BODY, price: 0 },
-    ...makeSortedOutfitOptions(BRIDE_OUTFIT_IDS, BRIDE_OUTFIT_PRICES, '신부 옷', 'woman_clothes'),
+    ...makeSortedOutfitOptions(BRIDE_OUTFIT_IDS, BRIDE_OUTFIT_PRICES, '옷', 'woman_clothes'),
   ],
 }
 

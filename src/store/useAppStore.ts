@@ -29,7 +29,7 @@ import {
 export type Stage = 'intro' | 'playerSelect' | 'worldcup' | 'result' | 'budget' | 'decorate' | 'frameConfirm' | 'complete'
 
 export type PlayerCount = 1 | 2
-export type PrintFrameRatio = '9:16' | '4:6' | '1:1' | '16:9'
+export type PrintFrameRatio = '2:3' | '3:2'
 export interface PrintFrame {
   x: number
   y: number
@@ -238,7 +238,7 @@ const initialState = {
   spent: 0,
   canvasBackgroundId: null as string | null,
   characters: makeCharacters(),
-  printFrameRatio: '4:6' as PrintFrameRatio,
+  printFrameRatio: '3:2' as PrintFrameRatio,
   printFrame: null as PrintFrame | null,
 }
 
@@ -265,7 +265,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       spent: 0,
       canvasBackgroundId: null,
       characters: makeCharacters(),
-      printFrameRatio: '4:6',
+      printFrameRatio: '3:2',
       printFrame: null,
     })),
 

@@ -6,10 +6,8 @@ import { renderPrintImage } from '../utils/print'
 import { SCENE_HEIGHT, SCENE_WIDTH } from '../data/constants'
 
 const FRAME_OPTIONS: { ratio: PrintFrameRatio; label: string; description: string; value: number }[] = [
-  { ratio: '9:16', label: '세로형', description: '기본 화면 비율', value: 9 / 16 },
-  { ratio: '4:6', label: '사진형', description: '배경 전체 비율', value: 4 / 6 },
-  { ratio: '1:1', label: '정사각형', description: '정방형 출력', value: 1 },
-  { ratio: '16:9', label: '가로형', description: '와이드 출력', value: 16 / 9 },
+  { ratio: '2:3', label: '세로 사진', description: '인화지 세로 비율', value: 2 / 3 },
+  { ratio: '3:2', label: '가로 사진', description: '인화지 가로 비율', value: 3 / 2 },
 ]
 
 const PREVIEW_W = 500
@@ -30,7 +28,7 @@ function defaultFrame(ratio: PrintFrameRatio): PrintFrame {
   const previewRatio = PREVIEW_W / PREVIEW_H
   if (option.value > previewRatio) {
     const height = PREVIEW_W / option.value
-    return { x: 0, y: (PREVIEW_H - height) / 2, width: PREVIEW_W, height }
+    return { x: 0, y: PREVIEW_H - height, width: PREVIEW_W, height }
   }
 
   const width = PREVIEW_H * option.value
@@ -46,7 +44,7 @@ function constrainFrame(frame: PrintFrame): PrintFrame {
 }
 
 function ratioValue(ratio: PrintFrameRatio) {
-  return FRAME_OPTIONS.find((item) => item.ratio === ratio)?.value ?? 9 / 16
+  return FRAME_OPTIONS.find((item) => item.ratio === ratio)?.value ?? 2 / 3
 }
 
 function resizeFrame(frame: PrintFrame, corner: ResizeCorner, pointerX: number, pointerY: number, ratio: number): PrintFrame {
@@ -227,7 +225,7 @@ export default function FrameConfirm() {
           </div>
         </div>
 
-        <div className="grid w-full grid-cols-4 gap-3">
+        <div className="grid w-full grid-cols-5 gap-3">
           {FRAME_OPTIONS.map((option) => (
             <button
               key={option.ratio}

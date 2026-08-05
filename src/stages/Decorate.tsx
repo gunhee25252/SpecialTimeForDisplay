@@ -89,6 +89,7 @@ const OBJECT_PART_TABS: { key: ObjectPart; label: string; itemCat: ItemCategory 
 ]
 
 const BACKGROUND_PART_TABS: { key: BackgroundGroup; label: string }[] = [
+  { key: 'solid', label: '단색' },
   { key: 'indoor', label: '실내' },
   { key: 'outdoor', label: '야외' },
 ]
@@ -123,10 +124,8 @@ const CHARACTER_MIN_VISIBLE_HEIGHT = FIGURE_HEIGHT * CHARACTER_MIN_VISIBLE_RATIO
 const MIN_PRINT_FRAME_SIZE = SCENE_WIDTH * 0.18
 
 const PRINT_FRAME_OPTIONS: { ratio: PrintFrameRatio; label: string; ratioLabel: string; value: number }[] = [
-  { ratio: '9:16', label: '세로', ratioLabel: '9:16', value: 9 / 16 },
-  { ratio: '4:6', label: '사진', ratioLabel: '4:6', value: 4 / 6 },
-  { ratio: '1:1', label: '정사각', ratioLabel: '1:1', value: 1 },
-  { ratio: '16:9', label: '가로', ratioLabel: '16:9', value: 16 / 9 },
+  { ratio: '2:3', label: '세로 사진', ratioLabel: '2:3', value: 2 / 3 },
+  { ratio: '3:2', label: '가로 사진', ratioLabel: '3:2', value: 3 / 2 },
 ]
 
 type FrameResizeCorner = 'nw' | 'ne' | 'sw' | 'se'
@@ -153,7 +152,7 @@ function defaultPrintFrame(ratio: PrintFrameRatio): PrintFrame {
   const sceneRatio = SCENE_WIDTH / SCENE_HEIGHT
   if (value > sceneRatio) {
     const height = SCENE_WIDTH / value
-    return { x: 0, y: (SCENE_HEIGHT - height) / 2, width: SCENE_WIDTH, height }
+    return { x: 0, y: SCENE_HEIGHT - height, width: SCENE_WIDTH, height }
   }
   const width = SCENE_HEIGHT * value
   return { x: (SCENE_WIDTH - width) / 2, y: 0, width, height: SCENE_HEIGHT }
@@ -361,8 +360,7 @@ export default function Decorate() {
     [backgroundRecommendations],
   )
   const firstRecommendedGroup =
-    backgroundRecommendations[0]?.item.backgroundGroup ?? 'indoor'
-
+    backgroundRecommendations[0]?.item.backgroundGroup ?? 'solid'
   const [activeMainTabKey, setActiveMainTabKey] = useState<string>(MAIN_TABS[0].key)
   const [activeBackgroundPart, setActiveBackgroundPart] =
     useState<BackgroundGroup>(firstRecommendedGroup)
@@ -510,18 +508,23 @@ export default function Decorate() {
     return entries
   }, [background, characters, placedItems])
 
-  // 첫 꾸미기 진입에서는 가장 잘 맞는 배경으로 바로 시작한다.
+  // 첫 꾸미기 진입에서는 1순위 추천 배경으로 시작하고, 비싸면 무료 아이보리를 쓴다.
   useLayoutEffect(() => {
     if (hasInitializedBackgroundRef.current) return
     hasInitializedBackgroundRef.current = true
     if (canvasBackgroundId) return
-    const canAfford = (item: DecorItem) => budget === null || spent + item.price <= budget
-    const recommended = backgroundRecommendations.map((entry) => entry.item).find(canAfford)
-    const fallback = ITEMS.filter((item) => item.category === 'background' && canAfford(item))
-      .sort((a, b) => a.price - b.price)[0]
-    const initialBackground = recommended ?? fallback
+
+    const recommended = backgroundRecommendations[0]?.item
+    const canAffordRecommended =
+      recommended && (budget === null || spent + recommended.price <= budget)
+    const initialBackground = canAffordRecommended
+      ? recommended
+      : findItem('bg-solid-ivory')
+
     if (!initialBackground || !setCanvasBackground(initialBackground.id)) return
-    if (initialBackground.backgroundGroup) setActiveBackgroundPart(initialBackground.backgroundGroup)
+    if (initialBackground.backgroundGroup) {
+      setActiveBackgroundPart(initialBackground.backgroundGroup)
+    }
   }, [backgroundRecommendations, budget, canvasBackgroundId, setCanvasBackground, spent])
 
   // 진입 시 인물 기본 위치 초기화(신랑 왼쪽·신부 오른쪽, 하단 중앙).
@@ -769,7 +772,7 @@ export default function Decorate() {
                 top: canvasTransform.top,
                 width: SCENE_WIDTH,
                 height: SCENE_HEIGHT,
-                backgroundColor: '#ffffff',
+                backgroundColor: background?.image ? '#ffffff' : background?.thumbnail ?? '#ffffff',
                 transform: `scale(${canvasTransform.scale})`,
                 transformOrigin: 'top left',
               }}
@@ -1015,7 +1018,7 @@ export default function Decorate() {
                   width: activePrintFrame.width,
                   height: activePrintFrame.height,
                   zIndex: 9998,
-                  boxShadow: `0 0 0 9999px rgba(15, 23, 42, ${isFrameEditing ? 0.4 : 0.14})`,
+                  boxShadow: `0 0 0 9999px rgba(100, 116, 139, ${isFrameEditing ? 0.62 : 0.52})`,
                 }}
               >
                 {isFrameEditing &&
@@ -1195,7 +1198,7 @@ export default function Decorate() {
                 ))}
               </div>
             ) : activeMainTab.key === 'background' ? (
-              <div className="grid w-full grid-cols-2 gap-1">
+              <div className="grid w-full grid-cols-3 gap-1">
                 {BACKGROUND_PART_TABS.map((t) => (
                   <button
                     key={t.key}
@@ -1436,7 +1439,7 @@ export default function Decorate() {
           ) : (
             // 배치 아이템 탭
             <ShopScrollRow key={activeTab.key}>
-              {activeTab.itemCat === 'background' && (
+              {activeTab.itemCat === 'background' && activeBackgroundPart === 'solid' && (
                 <button
                   type="button"
                   aria-pressed={canvasBackgroundId === null}
