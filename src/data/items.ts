@@ -23,6 +23,14 @@ const BG_IMAGES = {
   type14: assetUrl('images/backgrounds/bg-type14.png'),
   type15: assetUrl('images/backgrounds/bg-type15.png'),
   type16: assetUrl('images/backgrounds/bg-type16.png'),
+  regionSeoul: assetUrl('images/backgrounds/bg-region-seoul.png'),
+  regionJeju: assetUrl('images/backgrounds/bg-region-jeju.png'),
+  regionParis: assetUrl('images/backgrounds/bg-region-paris.png'),
+  regionSantorini: assetUrl('images/backgrounds/bg-region-santorini.png'),
+  regionNewYork: assetUrl('images/backgrounds/bg-region-newyork.png'),
+  regionSwiss: assetUrl('images/backgrounds/bg-region-swiss.png'),
+  regionMorocco: assetUrl('images/backgrounds/bg-region-morocco.png'),
+  regionAbbeyRoad: assetUrl('images/backgrounds/bg-region-abbey-road.png'),
 }
 
 const PROP_IMAGES = {
@@ -69,7 +77,7 @@ const STICKER_IMAGES = {
 // 꾸미기 아이템 카탈로그. decorate 화면의 상점/캔버스가 이 목록을 쓴다.
 // thumbnail: 이미지가 없을 때 쓰는 CSS 색상값. image: 있으면 실제 이미지로 렌더.
 export type ItemCategory = 'background' | 'object' | 'sticker' | 'text'
-export type BackgroundGroup = 'indoor' | 'outdoor' | 'solid'
+export type BackgroundGroup = 'indoor' | 'outdoor' | 'solid' | 'regional'
 export type ObjectShopGroup =
   | 'props'
   | 'stickers'
@@ -201,6 +209,16 @@ export const ITEMS: DecorItem[] = [
   { id: 'bg-type14', category: 'background', name: '오로라 가든', price: 14_000_000, thumbnail: '#315f9d', image: BG_IMAGES.type14, defaultWidth: 1080, defaultHeight: 1620, backgroundGroup: 'outdoor', tasteCode: 'OUT-DARK-FANCY-CHROMA' },
   { id: 'bg-type15', category: 'background', name: '달빛 클리프', price: 12_000_000, thumbnail: '#505966', image: BG_IMAGES.type15, defaultWidth: 1080, defaultHeight: 1620, backgroundGroup: 'outdoor', tasteCode: 'OUT-DARK-SIMPLE-MONO' },
   { id: 'bg-type16', category: 'background', name: '노을 비치', price: 10_000_000, thumbnail: '#705396', image: BG_IMAGES.type16, defaultWidth: 1080, defaultHeight: 1620, backgroundGroup: 'outdoor', tasteCode: 'OUT-DARK-SIMPLE-CHROMA' },
+
+  // Regional backgrounds are independent of taste recommendations.
+  { id: 'bg-region-seoul', category: 'background', name: '서울 한옥길', price: 6_000_000, thumbnail: '#d8b88c', image: BG_IMAGES.regionSeoul, defaultWidth: 1080, defaultHeight: 1620, backgroundGroup: 'regional' },
+  { id: 'bg-region-jeju', category: 'background', name: '제주 돌담길', price: 7_000_000, thumbnail: '#e7c94f', image: BG_IMAGES.regionJeju, defaultWidth: 1080, defaultHeight: 1620, backgroundGroup: 'regional' },
+  { id: 'bg-region-paris', category: 'background', name: '파리 센강', price: 12_000_000, thumbnail: '#e7c4b2', image: BG_IMAGES.regionParis, defaultWidth: 1080, defaultHeight: 1620, backgroundGroup: 'regional' },
+  { id: 'bg-region-santorini', category: 'background', name: '산토리니', price: 13_000_000, thumbnail: '#68b7e7', image: BG_IMAGES.regionSantorini, defaultWidth: 1080, defaultHeight: 1620, backgroundGroup: 'regional' },
+  { id: 'bg-region-newyork', category: 'background', name: '뉴욕 루프톱', price: 15_000_000, thumbnail: '#a76f5b', image: BG_IMAGES.regionNewYork, defaultWidth: 1080, defaultHeight: 1620, backgroundGroup: 'regional' },
+  { id: 'bg-region-swiss', category: 'background', name: '스위스 호숫가', price: 10_000_000, thumbnail: '#79c9c4', image: BG_IMAGES.regionSwiss, defaultWidth: 1080, defaultHeight: 1620, backgroundGroup: 'regional' },
+  { id: 'bg-region-morocco', category: 'background', name: '모로코 리아드', price: 11_000_000, thumbnail: '#c77d5b', image: BG_IMAGES.regionMorocco, defaultWidth: 1080, defaultHeight: 1620, backgroundGroup: 'regional' },
+  { id: 'bg-region-abbey-road', category: 'background', name: '애비 로드', price: 14_000_000, thumbnail: '#92908b', image: BG_IMAGES.regionAbbeyRoad, defaultWidth: 1080, defaultHeight: 1620, backgroundGroup: 'regional' },
 
   // 단색 배경: 이미지 없이 색상값을 캔버스와 인쇄물에 직접 사용한다.
   { id: 'bg-solid-ivory', category: 'background', name: '아이보리', price: 0, thumbnail: '#fff6e8', defaultWidth: 1080, defaultHeight: 1620, backgroundGroup: 'solid' },

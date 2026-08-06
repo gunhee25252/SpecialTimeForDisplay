@@ -1,0 +1,19 @@
+{
+  "printId": 17,
+  "imageFile": "print-017.png",
+  "copies": 1,
+  "grayscale": false,
+  "size": "4x6",
+  "sheetRatio": "2:3",
+  "pixelWidth": 1200,
+  "pixelHeight": 1800,
+  "dpi": 300,
+  "rotationDegrees": 0,
+  "frameRatio": "2:3",
+  "frame": {
+    "x": 0,
+    "y": 0,
+    "width": 1080,
+    "height": 1620
+  }
+}

@@ -92,6 +92,7 @@ const BACKGROUND_PART_TABS: { key: BackgroundGroup; label: string }[] = [
   { key: 'solid', label: '단색' },
   { key: 'indoor', label: '실내' },
   { key: 'outdoor', label: '야외' },
+  { key: 'regional', label: '지역' },
 ]
 
 const ITEM_CATEGORY_LABELS: Record<Exclude<ItemCategory, 'background'>, string> = {
@@ -1225,7 +1226,7 @@ export default function Decorate() {
                 ))}
               </div>
             ) : activeMainTab.key === 'background' ? (
-              <div className="grid w-full grid-cols-3 gap-1">
+              <div className="grid w-full grid-cols-4 gap-1">
                 {BACKGROUND_PART_TABS.map((t) => (
                   <button
                     key={t.key}
