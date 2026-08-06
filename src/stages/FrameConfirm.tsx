@@ -13,6 +13,7 @@ const FRAME_OPTIONS: { ratio: PrintFrameRatio; label: string; description: strin
 const PREVIEW_W = 500
 const PREVIEW_H = 750
 const MIN_FRAME_SIZE = 90
+const DEFAULT_FRAME_SCALE = 0.85
 
 type DragState =
   | { kind: 'move'; startX: number; startY: number; frame: PrintFrame }
@@ -26,13 +27,15 @@ function clamp(value: number, min: number, max: number) {
 function defaultFrame(ratio: PrintFrameRatio): PrintFrame {
   const option = FRAME_OPTIONS.find((item) => item.ratio === ratio) ?? FRAME_OPTIONS[0]
   const previewRatio = PREVIEW_W / PREVIEW_H
-  if (option.value > previewRatio) {
-    const height = PREVIEW_W / option.value
-    return { x: 0, y: PREVIEW_H - height, width: PREVIEW_W, height }
+  const maxWidth = option.value > previewRatio ? PREVIEW_W : PREVIEW_H * option.value
+  const width = maxWidth * DEFAULT_FRAME_SCALE
+  const height = width / option.value
+  return {
+    x: (PREVIEW_W - width) / 2,
+    y: (PREVIEW_H - height) / 2,
+    width,
+    height,
   }
-
-  const width = PREVIEW_H * option.value
-  return { x: (PREVIEW_W - width) / 2, y: 0, width, height: PREVIEW_H }
 }
 
 function constrainFrame(frame: PrintFrame): PrintFrame {

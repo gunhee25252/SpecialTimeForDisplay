@@ -59,6 +59,13 @@ export default function Budget() {
     }
   }
   useEffect(() => () => clearTimer(), [])
+  useEffect(() => {
+    clearTimer()
+    stop('drumRoll')
+    setPhase('idle')
+    setDrawn(null)
+    setShowGold(false)
+  }, [currentPlayer])
 
   const handleSettled = () => {
     clearTimer()
@@ -188,9 +195,9 @@ export default function Budget() {
             <Button onClick={() => setPhase('summing')}>두 사람 예산 합치기</Button>
           )}
           {phase === 'revealed' && isLastPlayer && !isDuo && (
-            <Button onClick={nextAfterBudget}>결과 보기</Button>
+            <Button onClick={nextAfterBudget}>사진 만들러 가기</Button>
           )}
-          {phase === 'summing' && <Button onClick={nextAfterBudget}>합친 취향 결과 보기</Button>}
+          {phase === 'summing' && <Button onClick={nextAfterBudget}>사진 만들러 가기</Button>}
         </div>
       </div>
 

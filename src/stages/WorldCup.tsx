@@ -10,8 +10,9 @@ export default function WorldCup() {
   const choose = useAppStore((s) => s.choose)
   const playerCount = useAppStore((s) => s.playerCount)
   const currentPlayer = useAppStore((s) => s.currentPlayer)
+  const roundSetIndex = useAppStore((s) => s.roundSetIndex)
 
-  const rounds = getWorldCupRounds(currentPlayer)
+  const rounds = getWorldCupRounds(roundSetIndex)
   const round = rounds[roundIndex]
   const total = rounds.length
   const isDuo = playerCount === 2

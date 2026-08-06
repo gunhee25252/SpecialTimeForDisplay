@@ -137,10 +137,10 @@ export default function Complete() {
 
   return (
     <StageLayout>
-      <div className="flex flex-1 flex-col items-center justify-center gap-5 text-center">
+      <div className="flex flex-1 flex-col items-center justify-center gap-6 text-center">
         <div>
-          <p className="text-2xl font-semibold text-brand-400">완성!</p>
-          <p className="mt-2 text-base text-gray-500">
+          <p className="text-5xl font-black text-brand-500">완성!</p>
+          <p className="mt-3 text-2xl font-bold text-gray-600">
             {isDuo ? '두 분의 합친 취향 유형' : '취향 유형'} · {type ? type.name : '유형 없음'}
           </p>
         </div>
@@ -159,28 +159,25 @@ export default function Complete() {
                 draggable={false}
               />
             ) : (
-              <p className="text-lg text-gray-400">이미지를 준비하고 있어요.</p>
+              <p className="text-2xl font-semibold text-gray-400">이미지를 준비하고 있어요.</p>
             )}
           </div>
 
-          <div className="w-full rounded-2xl bg-white px-8 py-4 shadow-sm">
-            <p className="text-lg font-semibold text-gray-800">
+          <div className="w-full rounded-2xl bg-white px-8 py-6 shadow-sm">
+            <p className="text-2xl font-bold text-gray-800">
               출력 정보: {printSpec.grayscale ? '흑백' : '컬러'} / 사진 {printFrameRatio}
               {printSpec.rotationDegrees === 90 ? ' / 가로 인화' : ' / 세로 인화'}
             </p>
-            <p className="mt-2 text-base text-gray-500">
+            <p className="mt-3 text-xl font-semibold text-gray-500">
               남은 예산 {formatWon(remaining)}
             </p>
-            {printError && <p className="mt-2 text-red-500">{printError}</p>}
+            {printError && <p className="mt-3 text-xl font-semibold text-red-500">{printError}</p>}
           </div>
         </div>
 
         <div className="flex w-full flex-col gap-3">
-          <Button onClick={handlePrintSave} className="w-full" disabled={isSaving || printStatus !== 'idle'}>
+          <Button onClick={handlePrintSave} className="w-full py-6 text-3xl" disabled={isSaving || printStatus !== 'idle'}>
             {isSaving || printStatus === 'printing' ? '인쇄 중...' : '인쇄하기'}
-          </Button>
-          <Button onClick={reset} className="w-full" disabled={isSaving || printStatus !== 'idle'}>
-            다시 하기
           </Button>
         </div>
       </div>

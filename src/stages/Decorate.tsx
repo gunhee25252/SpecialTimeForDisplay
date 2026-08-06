@@ -122,6 +122,7 @@ const CHARACTER_MIN_VISIBLE_RATIO = 0.4
 const CHARACTER_MIN_VISIBLE_WIDTH = FIGURE_WIDTH * CHARACTER_MIN_VISIBLE_RATIO
 const CHARACTER_MIN_VISIBLE_HEIGHT = FIGURE_HEIGHT * CHARACTER_MIN_VISIBLE_RATIO
 const MIN_PRINT_FRAME_SIZE = SCENE_WIDTH * 0.18
+const DEFAULT_PRINT_FRAME_SCALE = 0.85
 
 const PRINT_FRAME_OPTIONS: { ratio: PrintFrameRatio; label: string; ratioLabel: string; value: number }[] = [
   { ratio: '2:3', label: '세로 사진', ratioLabel: '2:3', value: 2 / 3 },
@@ -150,12 +151,15 @@ function printFrameRatioValue(ratio: PrintFrameRatio) {
 function defaultPrintFrame(ratio: PrintFrameRatio): PrintFrame {
   const value = printFrameRatioValue(ratio)
   const sceneRatio = SCENE_WIDTH / SCENE_HEIGHT
-  if (value > sceneRatio) {
-    const height = SCENE_WIDTH / value
-    return { x: 0, y: SCENE_HEIGHT - height, width: SCENE_WIDTH, height }
+  const maxWidth = value > sceneRatio ? SCENE_WIDTH : SCENE_HEIGHT * value
+  const width = maxWidth * DEFAULT_PRINT_FRAME_SCALE
+  const height = width / value
+  return {
+    x: (SCENE_WIDTH - width) / 2,
+    y: (SCENE_HEIGHT - height) / 2,
+    width,
+    height,
   }
-  const width = SCENE_HEIGHT * value
-  return { x: (SCENE_WIDTH - width) / 2, y: 0, width, height: SCENE_HEIGHT }
 }
 
 function movePrintFrame(frame: PrintFrame, x: number, y: number): PrintFrame {
@@ -950,7 +954,7 @@ export default function Decorate() {
                       onPointerDown={(e) => {
                         e.preventDefault()
                         e.stopPropagation()
-                        setItemScale(p.instanceId, itemScale + 0.1)
+                        setItemScale(p.instanceId, itemScale + 0.1, 'top-left')
                       }}
                       className="absolute -left-3 -top-3 flex h-9 w-9 items-center justify-center rounded-full bg-brand-500 text-2xl font-black text-white shadow-md disabled:bg-gray-300"
                     >
@@ -964,7 +968,7 @@ export default function Decorate() {
                       onPointerDown={(e) => {
                         e.preventDefault()
                         e.stopPropagation()
-                        setItemScale(p.instanceId, itemScale - 0.1)
+                        setItemScale(p.instanceId, itemScale - 0.1, 'bottom-left')
                       }}
                       className="absolute -bottom-3 -left-3 flex h-9 w-9 items-center justify-center rounded-full bg-brand-500 text-2xl font-black text-white shadow-md disabled:bg-gray-300"
                     >

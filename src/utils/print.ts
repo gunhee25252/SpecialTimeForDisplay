@@ -94,7 +94,7 @@ export function calculatePrintSpec(
   printId: number,
   budget: number | null,
   spent: number,
-  frameRatio: PrintFrameRatio = '3:2',
+  frameRatio: PrintFrameRatio = '2:3',
 ): PrintSpec {
   const remaining = Math.max(0, (budget ?? 0) - spent)
   const rotationDegrees = isLandscapePrintFrame(frameRatio) ? 90 : 0
@@ -486,12 +486,12 @@ export async function renderPrintImage(state: PrintRenderState): Promise<Blob> {
 
   const framed = state.printFrame ? cropCanvas(canvas, state.printFrame) : canvas
   let output = state.prepareForPrint
-    ? composePrintSheet(framed, state.grayscale ?? false, state.printFrameRatio ?? '3:2')
+    ? composePrintSheet(framed, state.grayscale ?? false, state.printFrameRatio ?? '2:3')
     : framed
   if (
     state.prepareForPrint &&
     state.rotateLandscapeForOutput &&
-    isLandscapePrintFrame(state.printFrameRatio ?? '3:2')
+    isLandscapePrintFrame(state.printFrameRatio ?? '2:3')
   ) {
     output = rotateClockwise(output)
   }

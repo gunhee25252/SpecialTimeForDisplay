@@ -2,7 +2,6 @@ import { useMemo } from 'react'
 import { useAppStore } from '../store/useAppStore'
 import { findTypeByCode } from '../data/types16'
 import { AXES } from '../data/axes'
-import { formatWon } from '../utils/format'
 import StageLayout from '../components/StageLayout'
 import Button from '../components/Button'
 
@@ -10,7 +9,6 @@ export default function Result() {
   const resultCode = useAppStore((s) => s.resultCode)
   const axisScores = useAppStore((s) => s.axisScores)
   const playerCount = useAppStore((s) => s.playerCount)
-  const totalBudget = useAppStore((s) => s.totalBudget)
   const setStage = useAppStore((s) => s.setStage)
 
   const type = resultCode ? findTypeByCode(resultCode) : undefined
@@ -42,7 +40,51 @@ export default function Result() {
     [axisScores],
   )
 
-  const strongest = [...axisResults].sort((a, b) => b.gap - a.gap)[0]
+  const strongestPercent = Math.max(...axisResults.map((result) => result.winnerPercent))
+  const strongestResults = axisResults.filter(
+    (result) => result.winnerPercent === strongestPercent,
+  )
+  const strongestInfo = (() => {
+    if (strongestPercent === 50) {
+      return {
+        label: '',
+        value: '모든 취향이 균형 잡혀 있어요',
+        caption: '',
+        centerOnly: true,
+      }
+    }
+
+    if (strongestResults.length === 1) {
+      const result = strongestResults[0]
+      return {
+        label: '가장 뚜렷한 취향',
+        value: `${strongestPercent}%`,
+        caption: `${result.axis.label} · ${result.winner.label}`,
+        centerOnly: false,
+      }
+    }
+
+    if (strongestResults.length >= 2) {
+      const isAllStrongest = strongestResults.length === axisResults.length
+      return {
+        label: isAllStrongest
+          ? '모든 취향이 뚜렷해요'
+          : `${strongestResults.length}가지 공동 취향`,
+        value: `${strongestPercent}%`,
+        caption: strongestResults
+          .map((result) => result.winner.label)
+          .join(' · '),
+        centerOnly: false,
+      }
+    }
+
+    return {
+      label: '가장 뚜렷한 취향',
+      value: `${strongestPercent}%`,
+      caption: '분석할 선택 없음',
+      centerOnly: false,
+    }
+  })()
   const resultTitle = isDuo ? '두 분의 합친 취향 유형' : '당신의 취향 유형'
   const descriptionLines =
     type?.description.match(/[^.]+(?:\.|$)/g)?.map((sentence) => sentence.trim()) ?? []
@@ -106,21 +148,13 @@ export default function Result() {
 
           <div
             className="relative z-10 flex shrink-0 flex-col gap-6"
-            style={{ paddingTop: '24px', paddingBottom: '40px' }}
+            style={{ paddingTop: '24px', paddingBottom: '100px' }}
           >
             <InfoRow
-              label="결혼 예산"
-              value={totalBudget != null ? formatWon(totalBudget) : '-'}
-              caption=""
-            />
-            <InfoRow
-              label="가장 뚜렷한 취향"
-              value={`${strongest?.winnerPercent ?? 0}%`}
-              caption={
-                strongest
-                  ? `${strongest.axis.label} · ${strongest.winner.label}`
-                  : '분석할 선택 없음'
-              }
+              label={strongestInfo.label}
+              value={strongestInfo.value}
+              caption={strongestInfo.caption}
+              centerOnly={strongestInfo.centerOnly}
             />
           </div>
         </section>
@@ -144,8 +178,8 @@ export default function Result() {
         </section>
 
         <div className="flex min-h-0 items-center justify-center">
-          <Button onClick={() => setStage('decorate')} className="px-16 py-5">
-            사진 만들러 가기
+          <Button onClick={() => setStage('budgetIntro')} className="px-16 py-5">
+            다음으로
           </Button>
         </div>
       </div>
@@ -157,31 +191,39 @@ function InfoRow({
   label,
   value,
   caption,
+  centerOnly = false,
 }: {
   label: string
   value: string
   caption: string
+  centerOnly?: boolean
 }) {
   return (
     <div
-      className="grid min-h-0 shrink-0 items-center rounded-[1.25rem] border-4 border-brand-100 bg-white/80 px-7 text-center"
+      className={`min-h-0 shrink-0 items-center rounded-[1.25rem] border-4 border-brand-100 bg-white/80 px-7 text-center ${
+        centerOnly ? 'flex justify-center' : 'grid'
+      }`}
       style={{
         height: '96px',
-        gridTemplateColumns: '16rem minmax(0, 1fr) 15rem',
+        gridTemplateColumns: centerOnly ? undefined : '18rem 12rem minmax(0, 1fr)',
       }}
     >
-      <p className="font-black text-brand-500" style={{ fontSize: '27px' }}>
-        {label}
-      </p>
+      {!centerOnly && (
+        <p className="font-black text-brand-500" style={{ fontSize: '27px' }}>
+          {label}
+        </p>
+      )}
       <p
-        className="truncate font-black leading-none text-gray-800"
-        style={{ fontSize: '38px' }}
+        className="font-black leading-none text-gray-800"
+        style={{ fontSize: centerOnly ? '32px' : '38px' }}
       >
         {value}
       </p>
-      <p className="text-center font-bold text-gray-600" style={{ fontSize: '25px' }}>
-        {caption}
-      </p>
+      {!centerOnly && (
+        <p className="text-center font-bold text-gray-600" style={{ fontSize: '25px' }}>
+          {caption}
+        </p>
+      )}
     </div>
   )
 }

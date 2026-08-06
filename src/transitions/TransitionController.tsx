@@ -35,6 +35,7 @@ export default function TransitionController({
   const { play } = useSound()
 
   const prevRef = useRef<Stage | null>(null)
+  const prevPlayerRef = useRef(currentPlayer)
   const idRef = useRef(0)
   const timers = useRef<number[]>([])
 
@@ -87,8 +88,19 @@ export default function TransitionController({
 
   useEffect(() => {
     const prev = prevRef.current
+    const prevPlayer = prevPlayerRef.current
     prevRef.current = stage
-    if (prev === stage) return
+    prevPlayerRef.current = currentPlayer
+    if (prev === stage) {
+      if (stage === 'worldcup' && playerCount === 2 && prevPlayer !== currentPlayer) {
+        const id = ++idRef.current
+        clearTimers()
+        setPlayerIntro({ player: currentPlayer, id })
+        play('start')
+        after(PLAYER_INTRO_AUTO_MS / 1000, () => setPlayerIntro(null))
+      }
+      return
+    }
 
     const type = getTransitionType(prev, stage)
     const id = ++idRef.current
@@ -142,9 +154,9 @@ export default function TransitionController({
         setRevealed(true)
         setSig(null)
     }
-    // stage 변화에만 반응 (콜백들은 안정적)
+    // stage 또는 둘이 모드의 현재 플레이어 변화에 반응한다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stage])
+  }, [stage, currentPlayer])
 
   // 언마운트 시 타이머 정리
   useEffect(() => () => clearTimers(), [clearTimers])

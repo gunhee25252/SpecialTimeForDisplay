@@ -6,7 +6,11 @@ import {
   type AxisKey,
   type PoleCode,
 } from '../data/axes'
-import { getWorldCupRounds, type Round } from '../data/worldcupRounds'
+import {
+  WORLDCUP_ROUND_SETS,
+  getWorldCupRounds,
+  type Round,
+} from '../data/worldcupRounds'
 import { findTypeByCode } from '../data/types16'
 import {
   drawBudgetResult,
@@ -26,10 +30,11 @@ import {
   type CharacterKey,
 } from '../data/characters'
 
-export type Stage = 'intro' | 'playerSelect' | 'worldcup' | 'result' | 'budget' | 'decorate' | 'frameConfirm' | 'complete'
+export type Stage = 'intro' | 'playerSelect' | 'worldcup' | 'result' | 'budgetIntro' | 'budget' | 'decorateIntro' | 'decorate' | 'frameConfirm' | 'complete'
 
 export type PlayerCount = 1 | 2
 export type PrintFrameRatio = '2:3' | '3:2'
+export type ItemScaleAnchor = 'center' | 'top-left' | 'bottom-left'
 export interface PrintFrame {
   x: number
   y: number
@@ -102,6 +107,8 @@ interface AppState {
   // 인원/진행
   playerCount: PlayerCount
   currentPlayer: number // 0-based
+  roundSetIndex: number // 현재 플레이어에게 보여줄 사진 세트
+  nextSoloRoundSetIndex: number // 다음 혼자 체험에서 사용할 사진 세트
   players: PlayerResult[]
 
   // 현재 플레이어의 월드컵 진행
@@ -125,13 +132,14 @@ interface AppState {
   setStage: (stage: Stage) => void
   setPlayerCount: (count: PlayerCount) => void
   start: (count?: PlayerCount) => void // 인원 확정 → worldcup (P1부터)
-  choose: (round: Round, side: 'A' | 'B') => void // 선택 → 점수 누적 → (마지막이면) budget으로
+  choose: (round: Round, side: 'A' | 'B') => void // 선택 → 점수 누적 → (마지막이면) 취향 결과로
   computeResult: () => void // 현재 플레이어 유형 산출 → players에 기록
+  startBudget: () => void // 취향 결과 확인 후 첫 번째 플레이어 예산 뽑기 시작
   drawBudget: () => void // 현재 플레이어 예산 1회 확정(티어 가중 추첨)
-  nextAfterBudget: () => void // 예산 확정 후 흐름 진행(다음 사람 / 결과)
+  nextAfterBudget: () => void // 예산 확정 후 흐름 진행(다음 사람 / 꾸미기)
   placeItem: (itemId: string, x: number, y: number) => string | null // 예산 초과면 null
   moveItem: (instanceId: string, x: number, y: number) => void
-  setItemScale: (instanceId: string, scale: number) => void
+  setItemScale: (instanceId: string, scale: number, anchor?: ItemScaleAnchor) => void
   bringItemToFront: (instanceId: string) => void
   removeItem: (instanceId: string) => void
   setCharacterExpr: (who: CharacterKey, exprId: string) => boolean // 표정 교체(가격차 반영, 초과면 false)
@@ -227,6 +235,8 @@ const initialState = {
   stage: 'intro' as Stage,
   playerCount: 1 as PlayerCount,
   currentPlayer: 0,
+  roundSetIndex: 0,
+  nextSoloRoundSetIndex: 0,
   players: [] as PlayerResult[],
   roundIndex: 0,
   axisScores: emptyAxisScores(),
@@ -238,7 +248,7 @@ const initialState = {
   spent: 0,
   canvasBackgroundId: null as string | null,
   characters: makeCharacters(),
-  printFrameRatio: '3:2' as PrintFrameRatio,
+  printFrameRatio: '2:3' as PrintFrameRatio,
   printFrame: null as PrintFrame | null,
 }
 
@@ -250,24 +260,35 @@ export const useAppStore = create<AppState>((set, get) => ({
   setPlayerCount: (count) => set({ playerCount: count }),
 
   start: (count) =>
-    set((state) => ({
-      stage: 'worldcup',
-      playerCount: count ?? state.playerCount,
-      currentPlayer: 0,
-      players: makePlayers(count ?? state.playerCount),
-      roundIndex: 0,
-      axisScores: emptyAxisScores(),
-      resultTypeId: null,
-      resultCode: null,
-      totalBudget: null,
-      budget: null,
-      placedItems: [],
-      spent: 0,
-      canvasBackgroundId: null,
-      characters: makeCharacters(),
-      printFrameRatio: '3:2',
-      printFrame: null,
-    })),
+    set((state) => {
+      const playerCount = count ?? state.playerCount
+      const roundSetIndex = playerCount === 1 ? state.nextSoloRoundSetIndex : 0
+      const nextSoloRoundSetIndex =
+        playerCount === 1
+          ? (state.nextSoloRoundSetIndex + 1) % WORLDCUP_ROUND_SETS.length
+          : state.nextSoloRoundSetIndex
+
+      return {
+        stage: 'worldcup',
+        playerCount,
+        currentPlayer: 0,
+        roundSetIndex,
+        nextSoloRoundSetIndex,
+        players: makePlayers(playerCount),
+        roundIndex: 0,
+        axisScores: emptyAxisScores(),
+        resultTypeId: null,
+        resultCode: null,
+        totalBudget: null,
+        budget: null,
+        placedItems: [],
+        spent: 0,
+        canvasBackgroundId: null,
+        characters: makeCharacters(),
+        printFrameRatio: '2:3',
+        printFrame: null,
+      }
+    }),
 
   choose: (round, side) => {
     const choice = side === 'A' ? round.A : round.B
@@ -287,11 +308,33 @@ export const useAppStore = create<AppState>((set, get) => ({
       return { axisScores }
     })
 
-    // 다음 라운드로, 마지막이면 현재 플레이어 유형 산출 후 예산 뽑기로.
+    // 다음 라운드로, 마지막이면 현재 플레이어 유형을 기록한다.
     const nextIndex = get().roundIndex + 1
-    if (nextIndex >= getWorldCupRounds(get().currentPlayer).length) {
+    if (nextIndex >= getWorldCupRounds(get().roundSetIndex).length) {
       get().computeResult()
-      set({ stage: 'budget' })
+      const { playerCount, currentPlayer, players } = get()
+      if (playerCount === 2 && currentPlayer === 0) {
+        // 두 사람의 사진 선택을 모두 마친 뒤 합친 취향 결과를 보여준다.
+        set({
+          currentPlayer: 1,
+          roundSetIndex: 1,
+          roundIndex: 0,
+          axisScores: emptyAxisScores(),
+          stage: 'worldcup',
+        })
+      } else if (playerCount === 2) {
+        const combinedScores = combineAxisScores(players.map((p) => p.axisScores))
+        const code = computeCode(combinedScores)
+        const type = findTypeByCode(code)
+        set({
+          axisScores: combinedScores,
+          resultCode: code,
+          resultTypeId: type ? type.typeId : null,
+          stage: 'result',
+        })
+      } else {
+        set({ stage: 'result' })
+      }
     } else {
       set({ roundIndex: nextIndex })
     }
@@ -311,6 +354,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ players: updated, resultCode: code, resultTypeId: typeId })
   },
 
+  startBudget: () => set({ currentPlayer: 0, stage: 'budget' }),
+
   drawBudget: () => {
     const { currentPlayer, playerCount, players } = get()
     // 플레이어당 1회 확정 — 이미 뽑았으면 무시(다시 뽑기 없음).
@@ -326,31 +371,11 @@ export const useAppStore = create<AppState>((set, get) => ({
   nextAfterBudget: () => {
     const { playerCount, currentPlayer, players } = get()
     if (playerCount === 2 && currentPlayer === 0) {
-      // 다음 사람(P2) 월드컵 시작 — 점수/라운드 초기화.
-      set({
-        currentPlayer: 1,
-        roundIndex: 0,
-        axisScores: emptyAxisScores(),
-        stage: 'worldcup',
-      })
+      set({ currentPlayer: 1 })
     } else {
-      // 마지막 플레이어까지 끝 — 예산 합계와 둘이 모드의 합산 취향을 확정 후 결과로.
+      // 마지막 예산까지 뽑으면 합계를 꾸미기 예산으로 확정한다.
       const total = players.reduce((sum, p) => sum + (p.budget ?? 0), 0)
-      if (playerCount === 2) {
-        const combinedScores = combineAxisScores(players.map((p) => p.axisScores))
-        const code = computeCode(combinedScores)
-        const type = findTypeByCode(code)
-        set({
-          totalBudget: total,
-          budget: total,
-          axisScores: combinedScores,
-          resultCode: code,
-          resultTypeId: type ? type.typeId : null,
-          stage: 'result',
-        })
-      } else {
-        set({ totalBudget: total, budget: total, stage: 'result' })
-      }
+      set({ totalBudget: total, budget: total, stage: 'decorateIntro' })
     }
   },
 
@@ -380,7 +405,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       ),
     })),
 
-  setItemScale: (instanceId, requestedScale) =>
+  setItemScale: (instanceId, requestedScale, anchor = 'center') =>
     set((state) => ({
       placedItems: state.placedItems.map((p) => {
         if (p.instanceId !== instanceId) return p
@@ -389,6 +414,18 @@ export const useAppStore = create<AppState>((set, get) => ({
         const currentScale = p.scale ?? 1
         const scale = clampItemScale(requestedScale)
         if (scale === currentScale) return p
+        const currentHeight = item.defaultHeight * currentScale
+        const nextHeight = item.defaultHeight * scale
+        if (anchor === 'top-left') {
+          return { ...p, scale }
+        }
+        if (anchor === 'bottom-left') {
+          return {
+            ...p,
+            y: p.y + currentHeight - nextHeight,
+            scale,
+          }
+        }
         return {
           ...p,
           x: p.x - (item.defaultWidth * (scale - currentScale)) / 2,
@@ -498,8 +535,10 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   reset: () => {
     placeCounter = 0
+    const { nextSoloRoundSetIndex } = get()
     set({
       ...initialState,
+      nextSoloRoundSetIndex,
       axisScores: emptyAxisScores(),
       players: [],
       placedItems: [],
