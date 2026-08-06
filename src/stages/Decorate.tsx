@@ -739,6 +739,13 @@ export default function Decorate() {
     else setCharacterOutfit(entry.who, DEFAULT_OUTFIT_ID)
   }
 
+  const handleSelectEquipment = (entry: EquipmentEntry) => {
+    if (entry.kind !== 'placed' || !entry.instanceId) return
+    setSelectedId(entry.instanceId)
+    setSelectedChar(null)
+    bringItemToFront(entry.instanceId)
+  }
+
   return (
     <StageLayout>
       <div className="flex h-full flex-col gap-4">
@@ -1096,42 +1103,58 @@ export default function Decorate() {
                 equipmentEntries.map((entry) => (
                   <div
                     key={entry.key}
-                    className="grid min-h-[68px] grid-cols-[2.25rem_minmax(0,1fr)_2rem] items-center gap-1 border-b border-gray-100 py-2 last:border-b-0"
+                    className={`grid min-h-[68px] grid-cols-[minmax(0,1fr)_2rem] items-center gap-1 border-b border-gray-100 py-2 last:border-b-0 ${
+                      entry.kind === 'placed' && entry.instanceId === selectedId
+                        ? 'bg-brand-50'
+                        : ''
+                    }`}
                   >
-                    <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-md bg-brand-50">
-                      {entry.image ? (
-                        <img
-                          src={entry.image}
-                          alt=""
-                          className="h-full w-full object-contain"
-                          draggable={false}
-                        />
-                      ) : entry.renderStyle === 'weddingPhrase' ? (
-                        <WeddingPhrase
-                          text={entry.text ?? ''}
-                          color={entry.swatch ?? '#ef6f9a'}
-                          className="h-full w-full"
-                        />
-                      ) : entry.renderStyle === 'letterShapeBalloon' ? (
-                        <LetterShapeBalloon
-                          letter={entry.text ?? ''}
-                          color={entry.swatch ?? '#ef6f9a'}
-                          className="h-full w-full"
-                        />
-                      ) : (
-                        <span
-                          className="h-7 w-7 rounded-md border border-black/5"
-                          style={{ backgroundColor: entry.swatch ?? '#f3f4f6' }}
-                        />
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <span className="block truncate text-sm font-bold text-gray-400">{entry.label}</span>
-                      <span className="block truncate text-base font-black text-gray-800">{entry.name}</span>
-                      <span className="block truncate text-sm font-bold text-brand-500">
-                        {entry.price === 0 ? '무료' : formatWon(entry.price)}
+                    <button
+                      type="button"
+                      onClick={() => handleSelectEquipment(entry)}
+                      disabled={entry.kind !== 'placed'}
+                      className="grid min-w-0 grid-cols-[2.25rem_minmax(0,1fr)] items-center gap-1 text-left disabled:cursor-default"
+                      aria-label={
+                        entry.kind === 'placed'
+                          ? `${entry.name} 선택하고 맨 앞으로 가져오기`
+                          : undefined
+                      }
+                    >
+                      <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-md bg-brand-50">
+                        {entry.image ? (
+                          <img
+                            src={entry.image}
+                            alt=""
+                            className="h-full w-full object-contain"
+                            draggable={false}
+                          />
+                        ) : entry.renderStyle === 'weddingPhrase' ? (
+                          <WeddingPhrase
+                            text={entry.text ?? ''}
+                            color={entry.swatch ?? '#ef6f9a'}
+                            className="h-full w-full"
+                          />
+                        ) : entry.renderStyle === 'letterShapeBalloon' ? (
+                          <LetterShapeBalloon
+                            letter={entry.text ?? ''}
+                            color={entry.swatch ?? '#ef6f9a'}
+                            className="h-full w-full"
+                          />
+                        ) : (
+                          <span
+                            className="h-7 w-7 rounded-md border border-black/5"
+                            style={{ backgroundColor: entry.swatch ?? '#f3f4f6' }}
+                          />
+                        )}
                       </span>
-                    </div>
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-bold text-gray-400">{entry.label}</span>
+                        <span className="block truncate text-base font-black text-gray-800">{entry.name}</span>
+                        <span className="block truncate text-sm font-bold text-brand-500">
+                          {entry.price === 0 ? '무료' : formatWon(entry.price)}
+                        </span>
+                      </span>
+                    </button>
                     <button
                       type="button"
                       onClick={() => handleRemoveEquipment(entry)}
