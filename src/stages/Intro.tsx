@@ -5,16 +5,29 @@ import { assetUrl } from '../utils/asset'
 
 const INTRO_RESULTS = [
   {
+    src: assetUrl('images/intro-results/intro-landscape-01.png'),
+    className: 'left-6 top-[510px] z-30 w-[470px] -rotate-[3deg]',
+    imageClassName: 'aspect-[3/2]',
+  },
+  {
+    src: assetUrl('images/intro-results/intro-landscape-02.png'),
+    className: 'right-6 top-[510px] z-30 w-[470px] rotate-[3deg]',
+    imageClassName: 'aspect-[3/2]',
+  },
+  {
     src: assetUrl('images/intro-results/intro-result-01.png?v=portrait-2'),
-    className: 'left-3 top-[178px] z-10 w-[390px] -rotate-[7deg]',
+    className: 'left-8 top-[120px] z-10 w-[340px] -rotate-[6deg]',
+    imageClassName: 'aspect-[2/3]',
   },
   {
     src: assetUrl('images/intro-results/intro-result-02.png?v=portrait-2'),
-    className: 'left-1/2 top-[106px] z-20 w-[460px] -translate-x-1/2 rotate-[1deg]',
+    className: 'left-1/2 top-20 z-20 w-[410px] -translate-x-1/2 rotate-[1deg]',
+    imageClassName: 'aspect-[2/3]',
   },
   {
     src: assetUrl('images/intro-results/intro-result-03.png?v=portrait-2'),
-    className: 'right-3 top-[178px] z-10 w-[390px] rotate-[7deg]',
+    className: 'right-8 top-[120px] z-10 w-[340px] rotate-[6deg]',
+    imageClassName: 'aspect-[2/3]',
   },
 ]
 
@@ -25,7 +38,7 @@ export default function Intro() {
   return (
     <StageLayout showReset={false}>
       <div className="flex flex-1 flex-col items-center text-center">
-        <div className="mt-[270px] space-y-6">
+        <div className="mt-[300px] space-y-6">
           <h1 className="text-6xl font-bold leading-tight text-gray-800">
             나만의
             <br />
@@ -38,7 +51,7 @@ export default function Intro() {
           </p>
         </div>
 
-        <div className="pointer-events-none relative mt-[10px] h-[900px] w-full" aria-hidden="true">
+        <div className="pointer-events-none relative mt-[10px] h-[840px] w-full" aria-hidden="true">
           {INTRO_RESULTS.map((result) => (
             <div
               key={result.src}
@@ -47,7 +60,7 @@ export default function Intro() {
               <img
                 src={result.src}
                 alt=""
-                className="block aspect-[2/3] w-full object-cover"
+                className={`block w-full object-cover ${result.imageClassName}`}
                 draggable={false}
               />
             </div>

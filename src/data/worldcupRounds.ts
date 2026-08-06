@@ -20,13 +20,13 @@ export interface Round {
 
 const wcImage = (fileName: string) => assetUrl(`images/worldcup/${fileName}`)
 
-// 앞의 4라운드는 각 축을 3점으로 결정한다.
-// 마지막 2라운드는 모든 축에 1점씩 더해 취향의 강도만 조정한다.
-// 따라서 6번의 선택이 끝나면 16가지 유형이 같은 빈도로 나온다.
+// 앞의 4라운드는 각 축의 중심을 3점으로 결정한다.
+// 뒤의 3라운드는 한 축씩만 대칭적으로 보정한다.
+// 두 사람의 점수를 합쳐도 동점이 생기지 않으며, 무작위 선택 시 16가지 유형이 같은 빈도로 나온다.
 const PLAYER_ONE_ROUNDS: Round[] = [
   {
     id: 'p1-r1',
-    question: '어떤 공간이 더 편안하게 느껴지나요?',
+    question: '더 마음에 드는 사진은?',
     A: {
       id: 'p1-r1a',
       label: '아늑한 라이브러리',
@@ -44,7 +44,7 @@ const PLAYER_ONE_ROUNDS: Round[] = [
   },
   {
     id: 'p1-r2',
-    question: '어떤 빛과 분위기에 더 끌리나요?',
+    question: '더 마음에 드는 사진은?',
     A: {
       id: 'p1-r2a',
       label: '구름 위 아침',
@@ -62,7 +62,7 @@ const PLAYER_ONE_ROUNDS: Round[] = [
   },
   {
     id: 'p1-r3',
-    question: '어떤 화면 구성이 더 마음에 드나요?',
+    question: '더 마음에 드는 사진은?',
     A: {
       id: 'p1-r3a',
       label: '코럴 리프',
@@ -80,7 +80,7 @@ const PLAYER_ONE_ROUNDS: Round[] = [
   },
   {
     id: 'p1-r4',
-    question: '어떤 색감이 더 취향인가요?',
+    question: '더 마음에 드는 사진은?',
     A: {
       id: 'p1-r4a',
       label: '모노 피오르',
@@ -98,38 +98,56 @@ const PLAYER_ONE_ROUNDS: Round[] = [
   },
   {
     id: 'p1-r5',
-    question: '결혼식으로 옮긴다면 어느 장면이 더 끌리나요?',
+    question: '더 마음에 드는 사진은?',
     A: {
       id: 'p1-r5a',
       label: '플라워 채플',
       desc: '밝은 실내를 꽃으로 풍성하게 채운 예식',
       image: wcImage('worldcup01.png'),
-      weights: { IN: 1, LIGHT: 1, FANCY: 1, MONO: 1 },
+      weights: { IN: 1 },
     },
     B: {
       id: 'p1-r5b',
       label: '나이트 플라워 가든',
       desc: '밤하늘 아래 짙은 꽃빛이 살아나는 야외 예식',
       image: wcImage('worldcup23.png'),
-      weights: { OUT: 1, DARK: 1, FANCY: 1, CHROMA: 1 },
+      weights: { OUT: 1 },
     },
   },
   {
     id: 'p1-r6',
-    question: '마지막으로 더 기억에 남는 결혼식은?',
+    question: '더 마음에 드는 사진은?',
     A: {
       id: 'p1-r6a',
       label: '문라이트 세리머니',
       desc: '달빛 아래 여백을 살린 차분한 야외 예식',
       image: wcImage('worldcup20.png'),
-      weights: { OUT: 1, DARK: 1, SIMPLE: 1, MONO: 1 },
+      weights: { DARK: 1 },
     },
     B: {
       id: 'p1-r6b',
       label: '글라스 채플',
       desc: '햇빛과 컬러 플라워가 어우러진 실내 예식',
       image: wcImage('worldcup24.png'),
-      weights: { IN: 1, LIGHT: 1, FANCY: 1, CHROMA: 1 },
+      weights: { LIGHT: 1 },
+    },
+  },
+  {
+    id: 'p1-r7',
+    question: '더 마음에 드는 사진은?',
+    A: {
+      id: 'p1-r7a',
+      label: '풍성한 온실',
+      desc: '꽃과 식물이 층층이 채워진 풍성한 공간',
+      image: wcImage('worldcup41.png'),
+      weights: { FANCY: 2 },
+    },
+    B: {
+      id: 'p1-r7b',
+      label: '여백의 온실',
+      desc: '최소한의 식물만 놓인 단정한 공간',
+      image: wcImage('worldcup42.png'),
+      weights: { SIMPLE: 2 },
     },
   },
 ]
@@ -137,7 +155,7 @@ const PLAYER_ONE_ROUNDS: Round[] = [
 const PLAYER_TWO_ROUNDS: Round[] = [
   {
     id: 'p2-r1',
-    question: '어떤 공간이 더 편안하게 느껴지나요?',
+    question: '더 마음에 드는 사진은?',
     A: {
       id: 'p2-r1a',
       label: '글라스하우스 카페',
@@ -155,7 +173,7 @@ const PLAYER_TWO_ROUNDS: Round[] = [
   },
   {
     id: 'p2-r2',
-    question: '어떤 빛과 분위기에 더 끌리나요?',
+    question: '더 마음에 드는 사진은?',
     A: {
       id: 'p2-r2a',
       label: '선라이트 폭포',
@@ -173,7 +191,7 @@ const PLAYER_TWO_ROUNDS: Round[] = [
   },
   {
     id: 'p2-r3',
-    question: '어떤 화면 구성이 더 마음에 드나요?',
+    question: '더 마음에 드는 사진은?',
     A: {
       id: 'p2-r3a',
       label: '트로피컬 포레스트',
@@ -191,7 +209,7 @@ const PLAYER_TWO_ROUNDS: Round[] = [
   },
   {
     id: 'p2-r4',
-    question: '어떤 색감이 더 취향인가요?',
+    question: '더 마음에 드는 사진은?',
     A: {
       id: 'p2-r4a',
       label: '문 스케이프',
@@ -209,38 +227,56 @@ const PLAYER_TWO_ROUNDS: Round[] = [
   },
   {
     id: 'p2-r5',
-    question: '결혼식으로 옮긴다면 어느 장면이 더 끌리나요?',
+    question: '더 마음에 드는 사진은?',
     A: {
       id: 'p2-r5a',
       label: '문라이트 가든',
       desc: '달빛과 짙은 꽃 장식이 어우러진 야외 예식',
       image: wcImage('worldcup17.png'),
-      weights: { OUT: 1, DARK: 1, FANCY: 1, MONO: 1 },
+      weights: { MONO: 1 },
     },
     B: {
       id: 'p2-r5b',
       label: '주얼 톤 볼룸',
       desc: '깊고 선명한 컬러로 채운 화려한 실내 예식',
       image: wcImage('worldcup16.png'),
-      weights: { IN: 1, DARK: 1, FANCY: 1, CHROMA: 1 },
+      weights: { CHROMA: 1 },
     },
   },
   {
     id: 'p2-r6',
-    question: '마지막으로 더 기억에 남는 결혼식은?',
+    question: '더 마음에 드는 사진은?',
     A: {
       id: 'p2-r6a',
       label: '컬러 블록 가든',
       desc: '밝은 햇빛과 선명한 포인트가 살아나는 야외 예식',
       image: wcImage('worldcup21.png'),
-      weights: { OUT: 1, LIGHT: 1, SIMPLE: 1, CHROMA: 1 },
+      weights: { SIMPLE: 1 },
     },
     B: {
       id: 'p2-r6b',
       label: '블랙 골드 볼룸',
       desc: '검정과 금빛 장식으로 밀도 있게 연출한 실내 예식',
       image: wcImage('worldcup02.png'),
-      weights: { IN: 1, DARK: 1, FANCY: 1, MONO: 1 },
+      weights: { FANCY: 1 },
+    },
+  },
+  {
+    id: 'p2-r7',
+    question: '더 마음에 드는 사진은?',
+    A: {
+      id: 'p2-r7a',
+      label: '선셋 라운지',
+      desc: '유리창 안에서 노을과 바다를 바라보는 실내',
+      image: wcImage('worldcup43.png'),
+      weights: { IN: 2 },
+    },
+    B: {
+      id: 'p2-r7b',
+      label: '선셋 테라스',
+      desc: '탁 트인 야외에서 노을과 바다를 마주하는 공간',
+      image: wcImage('worldcup44.png'),
+      weights: { OUT: 2 },
     },
   },
 ]
