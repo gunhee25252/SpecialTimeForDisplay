@@ -43,6 +43,7 @@ const PROP_IMAGES = {
   prop14: assetUrl('images/props/prop14.png'),
   prop15: assetUrl('images/props/prop15.png'),
   prop16: assetUrl('images/props/prop16.png'),
+  prop17: assetUrl('images/props/prop17.png'),
 }
 
 const STICKER_IMAGES = {
@@ -215,6 +216,7 @@ export const ITEMS: DecorItem[] = [
   { id: 'bg-solid-burgundy', category: 'background', name: '버건디', price: 0, thumbnail: '#713d4a', defaultWidth: 1080, defaultHeight: 1620, backgroundGroup: 'solid' },
 
   // 오브제: 공간에 실제로 놓이는 물건. 가격 오름차순으로 표시한다.
+  { id: 'prop17', category: 'object', name: '동그리 안경', price: 500_000, thumbnail: '#2e2b31', image: PROP_IMAGES.prop17, defaultWidth: 170, defaultHeight: 65, shape: 'rect', objectGroup: 'props' },
   { id: 'prop06', category: 'object', name: '촛대 세트', price: 500_000, thumbnail: '#e8b94b', image: PROP_IMAGES.prop06, defaultWidth: 145, defaultHeight: 243, shape: 'rect', objectGroup: 'props' },
   { id: 'prop05', category: 'object', name: '장미 화병', price: 1_000_000, thumbnail: '#e999a4', image: PROP_IMAGES.prop05, defaultWidth: 180, defaultHeight: 214, shape: 'rect', objectGroup: 'props' },
   { id: 'prop01', category: 'object', name: '핑크 하트 케이크', price: 2_000_000, thumbnail: '#e7c8a0', image: PROP_IMAGES.prop01, defaultWidth: 186, defaultHeight: 246, shape: 'rect', objectGroup: 'props' },
