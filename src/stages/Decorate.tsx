@@ -1,5 +1,10 @@
-import { useRef, useState, useCallback, useLayoutEffect, useMemo } from 'react'
-import { useAppStore, type PrintFrame, type PrintFrameRatio } from '../store/useAppStore'
+import { useRef, useState, useCallback, useEffect, useLayoutEffect, useMemo } from 'react'
+import {
+  useAppStore,
+  type DecorateStep,
+  type PrintFrame,
+  type PrintFrameRatio,
+} from '../store/useAppStore'
 import {
   ITEMS,
   findItem,
@@ -73,6 +78,23 @@ const MAIN_TABS: ShopTab[] = [
   { key: 'bride', label: '신부', who: 'bride' },
   { key: 'objects', label: '오브젝트', itemCat: 'object' },
 ]
+
+const DECORATE_STEPS: { key: DecorateStep; number: number; label: string }[] = [
+  { key: 'background', number: 1, label: '배경' },
+  { key: 'characters', number: 2, label: '신랑·신부' },
+  { key: 'objects', number: 3, label: '오브젝트' },
+]
+
+function mainTabsForStep(step: DecorateStep) {
+  if (step === 'background') return MAIN_TABS.filter((tab) => tab.key === 'background')
+  if (step === 'characters') return MAIN_TABS.filter((tab) => tab.who)
+  return MAIN_TABS.filter((tab) => tab.key === 'objects')
+}
+
+function firstMainTabKey(step: DecorateStep) {
+  if (step === 'characters') return 'groom'
+  return step
+}
 
 const CHARACTER_PART_TABS: { key: CharacterPart; label: string }[] = [
   { key: 'hair', label: '헤어' },
@@ -225,15 +247,159 @@ const CHAR_IMG_STYLE: React.CSSProperties = {
   maxWidth: 'none',
 }
 
-function ShopScrollRow({ children }: { children: React.ReactNode }) {
+function ShopScrollRow({
+  children,
+  large = false,
+  objectLarge = false,
+}: {
+  children: React.ReactNode
+  large?: boolean
+  objectLarge?: boolean
+}) {
+  const pointerDragRef = useRef<{
+    pointerId: number
+    startX: number
+    startScrollLeft: number
+    visualScale: number
+    dragged: boolean
+  } | null>(null)
+  const suppressClickRef = useRef(false)
+
+  const finishPointerDrag = (element: HTMLDivElement, pointerId: number) => {
+    const drag = pointerDragRef.current
+    if (!drag || drag.pointerId !== pointerId) return
+    suppressClickRef.current = drag.dragged
+    pointerDragRef.current = null
+    if (element.hasPointerCapture(pointerId)) element.releasePointerCapture(pointerId)
+    window.setTimeout(() => {
+      suppressClickRef.current = false
+    }, 0)
+  }
+
   return (
-    <div className="shop-scrollbar-cards">
-      <div className="shop-scrollbar flex gap-3 overflow-x-scroll pb-3">
+    <div
+      className={`shop-scrollbar-cards min-h-0 flex-1 ${
+        objectLarge || large ? 'flex flex-col justify-end' : ''
+      }`}
+    >
+      <div
+        className={`shop-scrollbar flex cursor-grab gap-3 overflow-x-scroll pb-3 active:cursor-grabbing ${
+          large ? 'character-shop-row' : objectLarge ? 'object-shop-row' : ''
+        }`}
+        style={{ touchAction: 'pan-y' }}
+        onPointerDown={(event) => {
+          if (event.button !== 0) return
+          pointerDragRef.current = {
+            pointerId: event.pointerId,
+            startX: event.clientX,
+            startScrollLeft: event.currentTarget.scrollLeft,
+            visualScale:
+              event.currentTarget.getBoundingClientRect().width /
+                event.currentTarget.offsetWidth || 1,
+            dragged: false,
+          }
+        }}
+        onPointerMove={(event) => {
+          const drag = pointerDragRef.current
+          if (!drag || drag.pointerId !== event.pointerId) return
+          const distance = event.clientX - drag.startX
+          if (!drag.dragged && Math.abs(distance) < 8) return
+          if (!drag.dragged) {
+            drag.dragged = true
+            event.currentTarget.setPointerCapture(event.pointerId)
+          }
+          event.preventDefault()
+          event.currentTarget.scrollLeft =
+            drag.startScrollLeft - distance / drag.visualScale
+        }}
+        onPointerUp={(event) => finishPointerDrag(event.currentTarget, event.pointerId)}
+        onPointerCancel={(event) => finishPointerDrag(event.currentTarget, event.pointerId)}
+        onClickCapture={(event) => {
+          if (!suppressClickRef.current) return
+          event.preventDefault()
+          event.stopPropagation()
+        }}
+      >
         {children}
       </div>
     </div>
   )
 }
+
+function EquipmentDragScroll({ children }: { children: React.ReactNode }) {
+  const pointerDragRef = useRef<{
+    pointerId: number
+    startY: number
+    startScrollTop: number
+    visualScale: number
+    dragged: boolean
+  } | null>(null)
+  const suppressClickRef = useRef(false)
+
+  const finishPointerDrag = (element: HTMLDivElement, pointerId: number) => {
+    const drag = pointerDragRef.current
+    if (!drag || drag.pointerId !== pointerId) return
+    suppressClickRef.current = drag.dragged
+    pointerDragRef.current = null
+    if (element.hasPointerCapture(pointerId)) element.releasePointerCapture(pointerId)
+    window.setTimeout(() => {
+      suppressClickRef.current = false
+    }, 0)
+  }
+
+  return (
+    <div
+      className="equipment-scrollbar min-h-0 flex-1 cursor-grab overflow-y-scroll px-2 active:cursor-grabbing"
+      style={{ touchAction: 'pan-x' }}
+      onPointerDown={(event) => {
+        if (event.button !== 0) return
+        pointerDragRef.current = {
+          pointerId: event.pointerId,
+          startY: event.clientY,
+          startScrollTop: event.currentTarget.scrollTop,
+          visualScale:
+            event.currentTarget.getBoundingClientRect().height /
+              event.currentTarget.offsetHeight || 1,
+          dragged: false,
+        }
+      }}
+      onPointerMove={(event) => {
+        const drag = pointerDragRef.current
+        if (!drag || drag.pointerId !== event.pointerId) return
+        const distance = event.clientY - drag.startY
+        if (!drag.dragged && Math.abs(distance) < 8) return
+        if (!drag.dragged) {
+          drag.dragged = true
+          event.currentTarget.setPointerCapture(event.pointerId)
+        }
+        event.preventDefault()
+        event.currentTarget.scrollTop = drag.startScrollTop - distance / drag.visualScale
+      }}
+      onPointerUp={(event) => finishPointerDrag(event.currentTarget, event.pointerId)}
+      onPointerCancel={(event) => finishPointerDrag(event.currentTarget, event.pointerId)}
+      onClickCapture={(event) => {
+        if (!suppressClickRef.current) return
+        event.preventDefault()
+        event.stopPropagation()
+      }}
+    >
+      {children}
+    </div>
+  )
+}
+
+function splitRecommendationReason(reason: string) {
+  const words = reason.split(' ')
+  return [words.slice(0, 2).join(' '), words.slice(2).join(' ')]
+}
+
+const RECOMMENDATION_RANK_COLORS = [
+  'text-amber-500',
+  'text-gray-400',
+  'text-orange-700',
+] as const
+
+const LOW_BUDGET_WARNING_THRESHOLD = 10_000_000
 
 function WeddingPhrase({
   text,
@@ -322,6 +488,163 @@ function LetterShapeBalloon({
   )
 }
 
+type DecorateTransitionTarget = DecorateStep
+
+const TRANSITION_GUIDES: Record<
+  DecorateTransitionTarget,
+  { title: string; description: string; button: string }
+> = {
+  background: {
+    title: '먼저 배경을 골라볼까요?',
+    description: '배경은 네 가지 종류로 나뉘어요.\n분석한 취향에 맞는 추천을 참고해 원하는 배경을 골라보세요.',
+    button: '배경 꾸미기 시작',
+  },
+  characters: {
+    title: '이제 신랑·신부를 꾸며볼까요?',
+    description: '신랑과 신부는 네 가지 항목을 각각 고를 수 있어요.\n꾸민 뒤 두 사람을 끌어서 사진에 어울리는 위치로 옮겨보세요.',
+    button: '신랑·신부 꾸미기 시작',
+  },
+  objects: {
+    title: '마지막으로 오브젝트를 채워볼까요?',
+    description: '오브젝트를 배치한 뒤 크기를 키우거나 줄일 수 있어요.\n원래 크기로 되돌리거나 필요 없는 항목은 삭제해 보세요.',
+    button: '오브젝트 꾸미기 시작',
+  },
+}
+
+function DecorateTransition({
+  target,
+  onContinue,
+  onReturn,
+}: {
+  target: DecorateTransitionTarget
+  onContinue: () => void
+  onReturn?: () => void
+}) {
+  const guide = TRANSITION_GUIDES[target]
+  const targetIndex = DECORATE_STEPS.findIndex((step) => step.key === target)
+  const titleColorClass =
+    target === 'background'
+      ? 'text-brand-600'
+      : target === 'characters'
+        ? 'text-rose-500'
+        : 'text-emerald-600'
+
+  return (
+    <div className="absolute inset-0 z-[30000] flex items-center justify-center bg-gray-900/50 px-12 py-20">
+      <div className="flex max-h-full w-full flex-col items-center justify-center gap-8 overflow-hidden rounded-2xl border-4 border-brand-100 bg-white px-10 py-9 text-center shadow-2xl">
+        <div className="grid w-full grid-cols-3 gap-3">
+          {DECORATE_STEPS.map((step, index) => (
+            <div
+              key={step.key}
+              className={`flex h-14 items-center justify-center gap-3 rounded-lg border-2 text-xl font-black ${
+                index < targetIndex
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                  : index === targetIndex
+                    ? 'border-brand-500 bg-brand-500 text-white'
+                    : 'border-gray-200 bg-white text-gray-400'
+              }`}
+            >
+              <span>{step.number}</span>
+              <span>{step.label}</span>
+            </div>
+          ))}
+        </div>
+
+        <div>
+          <h1 className={`text-5xl font-black leading-tight ${titleColorClass}`}>
+            {guide.title}
+          </h1>
+          <p className="mt-6 whitespace-pre-line text-3xl font-bold leading-[1.65] text-gray-600">
+            {guide.description}
+          </p>
+        </div>
+
+        {target === 'background' && (
+          <div className="grid w-full grid-cols-2 gap-x-10 gap-y-5 px-8 text-left text-2xl font-bold text-gray-700">
+            <p>
+              <strong className="text-slate-600">단색</strong>
+              <span className="text-gray-400"> : </span>동일색 배경
+            </p>
+            <p>
+              <strong className="text-rose-500">실내</strong>
+              <span className="text-gray-400"> : </span>실내 배경
+            </p>
+            <p>
+              <strong className="text-emerald-600">야외</strong>
+              <span className="text-gray-400"> : </span>야외 배경
+            </p>
+            <p>
+              <strong className="text-amber-600">지역</strong>
+              <span className="text-gray-400"> : </span>실제 지역
+            </p>
+          </div>
+        )}
+
+        {target === 'characters' && (
+          <div className="grid w-full grid-cols-2 gap-x-10 gap-y-5 px-8 text-left text-2xl font-bold text-gray-700">
+            <p>
+              <strong className="text-rose-500">헤어</strong>
+              <span className="text-gray-400"> : </span>머리 모양
+            </p>
+            <p>
+              <strong className="text-amber-600">염색</strong>
+              <span className="text-gray-400"> : </span>머리 색
+            </p>
+            <p>
+              <strong className="text-sky-600">표정</strong>
+              <span className="text-gray-400"> : </span>얼굴 표정
+            </p>
+            <p>
+              <strong className="text-emerald-600">옷</strong>
+              <span className="text-gray-400"> : </span>의상
+            </p>
+          </div>
+        )}
+
+        {target === 'objects' && (
+          <div className="grid w-full grid-cols-4 gap-6 px-8">
+            <div className="flex flex-col items-center gap-3 text-xl font-black text-gray-700">
+              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-500 text-4xl font-black text-white shadow-md">
+                +
+              </span>
+              <span>확대</span>
+            </div>
+            <div className="flex flex-col items-center gap-3 text-xl font-black text-gray-700">
+              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-500 text-4xl font-black text-white shadow-md">
+                −
+              </span>
+              <span>축소</span>
+            </div>
+            <div className="flex flex-col items-center gap-3 text-xl font-black text-gray-700">
+              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-3xl font-black text-brand-600 shadow-md ring-2 ring-brand-400">
+                ↺
+              </span>
+              <span>리셋</span>
+            </div>
+            <div className="flex flex-col items-center gap-3 text-xl font-black text-gray-700">
+              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-red-500 text-2xl font-bold text-white shadow-md">
+                ✕
+              </span>
+              <span>삭제</span>
+            </div>
+          </div>
+        )}
+
+        <div className="flex w-full gap-4">
+          {onReturn && (
+            <Button variant="secondary" onClick={onReturn} className="w-1/3 py-5 text-2xl">
+              이전 단계로
+            </Button>
+          )}
+          <Button onClick={onContinue} className="flex-1 py-5 text-2xl">
+            {guide.button}
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // 5) decorate — 신랑·신부 고정 배치 + 배경/표정/아이템 꾸미기.
 export default function Decorate() {
   const placedItems = useAppStore((s) => s.placedItems)
@@ -343,12 +666,17 @@ export default function Decorate() {
   const setCanvasBackground = useAppStore((s) => s.setCanvasBackground)
   const printFrameRatio = useAppStore((s) => s.printFrameRatio)
   const printFrame = useAppStore((s) => s.printFrame)
+  const decorateStep = useAppStore((s) => s.decorateStep)
+  const seenDecorateGuides = useAppStore((s) => s.seenDecorateGuides)
+  const lowBudgetAlertShown = useAppStore((s) => s.lowBudgetAlertShown)
   const setPrintFrameRatio = useAppStore((s) => s.setPrintFrameRatio)
   const setPrintFrame = useAppStore((s) => s.setPrintFrame)
+  const setDecorateStep = useAppStore((s) => s.setDecorateStep)
+  const markDecorateGuideSeen = useAppStore((s) => s.markDecorateGuideSeen)
+  const markLowBudgetAlertShown = useAppStore((s) => s.markLowBudgetAlertShown)
   const setStage = useAppStore((s) => s.setStage)
   const resultCode = useAppStore((s) => s.resultCode)
   const axisScores = useAppStore((s) => s.axisScores)
-  const playerCount = useAppStore((s) => s.playerCount)
 
   const backgroundRecommendations = useMemo(
     () => getBackgroundRecommendations(resultCode, axisScores),
@@ -366,7 +694,9 @@ export default function Decorate() {
   )
   const firstRecommendedGroup =
     backgroundRecommendations[0]?.item.backgroundGroup ?? 'solid'
-  const [activeMainTabKey, setActiveMainTabKey] = useState<string>(MAIN_TABS[0].key)
+  const [activeMainTabKey, setActiveMainTabKey] = useState<string>(() =>
+    firstMainTabKey(decorateStep),
+  )
   const [activeBackgroundPart, setActiveBackgroundPart] =
     useState<BackgroundGroup>(firstRecommendedGroup)
   const [activeCharacterParts, setActiveCharacterParts] = useState<Record<CharacterKey, CharacterPart>>({
@@ -378,6 +708,11 @@ export default function Decorate() {
   const [selectedChar, setSelectedChar] = useState<CharacterKey | null>(null)
   const [warning, setWarning] = useState<string | null>(null)
   const [isFrameEditing, setIsFrameEditing] = useState(false)
+  const [isLowBudgetAlerting, setIsLowBudgetAlerting] = useState(false)
+  const [transitionTarget, setTransitionTarget] =
+    useState<DecorateTransitionTarget | null>(() =>
+      seenDecorateGuides.background ? null : 'background',
+    )
 
   const canvasViewportRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLDivElement>(null)
@@ -387,19 +722,18 @@ export default function Decorate() {
   const frameDragRef = useRef<FrameDragState | null>(null)
 
   const remaining = budget === null ? null : budget - spent
+  const isLowBudget =
+    remaining !== null && remaining < LOW_BUDGET_WARNING_THRESHOLD
   const background = canvasBackgroundId ? findItem(canvasBackgroundId) : undefined
   const backgroundPrice = background?.price ?? 0
-  const activeMainTab = MAIN_TABS.find((t) => t.key === activeMainTabKey) ?? MAIN_TABS[0]
+  const visibleMainTabs = mainTabsForStep(decorateStep)
+  const activeMainTab =
+    visibleMainTabs.find((t) => t.key === activeMainTabKey) ?? visibleMainTabs[0]
   const activeCharacterPart = activeMainTab.who ? activeCharacterParts[activeMainTab.who] : 'hair'
   const activeObjectTab =
     OBJECT_PART_TABS.find((tab) => tab.key === activeObjectPart) ??
     OBJECT_PART_TABS[0]
   const activePrintFrame = printFrame ?? defaultPrintFrame(printFrameRatio)
-  const activeMainTabIndex = Math.max(0, MAIN_TABS.findIndex((t) => t.key === activeMainTab.key))
-  const subTabWidthPct = 58
-  const subTabCenterPct = ((activeMainTabIndex + 0.5) / MAIN_TABS.length) * 100
-  const subTabLeftPct = Math.max(0, Math.min(100 - subTabWidthPct, subTabCenterPct - subTabWidthPct / 2))
-  const subTabStyle = { width: `${subTabWidthPct}%`, marginLeft: `${subTabLeftPct}%` }
   const activeTab: ShopTab = activeMainTab.who
     ? {
         key: `${activeMainTab.key}-${activeCharacterPart}`,
@@ -407,6 +741,7 @@ export default function Decorate() {
         who: activeMainTab.who,
         characterPart: activeCharacterPart,
       }
+
     : activeMainTab.key === 'objects'
       ? {
           key: `objects-${activeObjectPart}`,
@@ -414,6 +749,13 @@ export default function Decorate() {
           itemCat: activeObjectTab.itemCat,
         }
       : activeMainTab
+
+  useEffect(() => {
+    if (transitionTarget !== null || !isLowBudget || lowBudgetAlertShown) return
+    markLowBudgetAlertShown()
+    setIsLowBudgetAlerting(true)
+  }, [isLowBudget, lowBudgetAlertShown, markLowBudgetAlertShown, transitionTarget])
+
   const visibleItems = ITEMS.filter(
     (item) =>
       item.category === activeTab.itemCat &&
@@ -513,7 +855,8 @@ export default function Decorate() {
     return entries
   }, [background, characters, placedItems])
 
-  // 첫 꾸미기 진입에서는 1순위 추천 배경으로 시작하고, 비싸면 무료 아이보리를 쓴다.
+  // 첫 꾸미기 진입에서는 1순위 추천 배경으로 시작하되, 잔액이 1,000만 원 아래로
+  // 내려가거나 예산을 초과하면 무료 아이보리 배경으로 시작한다.
   useLayoutEffect(() => {
     if (hasInitializedBackgroundRef.current) return
     hasInitializedBackgroundRef.current = true
@@ -521,7 +864,10 @@ export default function Decorate() {
 
     const recommended = backgroundRecommendations[0]?.item
     const canAffordRecommended =
-      recommended && (budget === null || spent + recommended.price <= budget)
+      recommended &&
+      (budget === null ||
+        (spent + recommended.price <= budget &&
+          budget - (spent + recommended.price) >= LOW_BUDGET_WARNING_THRESHOLD))
     const initialBackground = canAffordRecommended
       ? recommended
       : findItem('bg-solid-ivory')
@@ -612,6 +958,39 @@ export default function Decorate() {
 
   const handleMainTabClick = (tab: ShopTab) => {
     setActiveMainTabKey(tab.key)
+  }
+
+  const activateDecorateStep = (step: DecorateStep) => {
+    setDecorateStep(step)
+    setActiveMainTabKey(firstMainTabKey(step))
+    setSelectedId(null)
+    setSelectedChar(null)
+    setIsFrameEditing(false)
+  }
+
+  const handleNextDecorateStep = () => {
+    if (decorateStep === 'background') {
+      if (seenDecorateGuides.characters) activateDecorateStep('characters')
+      else setTransitionTarget('characters')
+      return
+    }
+    if (decorateStep === 'characters') {
+      if (seenDecorateGuides.objects) activateDecorateStep('objects')
+      else setTransitionTarget('objects')
+      return
+    }
+    setStage('frameConfirm')
+  }
+
+  const handlePreviousDecorateStep = () => {
+    activateDecorateStep(decorateStep === 'objects' ? 'characters' : 'background')
+  }
+
+  const handleTransitionContinue = () => {
+    if (!transitionTarget) return
+    markDecorateGuideSeen(transitionTarget)
+    activateDecorateStep(transitionTarget)
+    setTransitionTarget(null)
   }
 
   const handleCharacterPartClick = (who: CharacterKey, part: CharacterPart) => {
@@ -747,21 +1126,70 @@ export default function Decorate() {
     bringItemToFront(entry.instanceId)
   }
 
+  const currentStepIndex = DECORATE_STEPS.findIndex((step) => step.key === decorateStep)
+
   return (
     <StageLayout>
+      {transitionTarget && (
+        <DecorateTransition
+          target={transitionTarget}
+          onContinue={handleTransitionContinue}
+          onReturn={
+            transitionTarget === 'background' ? undefined : () => setTransitionTarget(null)
+          }
+        />
+      )}
       <div className="flex h-full flex-col gap-4">
         {/* 예산 바 */}
-        <div className="rounded-2xl bg-white px-5 py-4 shadow-sm">
-          <div className="flex items-center justify-between text-xl font-semibold">
-            <span className="text-gray-500">예산 {budget === null ? '-' : formatWon(budget)}</span>
-            <span className="text-gray-500">
-              사용 <span className="font-bold text-brand-500">{formatWon(spent)}</span>
+        <div className="relative shrink-0 rounded-2xl bg-white px-6 py-5 shadow-sm">
+          <div className="mb-4 grid grid-cols-3 gap-3">
+            {DECORATE_STEPS.map((step, index) => (
+              <div
+                key={step.key}
+                className={`flex h-16 items-center justify-center gap-3 rounded-lg border-2 text-2xl font-black ${
+                  index < currentStepIndex
+                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                    : index === currentStepIndex
+                      ? 'border-brand-500 bg-brand-500 text-white'
+                      : 'border-gray-200 bg-gray-50 text-gray-400'
+                }`}
+              >
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/75 text-xl shadow-sm">
+                  {step.number}
+                </span>
+                <span>{step.label}</span>
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-3 text-3xl font-black">
+            <span className="flex h-14 items-center justify-center gap-2 text-gray-800">
+              <span>예산</span>
+              <strong className="font-black">
+                {budget === null ? '-' : formatWon(budget)}
+              </strong>
             </span>
-            <span className={`font-semibold ${remaining !== null && remaining < 0 ? 'text-red-500' : 'text-emerald-600'}`}>
-              남음 {remaining === null ? '-' : formatWon(Math.max(0, remaining))}
+            <span className="flex h-14 items-center justify-center gap-2 border-l border-gray-200 text-brand-500">
+              <span>사용</span>
+              <strong className="font-black">{formatWon(spent)}</strong>
+            </span>
+            <span className="flex h-14 items-center justify-center border-l border-gray-200">
+              <span
+                className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 font-black ${
+                  isLowBudget ? 'text-red-500' : 'text-emerald-600'
+                } ${isLowBudgetAlerting ? 'low-budget-alert' : ''}`}
+              >
+                <span>남음</span>
+                <strong className="font-black">
+                  {remaining === null ? '-' : formatWon(Math.max(0, remaining))}
+                </strong>
+              </span>
             </span>
           </div>
-          {warning && <p className="mt-2 text-center text-lg font-bold text-red-500">{warning}</p>}
+          {warning && (
+            <p className="absolute left-1/2 top-full z-[20000] mt-2 -translate-x-1/2 whitespace-nowrap rounded-lg bg-red-500 px-6 py-3 text-center text-xl font-black text-white shadow-lg">
+              {warning}
+            </p>
+          )}
         </div>
 
         {/* 전체 배경 캔버스 + 장비 목록 */}
@@ -1090,109 +1518,179 @@ export default function Decorate() {
             <div className="pointer-events-none absolute inset-0 z-[9999] rounded-2xl border-2 border-brand-100" />
           </div>
 
-          <aside className="flex w-[23%] min-w-[168px] flex-col overflow-hidden rounded-2xl border-2 border-brand-100 bg-white shadow-sm">
-            <div className="flex shrink-0 items-center justify-between border-b border-brand-100 px-2.5 py-3">
-              <h2 className="text-lg font-black text-gray-800">구매 목록</h2>
-              <span className="text-sm font-bold text-brand-500">{equipmentEntries.length}개</span>
-            </div>
-            <div className="equipment-scrollbar min-h-0 flex-1 overflow-y-scroll px-2">
-              {equipmentEntries.length === 0 ? (
-                <div className="flex h-full items-center justify-center px-4 text-center text-base font-semibold text-gray-400">
-                  선택한 장비가 없습니다
-                </div>
-              ) : (
-                equipmentEntries.map((entry) => (
-                  <div
-                    key={entry.key}
-                    className={`grid min-h-[68px] grid-cols-[minmax(0,1fr)_2rem] items-center gap-1 border-b border-gray-100 py-2 last:border-b-0 ${
-                      entry.kind === 'placed' && entry.instanceId === selectedId
-                        ? 'bg-brand-50'
-                        : ''
-                    }`}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => handleSelectEquipment(entry)}
-                      disabled={entry.kind !== 'placed'}
-                      className="grid min-w-0 grid-cols-[2.25rem_minmax(0,1fr)] items-center gap-1 text-left disabled:cursor-default"
-                      aria-label={
-                        entry.kind === 'placed'
-                          ? `${entry.name} 선택하고 맨 앞으로 가져오기`
-                          : undefined
-                      }
+          <div className="flex w-[23%] min-w-[168px] flex-col gap-3">
+            <aside className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border-2 border-brand-100 bg-white shadow-sm">
+              <div className="flex shrink-0 items-center justify-between border-b border-brand-100 px-2.5 py-3">
+                <h2 className="text-lg font-black text-gray-800">구매 목록</h2>
+                <span className="text-sm font-bold text-brand-500">{equipmentEntries.length}개</span>
+              </div>
+              <EquipmentDragScroll>
+                {equipmentEntries.length === 0 ? (
+                  <div className="flex h-full items-center justify-center px-4 text-center text-base font-semibold text-gray-400">
+                    선택한 장비가 없습니다
+                  </div>
+                ) : (
+                  equipmentEntries.map((entry) => (
+                    <div
+                      key={entry.key}
+                      className={`grid min-h-[68px] grid-cols-[minmax(0,1fr)_2rem] items-center gap-1 border-b border-gray-100 py-2 last:border-b-0 ${
+                        entry.kind === 'placed' && entry.instanceId === selectedId
+                          ? 'bg-brand-50'
+                          : ''
+                      }`}
                     >
-                      <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-md bg-brand-50">
-                        {entry.image ? (
-                          <img
-                            src={entry.image}
-                            alt=""
-                            className="h-full w-full object-contain"
-                            draggable={false}
-                          />
-                        ) : entry.renderStyle === 'weddingPhrase' ? (
-                          <WeddingPhrase
-                            text={entry.text ?? ''}
-                            color={entry.swatch ?? '#ef6f9a'}
-                            className="h-full w-full"
-                          />
-                        ) : entry.renderStyle === 'letterShapeBalloon' ? (
-                          <LetterShapeBalloon
-                            letter={entry.text ?? ''}
-                            color={entry.swatch ?? '#ef6f9a'}
-                            className="h-full w-full"
-                          />
-                        ) : (
-                          <span
-                            className="h-7 w-7 rounded-md border border-black/5"
-                            style={{ backgroundColor: entry.swatch ?? '#f3f4f6' }}
-                          />
-                        )}
-                      </span>
-                      <span className="min-w-0">
-                        <span className="block truncate text-sm font-bold text-gray-400">{entry.label}</span>
-                        <span className="block truncate text-base font-black text-gray-800">{entry.name}</span>
-                        <span className="block truncate text-sm font-bold text-brand-500">
-                          {entry.price === 0 ? '무료' : formatWon(entry.price)}
+                      <button
+                        type="button"
+                        onClick={() => handleSelectEquipment(entry)}
+                        disabled={entry.kind !== 'placed'}
+                        className="grid min-w-0 grid-cols-[2.25rem_minmax(0,1fr)] items-center gap-1 text-left disabled:cursor-default"
+                        aria-label={
+                          entry.kind === 'placed'
+                            ? `${entry.name} 선택하고 맨 앞으로 가져오기`
+                            : undefined
+                        }
+                      >
+                        <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-md bg-brand-50">
+                          {entry.image ? (
+                            <img
+                              src={entry.image}
+                              alt=""
+                              className="h-full w-full object-contain"
+                              draggable={false}
+                            />
+                          ) : entry.renderStyle === 'weddingPhrase' ? (
+                            <WeddingPhrase
+                              text={entry.text ?? ''}
+                              color={entry.swatch ?? '#ef6f9a'}
+                              className="h-full w-full"
+                            />
+                          ) : entry.renderStyle === 'letterShapeBalloon' ? (
+                            <LetterShapeBalloon
+                              letter={entry.text ?? ''}
+                              color={entry.swatch ?? '#ef6f9a'}
+                              className="h-full w-full"
+                            />
+                          ) : (
+                            <span
+                              className="h-7 w-7 rounded-md border border-black/5"
+                              style={{ backgroundColor: entry.swatch ?? '#f3f4f6' }}
+                            />
+                          )}
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block truncate text-sm font-bold text-gray-400">{entry.label}</span>
+                          <span className="block truncate text-base font-black text-gray-800">{entry.name}</span>
+                          <span className="block truncate text-sm font-bold text-brand-500">
+                            {entry.price === 0 ? '무료' : formatWon(entry.price)}
+                          </span>
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveEquipment(entry)}
+                        className="flex h-8 w-8 items-center justify-center rounded-full bg-red-50 text-xl font-bold leading-none text-red-500 active:bg-red-100"
+                        aria-label={`${entry.name} 빼기`}
+                        title="장비에서 빼기"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))
+                )}
+              </EquipmentDragScroll>
+              <div className="flex shrink-0 items-center justify-between border-t-2 border-brand-100 bg-brand-50/40 px-3 py-3 text-base font-black">
+                <span className="text-gray-600">구매 합계</span>
+                <span className="text-brand-500">{formatWon(spent)}</span>
+              </div>
+            </aside>
+
+            <section className="shrink-0 overflow-hidden rounded-2xl border-2 border-brand-100 bg-white shadow-sm">
+              <h3 className="border-b border-brand-100 px-2.5 py-3 text-center text-base font-black leading-tight text-gray-800">
+                당신의 취향에 어울리는 배경
+              </h3>
+              <div className="flex flex-col gap-1.5 p-2.5">
+                {backgroundRecommendations.map((recommendation, index) => {
+                  const selected = recommendation.item.id === canvasBackgroundId
+                  const delta = recommendation.item.price - backgroundPrice
+                  const affordable = budget === null || spent + delta <= budget
+                  return (
+                    <button
+                      key={recommendation.item.id}
+                      type="button"
+                      onClick={() => handleRecommendationTap(recommendation)}
+                      disabled={!affordable && !selected}
+                      className={`grid min-h-[108px] min-w-0 grid-cols-[3.5rem_minmax(0,1fr)] items-center gap-2 rounded-lg border-2 px-2 py-2 text-left disabled:opacity-40 ${
+                        selected
+                          ? 'border-brand-500 bg-brand-50'
+                          : 'border-brand-100 bg-white active:bg-brand-50'
+                      }`}
+                    >
+                      <img
+                        src={recommendation.item.image}
+                        alt={recommendation.item.name}
+                        className="h-20 w-14 rounded-md object-cover"
+                        draggable={false}
+                      />
+                      <span className="min-w-0 border-l border-brand-100 pl-2 text-left">
+                        <span
+                          className={`block whitespace-nowrap text-sm font-bold leading-snug ${
+                            RECOMMENDATION_RANK_COLORS[index] ?? 'text-gray-500'
+                          }`}
+                        >
+                          {index + 1}위. {recommendation.label}
+                        </span>
+                        <span className="block break-keep text-base font-black leading-snug text-gray-800">
+                          {recommendation.item.name}
+                        </span>
+                        <span className="block text-base font-black leading-snug text-brand-500">
+                          {formatWon(recommendation.item.price)}
+                        </span>
+                        <span className="block min-h-[2.25rem] whitespace-normal break-keep text-sm font-semibold leading-snug text-gray-500">
+                          {splitRecommendationReason(recommendation.reason).map((line, lineIndex) => (
+                            <span key={lineIndex} className="block">
+                              {line}
+                            </span>
+                          ))}
                         </span>
                       </span>
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveEquipment(entry)}
-                      className="flex h-8 w-8 items-center justify-center rounded-full bg-red-50 text-xl font-bold leading-none text-red-500 active:bg-red-100"
-                      aria-label={`${entry.name} 빼기`}
-                      title="장비에서 빼기"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))
-              )}
-            </div>
-            <div className="flex shrink-0 items-center justify-between border-t border-brand-100 px-2.5 py-3 text-sm font-bold">
-              <span className="text-gray-500">사용 합계</span>
-              <span className="text-brand-500">{formatWon(spent)}</span>
-            </div>
-          </aside>
+                  )
+                })}
+              </div>
+            </section>
+          </div>
         </div>
 
         {/* 상점 */}
-        <div className="rounded-2xl bg-white p-3 shadow-sm">
-          {/* 카테고리 탭 */}
-          <div className="mb-2 grid grid-cols-4 gap-2">
-            {MAIN_TABS.map((t) => (
-              <button
-                key={t.key}
-                onClick={() => handleMainTabClick(t)}
-                className={`select-none rounded-xl py-2 text-lg font-bold ${
-                  t.key === activeMainTabKey ? 'bg-brand-500 text-white' : 'bg-brand-50 text-brand-500'
-                }`}
-              >
-                {t.label}
-              </button>
-            ))}
+        <div className="flex h-[388px] shrink-0 flex-col rounded-2xl bg-white p-3 shadow-sm">
+          <div
+            className={`mb-2 grid gap-2 ${
+              decorateStep === 'characters' ? 'grid-cols-2' : 'grid-cols-1'
+            }`}
+          >
+            {decorateStep === 'characters' ? (
+              <>
+              {visibleMainTabs.map((t) => (
+                <button
+                  key={t.key}
+                  onClick={() => handleMainTabClick(t)}
+                  className={`select-none rounded-xl py-2 text-lg font-bold ${
+                    t.key === activeMainTabKey
+                      ? 'bg-brand-500 text-white'
+                      : 'bg-brand-50 text-brand-500'
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+              </>
+            ) : (
+              <div className="select-none rounded-xl bg-brand-500 py-2 text-center text-lg font-bold text-white">
+                {decorateStep === 'background' ? '배경' : '오브젝트'}
+              </div>
+            )}
           </div>
-          <div className="mb-3 flex min-h-[40px] items-center rounded-lg bg-gray-100 p-1" style={subTabStyle}>
+          <div className="mb-3 flex min-h-[40px] w-full items-center rounded-lg bg-gray-100 p-1">
             {activeMainTab.who ? (
               <div className="grid w-full grid-cols-4 gap-1">
                 {CHARACTER_PART_TABS.map((t) => (
@@ -1246,54 +1744,9 @@ export default function Decorate() {
             )}
           </div>
 
-          <div className="mb-3 h-[118px] shrink-0">
-            <p className="mb-1 px-1 text-xl font-black leading-tight text-gray-700">
-              {playerCount === 2
-                ? '두 분의 합친 취향에 어울리는 배경'
-                : '당신의 취향에 어울리는 배경'}
-            </p>
-            <div className="grid grid-cols-3 gap-2">
-              {backgroundRecommendations.map((recommendation) => {
-                const selected = recommendation.item.id === canvasBackgroundId
-                const delta = recommendation.item.price - backgroundPrice
-                const affordable = budget === null || spent + delta <= budget
-                return (
-                  <button
-                    key={recommendation.item.id}
-                    onClick={() => handleRecommendationTap(recommendation)}
-                    disabled={!affordable && !selected}
-                    className={`grid h-20 min-w-0 select-none grid-cols-[3.25rem_minmax(0,1fr)] items-center gap-2 rounded-lg border-2 p-1.5 text-left ${
-                      selected
-                        ? 'border-brand-500 bg-brand-50'
-                        : 'border-brand-100 bg-white active:bg-brand-50 disabled:opacity-40'
-                    }`}
-                  >
-                    <img
-                      src={recommendation.item.image}
-                      alt={recommendation.item.name}
-                      className="h-16 w-[3.25rem] rounded-md object-cover"
-                      draggable={false}
-                    />
-                    <span className="min-w-0">
-                      <span className="block truncate text-base font-black leading-tight text-brand-500">
-                        {recommendation.label}
-                      </span>
-                      <span className="block truncate text-lg font-bold leading-tight text-gray-800">
-                        {recommendation.item.name}
-                      </span>
-                      <span className="block truncate text-sm leading-tight text-gray-500">
-                        {recommendation.reason} · {formatWon(recommendation.item.price)}
-                      </span>
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-
           {/* 표정 탭: 해당 인물의 표정 교체 */}
           {activeTab.who && activeTab.characterPart === 'face' ? (
-            <ShopScrollRow key={activeTab.key}>
+            <ShopScrollRow key={activeTab.key} large>
               {FACE_EXPRESSIONS.map((ex) => {
                 const who = activeTab.who!
                 const curExpr = characters[who]?.exprId ?? DEFAULT_EXPR_ID
@@ -1329,7 +1782,7 @@ export default function Decorate() {
               })}
             </ShopScrollRow>
           ) : activeTab.who && activeTab.characterPart === 'hair' ? (
-            <ShopScrollRow key={activeTab.key}>
+            <ShopScrollRow key={activeTab.key} large>
               {HAIR_OPTIONS[activeTab.who].map((hair) => {
                 const who = activeTab.who!
                 const curHair = characters[who]?.hairId ?? DEFAULT_HAIR_ID
@@ -1396,7 +1849,7 @@ export default function Decorate() {
               })}
             </ShopScrollRow>
           ) : activeTab.who && activeTab.characterPart === 'hairColor' ? (
-            <ShopScrollRow key={activeTab.key}>
+            <ShopScrollRow key={activeTab.key} large>
               {HAIR_COLOR_OPTIONS.map((color) => {
                 const who = activeTab.who!
                 const curColor = characters[who]?.hairColorId ?? DEFAULT_HAIR_COLOR_ID
@@ -1429,7 +1882,7 @@ export default function Decorate() {
               })}
             </ShopScrollRow>
           ) : activeTab.who && activeTab.characterPart === 'outfit' ? (
-            <ShopScrollRow key={activeTab.key}>
+            <ShopScrollRow key={activeTab.key} large>
               {OUTFIT_OPTIONS[activeTab.who].map((outfit) => {
                 const who = activeTab.who!
                 const curOutfit = characters[who]?.outfitId ?? DEFAULT_OUTFIT_ID
@@ -1466,7 +1919,10 @@ export default function Decorate() {
             </ShopScrollRow>
           ) : (
             // 배치 아이템 탭
-            <ShopScrollRow key={activeTab.key}>
+            <ShopScrollRow
+              key={activeTab.key}
+              objectLarge={decorateStep === 'objects' || decorateStep === 'background'}
+            >
               {activeTab.itemCat === 'background' && activeBackgroundPart === 'solid' && (
                 <button
                   type="button"
@@ -1550,9 +2006,24 @@ export default function Decorate() {
           )}
         </div>
 
-        <Button onClick={() => setStage('frameConfirm')} className="w-full">
-          완성하기
-        </Button>
+        <div className="flex gap-3">
+          {decorateStep !== 'background' && (
+            <Button
+              variant="secondary"
+              onClick={handlePreviousDecorateStep}
+              className="w-1/3"
+            >
+              이전 단계
+            </Button>
+          )}
+          <Button onClick={handleNextDecorateStep} className="flex-1">
+            {decorateStep === 'background'
+              ? '배경 선택 완료'
+              : decorateStep === 'characters'
+                ? '신랑·신부 꾸미기 완료'
+                : '완성하기'}
+          </Button>
+        </div>
       </div>
     </StageLayout>
   )

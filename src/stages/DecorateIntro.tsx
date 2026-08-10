@@ -4,20 +4,16 @@ import Button from '../components/Button'
 
 const GUIDE_ITEMS = [
   {
-    title: '아이템 고르기',
-    description: '배경, 헤어, 염색, 표정, 의상과 오브젝트를 눌러 적용해 보세요.',
+    title: '배경 꾸미기',
+    description: '취향 추천을 참고해 사진의 장소와 분위기를 먼저 정해 보세요.',
   },
   {
-    title: '원하는 곳에 배치하기',
-    description: '캐릭터와 오브젝트를 손가락으로 끌어 원하는 위치로 옮길 수 있어요.',
+    title: '신랑·신부 꾸미기',
+    description: '헤어, 염색, 표정과 의상을 고르고 두 사람의 위치를 정해 보세요.',
   },
   {
-    title: '크기와 구성 다듬기',
-    description: '오브젝트를 선택한 뒤 +와 −로 크기를 조절하고 필요 없는 것은 삭제해 보세요.',
-  },
-  {
-    title: '사진 프레임 맞추기',
-    description: '프레임 조정에서 인쇄할 영역의 크기와 위치를 정한 뒤 완성해 주세요.',
+    title: '오브젝트 꾸미기',
+    description: '오브제와 문구를 배치하고 크기를 조절해 사진을 완성해 보세요.',
   },
 ]
 
@@ -35,7 +31,7 @@ export default function DecorateIntro() {
             꾸며볼까요?
           </h1>
           <p className="mt-7 text-3xl font-semibold text-gray-600">
-            뽑은 예산 안에서 원하는 아이템을 자유롭게 골라보세요.
+            세 단계로 차근차근 꾸미면 어렵지 않아요.
           </p>
         </div>
 

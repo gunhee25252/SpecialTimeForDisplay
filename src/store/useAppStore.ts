@@ -30,10 +30,11 @@ import {
   type CharacterKey,
 } from '../data/characters'
 
-export type Stage = 'intro' | 'playerSelect' | 'worldcup' | 'result' | 'budgetIntro' | 'budget' | 'decorateIntro' | 'decorate' | 'frameConfirm' | 'complete'
+export type Stage = 'intro' | 'playerSelect' | 'worldcup' | 'result' | 'budgetIntro' | 'budget' | 'decorate' | 'frameConfirm' | 'complete'
 
 export type PlayerCount = 1 | 2
 export type PrintFrameRatio = '2:3' | '3:2'
+export type DecorateStep = 'background' | 'characters' | 'objects'
 export type ItemScaleAnchor = 'center' | 'top-left' | 'bottom-left'
 export interface PrintFrame {
   x: number
@@ -125,6 +126,9 @@ interface AppState {
   spent: number
   canvasBackgroundId: string | null // decorate 캔버스 배경(배경 아이템 id)
   characters: CharactersState // 고정 배치되는 신랑·신부
+  decorateStep: DecorateStep
+  seenDecorateGuides: Record<DecorateStep, boolean>
+  lowBudgetAlertShown: boolean
   printFrameRatio: PrintFrameRatio
   printFrame: PrintFrame | null
 
@@ -149,6 +153,9 @@ interface AppState {
   moveCharacter: (who: CharacterKey, x: number, y: number) => void // 인물 위치 이동
   bringCharacterToFront: (who: CharacterKey) => void
   setCanvasBackground: (itemId: string | null) => boolean
+  setDecorateStep: (step: DecorateStep) => void
+  markDecorateGuideSeen: (step: DecorateStep) => void
+  markLowBudgetAlertShown: () => void
   setPrintFrameRatio: (ratio: PrintFrameRatio) => void
   setPrintFrame: (frame: PrintFrame) => void
   reset: () => void
@@ -248,6 +255,13 @@ const initialState = {
   spent: 0,
   canvasBackgroundId: null as string | null,
   characters: makeCharacters(),
+  decorateStep: 'background' as DecorateStep,
+  seenDecorateGuides: {
+    background: false,
+    characters: false,
+    objects: false,
+  } as Record<DecorateStep, boolean>,
+  lowBudgetAlertShown: false,
   printFrameRatio: '2:3' as PrintFrameRatio,
   printFrame: null as PrintFrame | null,
 }
@@ -285,6 +299,13 @@ export const useAppStore = create<AppState>((set, get) => ({
         spent: 0,
         canvasBackgroundId: null,
         characters: makeCharacters(),
+        decorateStep: 'background',
+        seenDecorateGuides: {
+          background: false,
+          characters: false,
+          objects: false,
+        },
+        lowBudgetAlertShown: false,
         printFrameRatio: '2:3',
         printFrame: null,
       }
@@ -375,7 +396,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     } else {
       // 마지막 예산까지 뽑으면 합계를 꾸미기 예산으로 확정한다.
       const total = players.reduce((sum, p) => sum + (p.budget ?? 0), 0)
-      set({ totalBudget: total, budget: total, stage: 'decorateIntro' })
+      set({ totalBudget: total, budget: total, stage: 'decorate' })
     }
   },
 
@@ -530,6 +551,12 @@ export const useAppStore = create<AppState>((set, get) => ({
     })
     return true
   },
+  setDecorateStep: (step) => set({ decorateStep: step }),
+  markDecorateGuideSeen: (step) =>
+    set((state) => ({
+      seenDecorateGuides: { ...state.seenDecorateGuides, [step]: true },
+    })),
+  markLowBudgetAlertShown: () => set({ lowBudgetAlertShown: true }),
   setPrintFrameRatio: (ratio) => set({ printFrameRatio: ratio }),
   setPrintFrame: (frame) => set({ printFrame: frame }),
 

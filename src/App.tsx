@@ -10,7 +10,6 @@ import WorldCup from './stages/WorldCup'
 import Result from './stages/Result'
 import BudgetIntro from './stages/BudgetIntro'
 import Budget from './stages/Budget'
-import DecorateIntro from './stages/DecorateIntro'
 import Decorate from './stages/Decorate'
 import FrameConfirm from './stages/FrameConfirm'
 import Complete from './stages/Complete'
@@ -46,8 +45,6 @@ function StageView({ stage }: { stage: Stage }) {
       return <BudgetIntro />
     case 'budget':
       return <Budget />
-    case 'decorateIntro':
-      return <DecorateIntro />
     case 'decorate':
       return <Decorate />
     case 'frameConfirm':
