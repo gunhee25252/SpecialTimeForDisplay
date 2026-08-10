@@ -5,29 +5,29 @@ import { assetUrl } from '../utils/asset'
 
 const INTRO_RESULTS = [
   {
-    src: assetUrl('images/intro-results/intro-landscape-01.png'),
-    className: 'left-6 top-[510px] z-30 w-[470px] -rotate-[3deg]',
-    imageClassName: 'aspect-[3/2]',
+    src: assetUrl('images/intro-results/intro-landscape-01.png?v=alternate-20260810'),
+    className: 'left-6 top-[510px] z-30 aspect-[3/2] w-[470px] -rotate-[3deg]',
+    imageClassName: 'absolute left-1/2 top-1/2 h-[150%] w-auto max-w-none -translate-x-1/2 -translate-y-1/2 -rotate-90',
   },
   {
-    src: assetUrl('images/intro-results/intro-landscape-02.png'),
-    className: 'right-6 top-[510px] z-30 w-[470px] rotate-[3deg]',
-    imageClassName: 'aspect-[3/2]',
+    src: assetUrl('images/intro-results/intro-landscape-02.png?v=night-20260810'),
+    className: 'right-6 top-[510px] z-30 aspect-[3/2] w-[470px] rotate-[3deg]',
+    imageClassName: 'absolute inset-0 h-full w-full object-cover',
   },
   {
-    src: assetUrl('images/intro-results/intro-result-01.png?v=portrait-2'),
+    src: assetUrl('images/intro-results/intro-result-02.png?v=recent-20260807'),
     className: 'left-8 top-[120px] z-10 w-[340px] -rotate-[6deg]',
-    imageClassName: 'aspect-[2/3]',
+    imageClassName: 'aspect-[2/3] w-full',
   },
   {
-    src: assetUrl('images/intro-results/intro-result-02.png?v=portrait-2'),
+    src: assetUrl('images/intro-results/intro-result-01.png?v=recent-20260807'),
     className: 'left-1/2 top-20 z-20 w-[410px] -translate-x-1/2 rotate-[1deg]',
-    imageClassName: 'aspect-[2/3]',
+    imageClassName: 'aspect-[2/3] w-full',
   },
   {
-    src: assetUrl('images/intro-results/intro-result-03.png?v=portrait-2'),
+    src: assetUrl('images/intro-results/intro-result-03.png?v=alternate-20260810'),
     className: 'right-8 top-[120px] z-10 w-[340px] rotate-[6deg]',
-    imageClassName: 'aspect-[2/3]',
+    imageClassName: 'aspect-[2/3] w-full',
   },
 ]
 
@@ -60,7 +60,7 @@ export default function Intro() {
               <img
                 src={result.src}
                 alt=""
-                className={`block w-full object-cover ${result.imageClassName}`}
+                className={`block object-cover ${result.imageClassName}`}
                 draggable={false}
               />
             </div>
