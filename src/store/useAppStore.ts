@@ -30,7 +30,7 @@ import {
   type CharacterKey,
 } from '../data/characters'
 
-export type Stage = 'intro' | 'playerSelect' | 'worldcup' | 'result' | 'budgetIntro' | 'budget' | 'decorate' | 'frameConfirm' | 'complete'
+export type Stage = 'intro' | 'playerSelect' | 'worldcup' | 'result' | 'budgetIntro' | 'budget' | 'decorateIntro' | 'decorate' | 'frameConfirm' | 'complete'
 
 export type PlayerCount = 1 | 2
 export type PrintFrameRatio = '2:3' | '3:2'
@@ -121,6 +121,7 @@ interface AppState {
   resultCode: string | null
   totalBudget: number | null
   budget: number | null // decorate/complete가 쓰는 사용 한도(= totalBudget)
+  soloBudgetRerollUsed: boolean
 
   placedItems: PlacedItem[]
   spent: number
@@ -139,7 +140,7 @@ interface AppState {
   choose: (round: Round, side: 'A' | 'B') => void // 선택 → 점수 누적 → (마지막이면) 취향 결과로
   computeResult: () => void // 현재 플레이어 유형 산출 → players에 기록
   startBudget: () => void // 취향 결과 확인 후 첫 번째 플레이어 예산 뽑기 시작
-  drawBudget: () => void // 현재 플레이어 예산 1회 확정(티어 가중 추첨)
+  drawBudget: (reroll?: boolean) => boolean // 현재 플레이어 예산 확정, 혼자 모드는 1회 재추첨 가능
   nextAfterBudget: () => void // 예산 확정 후 흐름 진행(다음 사람 / 꾸미기)
   placeItem: (itemId: string, x: number, y: number) => string | null // 예산 초과면 null
   moveItem: (instanceId: string, x: number, y: number) => void
@@ -251,6 +252,7 @@ const initialState = {
   resultCode: null as string | null,
   totalBudget: null as number | null,
   budget: null as number | null,
+  soloBudgetRerollUsed: false,
   placedItems: [] as PlacedItem[],
   spent: 0,
   canvasBackgroundId: null as string | null,
@@ -295,6 +297,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         resultCode: null,
         totalBudget: null,
         budget: null,
+        soloBudgetRerollUsed: false,
         placedItems: [],
         spent: 0,
         canvasBackgroundId: null,
@@ -377,16 +380,29 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   startBudget: () => set({ currentPlayer: 0, stage: 'budget' }),
 
-  drawBudget: () => {
-    const { currentPlayer, playerCount, players } = get()
-    // 플레이어당 1회 확정 — 이미 뽑았으면 무시(다시 뽑기 없음).
-    if (players[currentPlayer]?.budget != null) return
+  drawBudget: (reroll = false) => {
+    const { currentPlayer, playerCount, players, soloBudgetRerollUsed } = get()
+    const currentBudget = players[currentPlayer]?.budget
+    const canReroll =
+      reroll && playerCount === 1 && currentBudget != null && !soloBudgetRerollUsed
+    if (currentBudget != null && !canReroll) return false
+
     const minimumAmount = playerCount === 1 ? SOLO_MIN_BUDGET_AMOUNT : MIN_BUDGET_AMOUNT
-    const { tierId, tierLabel, amount } = drawBudgetResult(minimumAmount)
+    let result = drawBudgetResult(minimumAmount)
+    if (canReroll) {
+      for (let attempt = 0; attempt < 8 && result.amount === currentBudget; attempt += 1) {
+        result = drawBudgetResult(minimumAmount)
+      }
+    }
+    const { tierId, tierLabel, amount } = result
     const updated = players.map((p, i) =>
       i === currentPlayer ? { ...p, budget: amount, tierId, tierLabel } : p,
     )
-    set({ players: updated })
+    set({
+      players: updated,
+      soloBudgetRerollUsed: canReroll ? true : soloBudgetRerollUsed,
+    })
+    return true
   },
 
   nextAfterBudget: () => {
@@ -396,7 +412,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     } else {
       // 마지막 예산까지 뽑으면 합계를 꾸미기 예산으로 확정한다.
       const total = players.reduce((sum, p) => sum + (p.budget ?? 0), 0)
-      set({ totalBudget: total, budget: total, stage: 'decorate' })
+      set({ totalBudget: total, budget: total, stage: 'decorateIntro' })
     }
   },
 

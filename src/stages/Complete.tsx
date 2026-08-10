@@ -9,6 +9,7 @@ import {
   commitPrintId,
   getNextPrintId,
   isLandscapePrintFrame,
+  openPrintDialog,
   renderPrintImage,
   savePrintFiles,
 } from '../utils/print'
@@ -106,6 +107,7 @@ export default function Complete() {
         rotateLandscapeForOutput: true,
       })
       await savePrintFiles(imageBlob, printSpec)
+      await openPrintDialog(imageBlob)
 
       commitPrintId(printId)
       setPrintId(printId + 1)

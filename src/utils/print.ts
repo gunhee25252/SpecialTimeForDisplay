@@ -509,6 +509,77 @@ export function downloadBlob(blob: Blob, fileName: string) {
   window.setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
+export function openPrintDialog(imageBlob: Blob): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const imageUrl = URL.createObjectURL(imageBlob)
+    const frame = document.createElement('iframe')
+    frame.title = '인화 이미지'
+    frame.setAttribute('aria-hidden', 'true')
+    Object.assign(frame.style, {
+      position: 'fixed',
+      left: '-10000px',
+      top: '0',
+      width: '4in',
+      height: '6in',
+      border: '0',
+      pointerEvents: 'none',
+    })
+    document.body.appendChild(frame)
+
+    let cleanupTimer: number | undefined
+    const cleanup = () => {
+      if (cleanupTimer !== undefined) window.clearTimeout(cleanupTimer)
+      URL.revokeObjectURL(imageUrl)
+      frame.remove()
+    }
+
+    const printDocument = frame.contentDocument
+    const printWindow = frame.contentWindow
+    if (!printDocument || !printWindow) {
+      cleanup()
+      reject(new Error('인쇄 창을 열 수 없어요.'))
+      return
+    }
+
+    printDocument.title = '웨딩 사진 인화'
+    const style = printDocument.createElement('style')
+    style.textContent = `
+      @page { size: 4in 6in; margin: 0; }
+      html, body {
+        width: 4in;
+        height: 6in;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background: #fff;
+      }
+      img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+    `
+    printDocument.head.appendChild(style)
+
+    const image = printDocument.createElement('img')
+    image.alt = '완성된 웨딩 사진'
+    image.onload = () => {
+      printWindow.addEventListener('afterprint', cleanup, { once: true })
+      cleanupTimer = window.setTimeout(cleanup, 60_000)
+      printWindow.focus()
+      printWindow.print()
+      resolve()
+    }
+    image.onerror = () => {
+      cleanup()
+      reject(new Error('인쇄할 이미지를 불러오지 못했어요.'))
+    }
+    image.src = imageUrl
+    printDocument.body.appendChild(image)
+  })
+}
+
 function blobToDataUrl(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()

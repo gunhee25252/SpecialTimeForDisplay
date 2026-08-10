@@ -27,12 +27,14 @@ export default function Budget() {
   const currentPlayer = useAppStore((s) => s.currentPlayer)
   const players = useAppStore((s) => s.players)
   const drawBudget = useAppStore((s) => s.drawBudget)
+  const soloBudgetRerollUsed = useAppStore((s) => s.soloBudgetRerollUsed)
   const nextAfterBudget = useAppStore((s) => s.nextAfterBudget)
   const { play, stop } = useSound()
 
   const [phase, setPhase] = useState<Phase>('idle')
   const [drawn, setDrawn] = useState<Drawn | null>(null)
   const [showGold, setShowGold] = useState(false)
+  const [isRerollConfirming, setIsRerollConfirming] = useState(false)
   const timerRef = useRef<number | null>(null)
 
   const isDuo = playerCount === 2
@@ -65,6 +67,7 @@ export default function Budget() {
     setPhase('idle')
     setDrawn(null)
     setShowGold(false)
+    setIsRerollConfirming(false)
   }, [currentPlayer])
 
   const handleSettled = () => {
@@ -81,8 +84,8 @@ export default function Budget() {
     }
   }
 
-  const handleDraw = () => {
-    drawBudget() // 1회 확정
+  const handleDraw = (reroll = false) => {
+    if (!drawBudget(reroll)) return
     const p = useAppStore.getState().players[currentPlayer]
     if (!p || p.budget == null) return
     setDrawn({ amount: p.budget, tierId: p.tierId, tierLabel: p.tierLabel })
@@ -184,7 +187,7 @@ export default function Budget() {
         {/* 액션 버튼 */}
         <div className="flex min-h-[80px] flex-col items-center gap-4">
           {phase === 'idle' && (
-            <Button onClick={handleDraw} className="px-16 py-7 text-3xl">
+            <Button onClick={() => handleDraw()} className="px-16 py-7 text-3xl">
               예산 뽑기
             </Button>
           )}
@@ -195,7 +198,16 @@ export default function Budget() {
             <Button onClick={() => setPhase('summing')}>두 사람 예산 합치기</Button>
           )}
           {phase === 'revealed' && isLastPlayer && !isDuo && (
-            <Button onClick={nextAfterBudget}>사진 만들러 가기</Button>
+            <div className="flex gap-4">
+              <Button
+                variant="secondary"
+                onClick={() => setIsRerollConfirming(true)}
+                disabled={soloBudgetRerollUsed}
+              >
+                예산 다시 돌리기 · {soloBudgetRerollUsed ? '0회 남음' : '1회 남음'}
+              </Button>
+              <Button onClick={nextAfterBudget}>사진 만들러 가기</Button>
+            </div>
           )}
           {phase === 'summing' && <Button onClick={nextAfterBudget}>사진 만들러 가기</Button>}
         </div>
@@ -208,6 +220,46 @@ export default function Budget() {
           onClick={skipSpin}
           className="absolute inset-0 z-30 bg-transparent"
         />
+      )}
+
+      {isRerollConfirming && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="budget-reroll-confirm-title"
+          className="absolute inset-0 z-[50000] flex items-center justify-center bg-gray-900/60 px-12"
+        >
+          <div className="w-full max-w-[760px] rounded-2xl border-4 border-brand-100 bg-white px-12 py-14 text-center shadow-2xl">
+            <h2
+              id="budget-reroll-confirm-title"
+              className="text-4xl font-black leading-tight text-gray-800"
+            >
+              정말 예산을 다시 돌리시겠습니까?
+            </h2>
+            <p className="mt-6 whitespace-pre-line text-2xl font-bold leading-relaxed text-red-500">
+              {'현재 예산은 사라지고 다시 뽑은 예산으로 변경됩니다.\n예산 다시 돌리기는 한 번만 사용할 수 있습니다.'}
+            </p>
+            <div className="mt-10 grid grid-cols-2 gap-5">
+              <button
+                type="button"
+                onClick={() => setIsRerollConfirming(false)}
+                className="rounded-2xl border-2 border-gray-300 bg-white px-8 py-5 text-2xl font-black text-gray-600 active:bg-gray-100"
+              >
+                아니요
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsRerollConfirming(false)
+                  handleDraw(true)
+                }}
+                className="rounded-2xl bg-brand-500 px-8 py-5 text-2xl font-black text-white active:bg-brand-600"
+              >
+                네
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </StageLayout>
   )

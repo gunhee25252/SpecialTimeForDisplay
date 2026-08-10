@@ -53,22 +53,25 @@ body {
   background: #f472b6;
 }
 
-/* 2단계는 안내 블록 대신 남는 높이를 인물 아이템 미리보기에 사용한다. */
-.character-shop-row {
+/* 단계가 달라도 상점 카드의 외곽 크기와 정렬은 동일하게 유지한다. */
+.character-shop-row,
+.object-shop-row {
   width: 100%;
   align-items: flex-end;
 }
 
-.character-shop-row > button {
-  width: 11.25rem;
-  min-height: 14.75rem;
+.character-shop-row > button,
+.object-shop-row > button {
+  width: 11rem;
+  height: 14.25rem;
   gap: 0.4rem;
   padding: 0.75rem;
 }
 
-.character-shop-row > button > span:first-child {
-  width: 9.25rem;
-  height: 9.25rem;
+.character-shop-row > button > span:first-child,
+.object-shop-row > button > span:first-child {
+  width: 9rem;
+  height: 9rem;
 }
 
 .character-shop-row > button > span:first-child > span {
@@ -84,24 +87,6 @@ body {
 .character-shop-row > button > span:nth-child(3) {
   font-size: 1.05rem;
   line-height: 1.35rem;
-}
-
-/* 3단계는 안내 블록을 비운 높이까지 오브젝트 카드를 키워 중앙에 둔다. */
-.object-shop-row {
-  width: 100%;
-  align-items: flex-end;
-}
-
-.object-shop-row > button {
-  width: 11.25rem;
-  min-height: 14.75rem;
-  gap: 0.4rem;
-  padding: 0.75rem;
-}
-
-.object-shop-row > button > span:first-child {
-  width: 9.25rem;
-  height: 9.25rem;
 }
 
 .object-shop-row > button > span:first-child > img {

@@ -396,7 +396,7 @@ function splitRecommendationReason(reason: string) {
 const RECOMMENDATION_RANK_COLORS = [
   'text-amber-500',
   'text-gray-400',
-  'text-orange-700',
+  'text-orange-600',
 ] as const
 
 const LOW_BUDGET_WARNING_THRESHOLD = 10_000_000
@@ -2016,7 +2016,7 @@ export default function Decorate() {
               이전 단계
             </Button>
           )}
-          <Button onClick={handleNextDecorateStep} className="flex-1">
+          <Button onClick={handleNextDecorateStep} className="flex-1 border-2 border-transparent">
             {decorateStep === 'background'
               ? '배경 선택 완료'
               : decorateStep === 'characters'

@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "package:kiosk": "powershell -ExecutionPolicy Bypass -File ./build-kiosk.ps1",
     "preview": "vite preview"
   },
   "dependencies": {

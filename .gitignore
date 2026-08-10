@@ -5,3 +5,7 @@ dist-ssr
 .DS_Store
 .vite-dev*.log
 tmp/
+kiosk-server/bin/
+kiosk-server/obj/
+kiosk-package/
+SpecialTimeKiosk-win-x64.zip
