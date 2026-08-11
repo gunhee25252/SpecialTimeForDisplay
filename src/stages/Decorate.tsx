@@ -610,14 +610,14 @@ function BackgroundDecorateGuide({ onContinue }: { onContinue: () => void }) {
       </svg>
 
       <div
-        className="absolute left-1/2 w-[760px] -translate-x-1/2 text-center text-white"
-        style={{ top: 750, ...textShadow }}
+        className="absolute left-1/2 w-[920px] -translate-x-1/2 text-center text-white"
+        style={{ top: 650, ...textShadow }}
       >
         <h1 className="text-5xl font-black leading-tight text-brand-300">
           1. 먼저 배경을 골라볼까요?
         </h1>
         <p className="mt-6 text-2xl font-bold leading-relaxed">
-          직접 고르거나 분석한 취향에 맞는 추천을 참고해 보세요.
+          마음에 드는 배경을 골라 사진의 분위기를 정해보세요.
         </p>
       </div>
 
@@ -635,8 +635,8 @@ function BackgroundDecorateGuide({ onContinue }: { onContinue: () => void }) {
             취향 추천을 참고해 보세요
           </p>
           <p className="mt-3 text-2xl font-bold leading-relaxed">
-            <span className="block">분석한 취향을 바탕으로</span>
-            <span className="block">세 가지 배경을 추천해 드려요.</span>
+            <span className="block">참여자의 선택을 분석해서</span>
+            <span className="block">세 가지 배경 추천</span>
           </p>
         </div>
       )}
@@ -654,8 +654,8 @@ function BackgroundDecorateGuide({ onContinue }: { onContinue: () => void }) {
             배경을 직접 골라보세요
           </p>
           <p className="mt-3 text-2xl font-bold leading-relaxed">
-            <span className="block">단색, 실내, 야외, 지역 중 원하는 배경을</span>
-            <span className="block">직접 선택할 수 있어요.</span>
+            <span className="block">단색·실내·야외·지역 카테고리에서</span>
+            <span className="block">원하는 배경 직접 선택</span>
           </p>
         </div>
       )}
@@ -664,7 +664,10 @@ function BackgroundDecorateGuide({ onContinue }: { onContinue: () => void }) {
         className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2"
         style={{ top: '50%' }}
       >
-        <Button onClick={onContinue} className="w-[440px] px-24 py-6 text-3xl">
+        <Button
+          onClick={onContinue}
+          className="w-[480px] whitespace-nowrap px-8 py-6 text-3xl"
+        >
           배경 꾸미기 시작
         </Button>
       </div>
@@ -672,156 +675,204 @@ function BackgroundDecorateGuide({ onContinue }: { onContinue: () => void }) {
   )
 }
 
-const TRANSITION_GUIDES: Record<
-  DecorateTransitionTarget,
-  { title: string; description: string; button: string }
-> = {
-  background: {
-    title: '먼저 배경을 골라볼까요?',
-    description: '배경은 네 가지 종류로 나뉘어요.\n분석한 취향에 맞는 추천을 참고해 원하는 배경을 골라보세요.',
-    button: '배경 꾸미기 시작',
-  },
-  characters: {
-    title: '이제 신랑·신부를 꾸며볼까요?',
-    description: '신랑과 신부는 네 가지 항목을 각각 고를 수 있어요.\n꾸민 뒤 두 사람을 끌어서 사진에 어울리는 위치로 옮겨보세요.',
-    button: '신랑·신부 꾸미기 시작',
-  },
-  objects: {
-    title: '마지막으로 오브젝트를 채워볼까요?',
-    description: '오브젝트를 배치한 뒤 크기를 키우거나 줄일 수 있어요.\n원래 크기로 되돌리거나 필요 없는 항목은 삭제해 보세요.',
-    button: '오브젝트 꾸미기 시작',
-  },
-}
-
-function DecorateTransition({
+function DecorateStepSpotlightGuide({
   target,
   onContinue,
-  onReturn,
 }: {
-  target: DecorateTransitionTarget
+  target: Exclude<DecorateTransitionTarget, 'background'>
   onContinue: () => void
-  onReturn?: () => void
 }) {
-  const guide = TRANSITION_GUIDES[target]
-  const targetIndex = DECORATE_STEPS.findIndex((step) => step.key === target)
-  const titleColorClass =
-    target === 'background'
-      ? 'text-brand-600'
-      : target === 'characters'
-        ? 'text-rose-500'
-        : 'text-emerald-600'
+  const overlayRef = useRef<HTMLDivElement>(null)
+  const [shopRect, setShopRect] = useState<BackgroundGuideRect | null>(null)
+
+  useLayoutEffect(() => {
+    const overlay = overlayRef.current
+    const root = overlay?.parentElement
+    if (!overlay || !root) return undefined
+
+    let animationFrame = 0
+    const updateTarget = () => {
+      const shop = root.querySelector<HTMLElement>('[data-background-guide-target="shop"]')
+      const shopEnd = root.querySelector<HTMLElement>('[data-background-guide-shop-end]')
+      if (!shop) return
+
+      const rootBounds = root.getBoundingClientRect()
+      const scaleX = rootBounds.width / root.offsetWidth || 1
+      const scaleY = rootBounds.height / root.offsetHeight || 1
+      const bounds = [shop, shopEnd]
+        .filter((element): element is HTMLElement => element !== null)
+        .map((element) => element.getBoundingClientRect())
+      const left = Math.min(...bounds.map((rect) => rect.left))
+      const top = Math.min(...bounds.map((rect) => rect.top))
+      const right = Math.max(...bounds.map((rect) => rect.right))
+      const bottom = Math.max(...bounds.map((rect) => rect.bottom))
+      const padding = 5
+
+      setShopRect({
+        x: (left - rootBounds.left) / scaleX - padding,
+        y: (top - rootBounds.top) / scaleY - padding,
+        width: (right - left) / scaleX + padding * 2,
+        height: (bottom - top) / scaleY + padding * 2,
+      })
+    }
+
+    animationFrame = window.requestAnimationFrame(updateTarget)
+    const observer = new ResizeObserver(updateTarget)
+    observer.observe(root)
+    root
+      .querySelectorAll<HTMLElement>(
+        '[data-background-guide-target="shop"], [data-background-guide-shop-end]',
+      )
+      .forEach((element) => observer.observe(element))
+    window.addEventListener('resize', updateTarget)
+    return () => {
+      window.cancelAnimationFrame(animationFrame)
+      observer.disconnect()
+      window.removeEventListener('resize', updateTarget)
+    }
+  }, [])
+
+  const isCharacters = target === 'characters'
+  const accent = isCharacters ? '#fb7185' : '#34d399'
+  const number = isCharacters ? 2 : 3
+  const title = isCharacters
+    ? '이제 신랑·신부를 꾸며볼까요?'
+    : '마지막으로 오브젝트를 채워볼까요?'
+  const shopTitle = isCharacters
+    ? '신랑과 신부를 각각 꾸며보세요'
+    : '오브젝트를 배치해 보세요'
+  const buttonLabel = isCharacters ? '신랑·신부 꾸미기 시작' : '오브젝트 꾸미기 시작'
+  const textShadow = { textShadow: '0 2px 5px rgba(0, 0, 0, 0.75)' }
 
   return (
-    <div className="absolute inset-0 z-[30000] flex items-center justify-center bg-gray-900/50 px-12 py-20">
-      <div className="flex max-h-full w-full flex-col items-center justify-center gap-8 overflow-hidden rounded-2xl border-4 border-brand-100 bg-white px-10 py-9 text-center shadow-2xl">
-        <div className="grid w-full grid-cols-3 gap-3">
-          {DECORATE_STEPS.map((step, index) => (
-            <div
-              key={step.key}
-              className={`flex h-14 items-center justify-center gap-3 rounded-lg border-2 text-xl font-black ${
-                index < targetIndex
-                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                  : index === targetIndex
-                    ? 'border-brand-500 bg-brand-500 text-white'
-                    : 'border-gray-200 bg-white text-gray-400'
-              }`}
-            >
-              <span>{step.number}</span>
-              <span>{step.label}</span>
-            </div>
-          ))}
-        </div>
+    <div ref={overlayRef} className="absolute inset-0 z-[30000]">
+      <svg
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 h-full w-full"
+        viewBox={`0 0 ${BASE_WIDTH} ${BASE_HEIGHT}`}
+        preserveAspectRatio="none"
+      >
+        <defs>
+          <mask id={`decorate-${target}-guide-mask`}>
+            <rect width={BASE_WIDTH} height={BASE_HEIGHT} fill="white" />
+            {shopRect && (
+              <rect
+                x={shopRect.x}
+                y={shopRect.y}
+                width={shopRect.width}
+                height={shopRect.height}
+                rx="18"
+                fill="black"
+              />
+            )}
+          </mask>
+        </defs>
+        <rect
+          width={BASE_WIDTH}
+          height={BASE_HEIGHT}
+          fill="#1f2937"
+          fillOpacity="0.72"
+          mask={`url(#decorate-${target}-guide-mask)`}
+        />
+        {shopRect && (
+          <rect
+            {...shopRect}
+            rx="18"
+            fill="none"
+            stroke={accent}
+            strokeWidth="9"
+            vectorEffect="non-scaling-stroke"
+          />
+        )}
+      </svg>
 
-        <div>
-          <h1 className={`text-5xl font-black leading-tight ${titleColorClass}`}>
-            {guide.title}
-          </h1>
-          <p className="mt-6 whitespace-pre-line text-3xl font-bold leading-[1.65] text-gray-600">
-            {guide.description}
+      <div
+        className="absolute left-1/2 w-[1000px] -translate-x-1/2 text-center text-white"
+        style={{ top: isCharacters ? 650 : 600, ...textShadow }}
+      >
+        <h1
+          className="whitespace-nowrap text-5xl font-black leading-tight"
+          style={{ color: accent }}
+        >
+          {number}. {title}
+        </h1>
+        {isCharacters ? (
+          <p className="mt-6 text-2xl font-bold leading-relaxed">
+            <>
+              <span className="block">신랑과 신부를 원하는 모습으로 꾸민 뒤,</span>
+              <span className="block">
+                두 사람을 끌어 사진에 어울리는 위치로 옮겨보세요.
+              </span>
+            </>
+          </p>
+        ) : (
+          <div className="mt-6 text-2xl font-bold leading-relaxed">
+            <p>오브젝트를 배치해 사진을 자유롭게 꾸며보세요.</p>
+            <p className="mt-2">
+              마지막으로 선택한 오브젝트는 사진 속 가장 앞으로 올라와요.
+            </p>
+            <div className="mt-5 flex items-center justify-center gap-8 text-xl font-black">
+              <span className="flex items-center gap-2">
+                <strong className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-500 text-3xl text-white shadow-md">
+                  +
+                </strong>
+                확대
+              </span>
+              <span className="flex items-center gap-2">
+                <strong className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-500 text-3xl text-white shadow-md">
+                  −
+                </strong>
+                축소
+              </span>
+              <span className="flex items-center gap-2">
+                <strong className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-2xl text-brand-600 shadow-md ring-2 ring-brand-400">
+                  ↺
+                </strong>
+                리셋
+              </span>
+              <span className="flex items-center gap-2">
+                <strong className="flex h-12 w-12 items-center justify-center rounded-full bg-red-500 text-xl text-white shadow-md">
+                  ✕
+                </strong>
+                삭제
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {shopRect && (
+        <div
+          className="absolute w-[680px] -translate-x-1/2 text-left text-white"
+          style={{
+            left: 'calc(50% - 55px)',
+            top: Math.max(760, shopRect.y - (isCharacters ? 150 : 110)),
+            ...textShadow,
+          }}
+        >
+          <p className="text-3xl font-black" style={{ color: accent }}>
+            {shopTitle}
+          </p>
+          <p className="mt-3 text-2xl font-bold leading-relaxed">
+            {isCharacters ? (
+              <>
+                <span className="block">신랑과 신부 모두 헤어·염색·얼굴·의상</span>
+                <span className="block">네 가지 카테고리에서 각각 선택</span>
+              </>
+            ) : (
+              <span className="block">특별한 고가 오브제도 돈만 있다면 선택 가능!</span>
+            )}
           </p>
         </div>
+      )}
 
-        {target === 'background' && (
-          <div className="grid w-full grid-cols-2 gap-x-10 gap-y-5 px-8 text-left text-2xl font-bold text-gray-700">
-            <p>
-              <strong className="text-slate-600">단색</strong>
-              <span className="text-gray-400"> : </span>동일색 배경
-            </p>
-            <p>
-              <strong className="text-rose-500">실내</strong>
-              <span className="text-gray-400"> : </span>실내 배경
-            </p>
-            <p>
-              <strong className="text-emerald-600">야외</strong>
-              <span className="text-gray-400"> : </span>야외 배경
-            </p>
-            <p>
-              <strong className="text-amber-600">지역</strong>
-              <span className="text-gray-400"> : </span>실제 지역
-            </p>
-          </div>
-        )}
-
-        {target === 'characters' && (
-          <div className="grid w-full grid-cols-2 gap-x-10 gap-y-5 px-8 text-left text-2xl font-bold text-gray-700">
-            <p>
-              <strong className="text-rose-500">헤어</strong>
-              <span className="text-gray-400"> : </span>머리 모양
-            </p>
-            <p>
-              <strong className="text-amber-600">염색</strong>
-              <span className="text-gray-400"> : </span>머리 색
-            </p>
-            <p>
-              <strong className="text-sky-600">표정</strong>
-              <span className="text-gray-400"> : </span>얼굴 표정
-            </p>
-            <p>
-              <strong className="text-emerald-600">옷</strong>
-              <span className="text-gray-400"> : </span>의상
-            </p>
-          </div>
-        )}
-
-        {target === 'objects' && (
-          <div className="grid w-full grid-cols-4 gap-6 px-8">
-            <div className="flex flex-col items-center gap-3 text-xl font-black text-gray-700">
-              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-500 text-4xl font-black text-white shadow-md">
-                +
-              </span>
-              <span>확대</span>
-            </div>
-            <div className="flex flex-col items-center gap-3 text-xl font-black text-gray-700">
-              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-500 text-4xl font-black text-white shadow-md">
-                −
-              </span>
-              <span>축소</span>
-            </div>
-            <div className="flex flex-col items-center gap-3 text-xl font-black text-gray-700">
-              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-3xl font-black text-brand-600 shadow-md ring-2 ring-brand-400">
-                ↺
-              </span>
-              <span>리셋</span>
-            </div>
-            <div className="flex flex-col items-center gap-3 text-xl font-black text-gray-700">
-              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-red-500 text-2xl font-bold text-white shadow-md">
-                ✕
-              </span>
-              <span>삭제</span>
-            </div>
-          </div>
-        )}
-
-        <div className="flex w-full gap-4">
-          {onReturn && (
-            <Button variant="secondary" onClick={onReturn} className="w-1/3 py-5 text-2xl">
-              이전 단계로
-            </Button>
-          )}
-          <Button onClick={onContinue} className="flex-1 py-5 text-2xl">
-            {guide.button}
-          </Button>
-        </div>
+      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+        <Button
+          onClick={onContinue}
+          className="w-[480px] whitespace-nowrap px-8 py-6 text-3xl"
+        >
+          {buttonLabel}
+        </Button>
       </div>
     </div>
   )
@@ -1156,13 +1207,13 @@ export default function Decorate({
 
   const handleNextDecorateStep = () => {
     if (decorateStep === 'background') {
-      if (seenDecorateGuides.characters) activateDecorateStep('characters')
-      else setTransitionTarget('characters')
+      activateDecorateStep('characters')
+      if (!seenDecorateGuides.characters) setTransitionTarget('characters')
       return
     }
     if (decorateStep === 'characters') {
-      if (seenDecorateGuides.objects) activateDecorateStep('objects')
-      else setTransitionTarget('objects')
+      activateDecorateStep('objects')
+      if (!seenDecorateGuides.objects) setTransitionTarget('objects')
       return
     }
     setStage('frameConfirm')
@@ -1320,10 +1371,9 @@ export default function Decorate({
         transitionTarget === 'background' ? (
           <BackgroundDecorateGuide onContinue={handleTransitionContinue} />
         ) : (
-          <DecorateTransition
+          <DecorateStepSpotlightGuide
             target={transitionTarget}
             onContinue={handleTransitionContinue}
-            onReturn={() => setTransitionTarget(null)}
           />
         )
       )}
@@ -2134,7 +2184,7 @@ export default function Decorate({
                 >
                   <span className="h-16 w-16 rounded-lg border-2 border-gray-200 bg-white" />
                   <span className="w-full truncate text-center text-base font-semibold text-gray-700">
-                    흰색 배경
+                    흰색
                   </span>
                   <span className="w-full truncate text-center text-sm text-gray-400">무료</span>
                 </button>

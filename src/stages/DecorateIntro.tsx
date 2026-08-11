@@ -146,9 +146,26 @@ export default function DecorateIntro() {
               <p className="text-3xl font-black" style={{ color: '#5a9ef7' }}>
                 꾸미기는 세 단계예요
               </p>
-              <p className="mt-2 text-2xl font-bold">
-                배경, 신랑·신부, 오브젝트를 꾸며요.
-              </p>
+              <div className="mt-3 flex items-center gap-5 text-xl font-black">
+                <span className="flex items-center gap-2 whitespace-nowrap">
+                  <strong className="flex h-8 w-8 items-center justify-center rounded-full bg-[#5a9ef7] text-lg text-white">
+                    1
+                  </strong>
+                  배경
+                </span>
+                <span className="flex items-center gap-2 whitespace-nowrap">
+                  <strong className="flex h-8 w-8 items-center justify-center rounded-full bg-[#5a9ef7] text-lg text-white">
+                    2
+                  </strong>
+                  신랑·신부
+                </span>
+                <span className="flex items-center gap-2 whitespace-nowrap">
+                  <strong className="flex h-8 w-8 items-center justify-center rounded-full bg-[#5a9ef7] text-lg text-white">
+                    3
+                  </strong>
+                  오브젝트
+                </span>
+              </div>
             </div>
           </>
         )}
@@ -169,8 +186,8 @@ export default function DecorateIntro() {
                 프레임 조정도 가능해요
               </p>
               <p className="mt-2 text-2xl font-bold leading-relaxed">
-                <span className="block">사진의 위치와 크기를 조정하고</span>
-                <span className="block">가로·세로 비율도 바꿀 수 있어요.</span>
+                <span className="block">인화될 사진의 위치·크기 및</span>
+                <span className="block">가로·세로 비율 조정</span>
               </p>
             </div>
           </>
@@ -192,8 +209,8 @@ export default function DecorateIntro() {
                 구매 목록에서 맨 앞으로
               </p>
               <p className="mt-2 text-2xl font-bold leading-relaxed">
-                <span className="block">원하는 오브젝트를 누르면</span>
-                <span className="block">사진 속 가장 앞으로 올라와요.</span>
+                <span className="block">구매 목록에서 오브젝트를 선택하면</span>
+                <span className="block">사진 속 가장 앞으로 배치</span>
               </p>
             </div>
           </>
@@ -203,7 +220,10 @@ export default function DecorateIntro() {
           className="absolute"
           style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}
         >
-          <Button onClick={() => setShowTutorial(false)} className="w-[440px] px-24 py-6 text-3xl">
+          <Button
+            onClick={() => setShowTutorial(false)}
+            className="w-[480px] whitespace-nowrap px-8 py-6 text-3xl"
+          >
             다음으로
           </Button>
         </div>
