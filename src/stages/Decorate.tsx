@@ -646,7 +646,11 @@ function DecorateTransition({
 }
 
 // 5) decorate — 신랑·신부 고정 배치 + 배경/표정/아이템 꾸미기.
-export default function Decorate() {
+export default function Decorate({
+  suppressTransitionGuide = false,
+}: {
+  suppressTransitionGuide?: boolean
+}) {
   const placedItems = useAppStore((s) => s.placedItems)
   const spent = useAppStore((s) => s.spent)
   const budget = useAppStore((s) => s.budget)
@@ -1130,7 +1134,7 @@ export default function Decorate() {
 
   return (
     <StageLayout>
-      {transitionTarget && (
+      {!suppressTransitionGuide && transitionTarget && (
         <DecorateTransition
           target={transitionTarget}
           onContinue={handleTransitionContinue}
@@ -1142,7 +1146,7 @@ export default function Decorate() {
       <div className="flex h-full flex-col gap-4">
         {/* 예산 바 */}
         <div className="relative shrink-0 rounded-2xl bg-white px-6 py-5 shadow-sm">
-          <div className="mb-4 grid grid-cols-3 gap-3">
+          <div data-tutorial-target="steps" className="mb-4 grid grid-cols-3 gap-3">
             {DECORATE_STEPS.map((step, index) => (
               <div
                 key={step.key}
@@ -1503,6 +1507,7 @@ export default function Decorate() {
             )}
 
             <button
+              data-tutorial-target="frame-button"
               type="button"
               aria-pressed={isFrameEditing}
               onClick={isFrameEditing ? finishFrameEditing : beginFrameEditing}
@@ -1519,7 +1524,10 @@ export default function Decorate() {
           </div>
 
           <div className="flex w-[23%] min-w-[168px] flex-col gap-3">
-            <aside className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border-2 border-brand-100 bg-white shadow-sm">
+            <aside
+              data-tutorial-target="purchase-list"
+              className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border-2 border-brand-100 bg-white shadow-sm"
+            >
               <div className="flex shrink-0 items-center justify-between border-b border-brand-100 px-2.5 py-3">
                 <h2 className="text-lg font-black text-gray-800">구매 목록</h2>
                 <span className="text-sm font-bold text-brand-500">{equipmentEntries.length}개</span>
