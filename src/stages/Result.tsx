@@ -1,9 +1,73 @@
 import { useMemo } from 'react'
 import { useAppStore } from '../store/useAppStore'
 import { findTypeByCode } from '../data/types16'
-import { AXES } from '../data/axes'
+import { AXES, type AxisKey, type PoleCode } from '../data/axes'
 import StageLayout from '../components/StageLayout'
 import Button from '../components/Button'
+
+type CaptionIntensity = 'soft' | 'clear' | 'strong'
+
+const BALANCED_CAPTIONS: Record<AxisKey, string> = {
+  space: '실내의 편안함과 야외의 자유로움을 모두 좋아해요.',
+  tone: '밝은 설렘과 어두운 낭만을 고르게 즐겨요.',
+  deco: '꾸밀 때와 덜어낼 때를 정확히 아는 균형형이에요.',
+  color: '무채색의 차분함과 유채색의 생기를 모두 즐겨요.',
+}
+
+const POLE_CAPTIONS: Record<PoleCode, Record<CaptionIntensity, string>> = {
+  IN: {
+    soft: '날씨 좋은 날에도 실내의 편안함이 조금 더 끌려요.',
+    clear: '아늑하고 안정적인 실내에서 마음이 놓여요.',
+    strong: '날씨와 변수는 문밖에 두고 싶은 완전한 실내파예요.',
+  },
+  OUT: {
+    soft: '답답한 벽보다 탁 트인 풍경에 조금 더 마음이 가요.',
+    clear: '바람과 햇살이 있는 순간에 마음이 활짝 열려요.',
+    strong: '거의 밖에서 사는 완전한 야외파예요.',
+  },
+  LIGHT: {
+    soft: '조금 더 환하고 산뜻한 장면에 눈길이 가요.',
+    clear: '밝은 빛이 들어와야 설렘도 제대로 시작돼요.',
+    strong: '햇빛이 많을수록 기분도 함께 환해지는 취향이에요.',
+  },
+  DARK: {
+    soft: '은은한 그림자가 있는 장면에 조금 더 끌려요.',
+    clear: '조명이 낮아질수록 분위기는 더 깊어진다고 느껴요.',
+    strong: '촛불 하나만 켜도 분위기는 이미 완성돼요.',
+  },
+  FANCY: {
+    soft: '작은 포인트 하나라도 더하면 마음이 즐거워져요.',
+    clear: '볼거리와 장식이 풍성할수록 설렘도 커져요.',
+    strong: '빈 공간을 보면 무엇이라도 꾸미고 싶어져요.',
+  },
+  SIMPLE: {
+    soft: '군더더기 없이 정돈된 장면에 조금 더 끌려요.',
+    clear: '꼭 필요한 것만 남긴 깔끔한 구성을 좋아해요.',
+    strong: '하나를 더하기보다 덜어낼 때 마음이 편해요.',
+  },
+  MONO: {
+    soft: '색을 덜어낸 차분한 장면에 조금 더 눈길이 가요.',
+    clear: '절제된 색 안에서 분위기와 형태를 더 잘 발견해요.',
+    strong: '흑백만으로도 충분히 많은 이야기를 만들어요.',
+  },
+  CHROMA: {
+    soft: '작은 색 포인트가 들어가면 기분도 함께 살아나요.',
+    clear: '다채로운 색이 모일수록 장면이 더 생생해져요.',
+    strong: '색상표가 모자랄 만큼 다채로운 장면을 좋아해요.',
+  },
+}
+
+function getAxisCaption(
+  axis: AxisKey,
+  winner: PoleCode,
+  winnerPercent: number,
+  isBalanced: boolean,
+) {
+  if (isBalanced) return BALANCED_CAPTIONS[axis]
+  const intensity: CaptionIntensity =
+    winnerPercent >= 90 ? 'strong' : winnerPercent >= 70 ? 'clear' : 'soft'
+  return POLE_CAPTIONS[winner][intensity]
+}
 
 export default function Result() {
   const resultCode = useAppStore((s) => s.resultCode)
@@ -244,6 +308,12 @@ function AxisGauge({
 }) {
   const isBalanced = result.gap === 0
   const isLeftWinner = result.winner.code === result.left.code
+  const caption = getAxisCaption(
+    result.axis.key,
+    result.winner.code,
+    result.winnerPercent,
+    isBalanced,
+  )
 
   return (
     <div
@@ -298,6 +368,9 @@ function AxisGauge({
             }}
           />
         </div>
+        <p className="mt-2 text-center text-lg font-semibold leading-snug text-gray-500">
+          {caption}
+        </p>
       </div>
     </div>
   )

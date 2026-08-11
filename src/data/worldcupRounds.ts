@@ -8,7 +8,10 @@ export interface Choice {
   label: string
   desc?: string
   image?: string
+  // 16유형을 균등하게 판정하기 위한 점수.
   weights: Weights
+  // 두 사진에서 실제로 대비되는 축만 기록하는 게이지 점수.
+  gaugeWeights: Weights
 }
 
 export interface Round {
@@ -20,26 +23,28 @@ export interface Round {
 
 const wcImage = (fileName: string) => assetUrl(`images/worldcup/${fileName}`)
 
-// 앞의 4라운드는 각 축의 중심을 3점으로 결정한다.
-// 뒤의 3라운드는 한 축씩만 대칭적으로 보정한다.
-// 두 사람의 점수를 합쳐도 동점이 생기지 않으며, 무작위 선택 시 16가지 유형이 같은 빈도로 나온다.
+// 홀수 라운드는 네 축이 모두 반대인 사진을 사용한다.
+// 짝수 라운드는 자연스러운 사진을 사용하고, 눈에 띄게 대비되는 축만 게이지에 기록한다.
+// weights는 유형 판정 확률을 균등하게 유지하고 gaugeWeights는 선택의 강도를 표현한다.
 const PLAYER_ONE_ROUNDS: Round[] = [
   {
     id: 'p1-r1',
     question: '더 마음에 드는 사진은?',
     A: {
       id: 'p1-r1a',
-      label: '아늑한 라이브러리',
-      desc: '책과 조명으로 둘러싸인 포근한 실내',
-      image: wcImage('worldcup25.png'),
+      label: '파스텔 글라스홀',
+      desc: '밝은 실내를 다채로운 꽃으로 풍성하게 채운 공간',
+      image: wcImage('worldcup24.png'),
       weights: { IN: 3 },
+      gaugeWeights: { IN: 1, LIGHT: 1, FANCY: 1, CHROMA: 1 },
     },
     B: {
       id: 'p1-r1b',
-      label: '오픈 비치',
-      desc: '수평선까지 시야가 열리는 넓은 해변',
-      image: wcImage('worldcup26.png'),
+      label: '밤의 언덕 예식',
+      desc: '어두운 야외에 최소한의 무채색 장식만 놓인 공간',
+      image: wcImage('worldcup20.png'),
       weights: { OUT: 3 },
+      gaugeWeights: { OUT: 1, DARK: 1, SIMPLE: 1, MONO: 1 },
     },
   },
   {
@@ -47,17 +52,19 @@ const PLAYER_ONE_ROUNDS: Round[] = [
     question: '더 마음에 드는 사진은?',
     A: {
       id: 'p1-r2a',
-      label: '구름 위 아침',
-      desc: '구름 사이로 햇살이 번지는 밝은 아침',
+      label: '구름 위 일출',
+      desc: '밝은 아침 하늘에 여백이 넓게 펼쳐진 풍경',
       image: wcImage('worldcup27.png'),
       weights: { LIGHT: 3 },
+      gaugeWeights: { LIGHT: 1, SIMPLE: 1 },
     },
     B: {
       id: 'p1-r2b',
       label: '오로라 나이트',
-      desc: '어두운 밤하늘을 물들이는 깊고 신비로운 빛',
+      desc: '어두운 밤하늘을 여러 겹의 빛이 채우는 풍경',
       image: wcImage('worldcup28.png'),
       weights: { DARK: 3 },
+      gaugeWeights: { DARK: 1, FANCY: 1 },
     },
   },
   {
@@ -65,17 +72,19 @@ const PLAYER_ONE_ROUNDS: Round[] = [
     question: '더 마음에 드는 사진은?',
     A: {
       id: 'p1-r3a',
-      label: '코럴 리프',
-      desc: '산호와 물고기가 화면을 가득 채운 풍경',
-      image: wcImage('worldcup29.png'),
+      label: '블랙 골드 볼룸',
+      desc: '어두운 실내를 화려한 무채색 장식으로 채운 공간',
+      image: wcImage('worldcup02.png'),
       weights: { FANCY: 3 },
+      gaugeWeights: { IN: 1, DARK: 1, FANCY: 1, MONO: 1 },
     },
     B: {
       id: 'p1-r3b',
-      label: '화이트 듄',
-      desc: '선과 여백만 남은 고요한 모래 언덕',
-      image: wcImage('worldcup30.png'),
+      label: '컬러 들판 예식',
+      desc: '밝은 야외에 간결한 유채색 포인트를 둔 공간',
+      image: wcImage('worldcup21.png'),
       weights: { SIMPLE: 3 },
+      gaugeWeights: { OUT: 1, LIGHT: 1, SIMPLE: 1, CHROMA: 1 },
     },
   },
   {
@@ -83,17 +92,19 @@ const PLAYER_ONE_ROUNDS: Round[] = [
     question: '더 마음에 드는 사진은?',
     A: {
       id: 'p1-r4a',
-      label: '모노 피오르',
-      desc: '안개와 바위가 만드는 절제된 무채색 풍경',
-      image: wcImage('worldcup31.png'),
+      label: '화이트 솔트 플랫',
+      desc: '밝은 야외에 수평선과 무채색 여백만 남은 풍경',
+      image: wcImage('worldcup38.png'),
       weights: { MONO: 3 },
+      gaugeWeights: { OUT: 1, SIMPLE: 1, MONO: 1 },
     },
     B: {
       id: 'p1-r4b',
-      label: '어텀 피오르',
-      desc: '가을빛이 선명하게 번지는 다채로운 풍경',
-      image: wcImage('worldcup32.png'),
+      label: '라이브러리 거실',
+      desc: '밝은 실내를 책과 가구가 다채롭게 채운 공간',
+      image: wcImage('worldcup25.png'),
       weights: { CHROMA: 3 },
+      gaugeWeights: { IN: 1, FANCY: 1, CHROMA: 1 },
     },
   },
   {
@@ -101,17 +112,19 @@ const PLAYER_ONE_ROUNDS: Round[] = [
     question: '더 마음에 드는 사진은?',
     A: {
       id: 'p1-r5a',
-      label: '플라워 채플',
-      desc: '밝은 실내를 꽃으로 풍성하게 채운 예식',
-      image: wcImage('worldcup01.png'),
+      label: '미니멀 나이트 갤러리',
+      desc: '어두운 실내에 여백과 무채색만 남긴 공간',
+      image: wcImage('worldcup45.png'),
       weights: { IN: 1 },
+      gaugeWeights: { IN: 1, DARK: 1, SIMPLE: 1, MONO: 1 },
     },
     B: {
       id: 'p1-r5b',
-      label: '나이트 플라워 가든',
-      desc: '밤하늘 아래 짙은 꽃빛이 살아나는 야외 예식',
-      image: wcImage('worldcup23.png'),
+      label: '코럴 리프',
+      desc: '밝은 야외를 산호와 물고기가 다채롭게 채운 풍경',
+      image: wcImage('worldcup29.png'),
       weights: { OUT: 1 },
+      gaugeWeights: { OUT: 1, LIGHT: 1, FANCY: 1, CHROMA: 1 },
     },
   },
   {
@@ -119,17 +132,19 @@ const PLAYER_ONE_ROUNDS: Round[] = [
     question: '더 마음에 드는 사진은?',
     A: {
       id: 'p1-r6a',
-      label: '문라이트 세리머니',
-      desc: '달빛 아래 여백을 살린 차분한 야외 예식',
-      image: wcImage('worldcup20.png'),
+      label: '모노 피오르',
+      desc: '짙은 안개와 바위가 만드는 어두운 무채색 풍경',
+      image: wcImage('worldcup31.png'),
       weights: { DARK: 1 },
+      gaugeWeights: { DARK: 1, SIMPLE: 1, MONO: 1 },
     },
     B: {
       id: 'p1-r6b',
-      label: '글라스 채플',
-      desc: '햇빛과 컬러 플라워가 어우러진 실내 예식',
-      image: wcImage('worldcup24.png'),
+      label: '선라이트 폭포',
+      desc: '햇빛과 무지개가 식물을 환하게 비추는 풍경',
+      image: wcImage('worldcup35.png'),
       weights: { LIGHT: 1 },
+      gaugeWeights: { LIGHT: 1, FANCY: 1, CHROMA: 1 },
     },
   },
   {
@@ -137,17 +152,19 @@ const PLAYER_ONE_ROUNDS: Round[] = [
     question: '더 마음에 드는 사진은?',
     A: {
       id: 'p1-r7a',
-      label: '풍성한 온실',
-      desc: '꽃과 식물이 층층이 채워진 풍성한 공간',
+      label: '모노 그린하우스',
+      desc: '밝은 실내를 풍성한 무채색 식물 장식으로 채운 공간',
       image: wcImage('worldcup41.png'),
       weights: { FANCY: 2 },
+      gaugeWeights: { IN: 1, LIGHT: 1, FANCY: 1, MONO: 1 },
     },
     B: {
       id: 'p1-r7b',
-      label: '여백의 온실',
-      desc: '최소한의 식물만 놓인 단정한 공간',
-      image: wcImage('worldcup42.png'),
+      label: '컬러 나이트 비치',
+      desc: '어두운 야외에 선명한 색과 여백만 남긴 해변',
+      image: wcImage('worldcup46.png'),
       weights: { SIMPLE: 2 },
+      gaugeWeights: { OUT: 1, DARK: 1, SIMPLE: 1, CHROMA: 1 },
     },
   },
 ]
@@ -159,16 +176,18 @@ const PLAYER_TWO_ROUNDS: Round[] = [
     A: {
       id: 'p2-r1a',
       label: '글라스하우스 카페',
-      desc: '유리창과 식물에 둘러싸인 아늑한 실내',
+      desc: '어두운 실내를 식물과 가구가 다채롭게 채운 공간',
       image: wcImage('worldcup33.png'),
       weights: { IN: 3 },
+      gaugeWeights: { IN: 1, DARK: 1, FANCY: 1, CHROMA: 1 },
     },
     B: {
       id: 'p2-r1b',
-      label: '알파인 메도우',
-      desc: '산과 하늘 사이로 탁 트인 초원',
-      image: wcImage('worldcup34.png'),
+      label: '화이트 설원',
+      desc: '밝은 야외에 여백과 무채색만 남은 설원',
+      image: wcImage('worldcup47.png'),
       weights: { OUT: 3 },
+      gaugeWeights: { OUT: 1, LIGHT: 1, SIMPLE: 1, MONO: 1 },
     },
   },
   {
@@ -176,17 +195,19 @@ const PLAYER_TWO_ROUNDS: Round[] = [
     question: '더 마음에 드는 사진은?',
     A: {
       id: 'p2-r2a',
-      label: '선라이트 폭포',
-      desc: '햇살과 무지개가 반짝이는 환한 폭포',
-      image: wcImage('worldcup35.png'),
+      label: '가을 피오르',
+      desc: '밝은 햇빛 아래 다채로운 나무와 산이 펼쳐진 풍경',
+      image: wcImage('worldcup32.png'),
       weights: { LIGHT: 3 },
+      gaugeWeights: { LIGHT: 1, FANCY: 1, CHROMA: 1 },
     },
     B: {
       id: 'p2-r2b',
-      label: '밀키웨이 사막',
-      desc: '어두운 사막 위로 별빛이 쏟아지는 밤',
-      image: wcImage('worldcup36.png'),
+      label: '달 표면',
+      desc: '깊은 밤하늘 아래 고요한 무채색 풍경',
+      image: wcImage('worldcup39.png'),
       weights: { DARK: 3 },
+      gaugeWeights: { DARK: 1, SIMPLE: 1, MONO: 1 },
     },
   },
   {
@@ -194,17 +215,19 @@ const PLAYER_TWO_ROUNDS: Round[] = [
     question: '더 마음에 드는 사진은?',
     A: {
       id: 'p2-r3a',
-      label: '트로피컬 포레스트',
-      desc: '식물과 폭포가 층층이 가득한 풍경',
-      image: wcImage('worldcup37.png'),
+      label: '컬러 플라워 마켓',
+      desc: '밝은 실내를 꽃과 소품이 다채롭게 채운 공간',
+      image: wcImage('worldcup48.png'),
       weights: { FANCY: 3 },
+      gaugeWeights: { IN: 1, LIGHT: 1, FANCY: 1, CHROMA: 1 },
     },
     B: {
       id: 'p2-r3b',
-      label: '솔트 플랫',
-      desc: '하늘과 수평선만 남은 단정한 풍경',
-      image: wcImage('worldcup38.png'),
+      label: '별빛 사막',
+      desc: '어두운 야외에 모래와 별빛만 남은 무채색 풍경',
+      image: wcImage('worldcup36.png'),
       weights: { SIMPLE: 3 },
+      gaugeWeights: { OUT: 1, DARK: 1, SIMPLE: 1, MONO: 1 },
     },
   },
   {
@@ -212,17 +235,19 @@ const PLAYER_TWO_ROUNDS: Round[] = [
     question: '더 마음에 드는 사진은?',
     A: {
       id: 'p2-r4a',
-      label: '문 스케이프',
-      desc: '달 표면과 지구가 만드는 차분한 무채색',
-      image: wcImage('worldcup39.png'),
+      label: '화이트 듄',
+      desc: '밝은 모래와 여백이 중심이 되는 무채색 풍경',
+      image: wcImage('worldcup30.png'),
       weights: { MONO: 3 },
+      gaugeWeights: { LIGHT: 1, SIMPLE: 1, MONO: 1 },
     },
     B: {
       id: 'p2-r4b',
-      label: '컬러 네뷸라',
-      desc: '다양한 빛이 폭발하듯 펼쳐진 우주',
-      image: wcImage('worldcup40.png'),
+      label: '트로피컬 폭포',
+      desc: '어두운 숲과 식물이 화면을 다채롭게 채우는 풍경',
+      image: wcImage('worldcup37.png'),
       weights: { CHROMA: 3 },
+      gaugeWeights: { DARK: 1, FANCY: 1, CHROMA: 1 },
     },
   },
   {
@@ -230,17 +255,19 @@ const PLAYER_TWO_ROUNDS: Round[] = [
     question: '더 마음에 드는 사진은?',
     A: {
       id: 'p2-r5a',
-      label: '문라이트 가든',
-      desc: '달빛과 짙은 꽃 장식이 어우러진 야외 예식',
-      image: wcImage('worldcup17.png'),
+      label: '화이트 온실',
+      desc: '밝은 실내에 최소한의 무채색 장식만 놓인 공간',
+      image: wcImage('worldcup42.png'),
       weights: { MONO: 1 },
+      gaugeWeights: { IN: 1, LIGHT: 1, SIMPLE: 1, MONO: 1 },
     },
     B: {
       id: 'p2-r5b',
-      label: '주얼 톤 볼룸',
-      desc: '깊고 선명한 컬러로 채운 화려한 실내 예식',
-      image: wcImage('worldcup16.png'),
+      label: '컬러 네뷸라',
+      desc: '어두운 야외를 복잡한 색과 빛이 채우는 우주',
+      image: wcImage('worldcup40.png'),
       weights: { CHROMA: 1 },
+      gaugeWeights: { OUT: 1, DARK: 1, FANCY: 1, CHROMA: 1 },
     },
   },
   {
@@ -248,17 +275,19 @@ const PLAYER_TWO_ROUNDS: Round[] = [
     question: '더 마음에 드는 사진은?',
     A: {
       id: 'p2-r6a',
-      label: '컬러 블록 가든',
-      desc: '밝은 햇빛과 선명한 포인트가 살아나는 야외 예식',
-      image: wcImage('worldcup21.png'),
+      label: '오픈 비치',
+      desc: '하늘과 수평선이 시원하게 펼쳐진 밝은 야외',
+      image: wcImage('worldcup26.png'),
       weights: { SIMPLE: 1 },
+      gaugeWeights: { OUT: 1, SIMPLE: 1 },
     },
     B: {
       id: 'p2-r6b',
-      label: '블랙 골드 볼룸',
-      desc: '검정과 금빛 장식으로 밀도 있게 연출한 실내 예식',
-      image: wcImage('worldcup02.png'),
+      label: '트로피컬 플라워홀',
+      desc: '꽃과 테이블 장식이 가득한 밝은 실내',
+      image: wcImage('worldcup10.png'),
       weights: { FANCY: 1 },
+      gaugeWeights: { IN: 1, FANCY: 1 },
     },
   },
   {
@@ -266,17 +295,19 @@ const PLAYER_TWO_ROUNDS: Round[] = [
     question: '더 마음에 드는 사진은?',
     A: {
       id: 'p2-r7a',
-      label: '선셋 라운지',
-      desc: '유리창 안에서 노을과 바다를 바라보는 실내',
-      image: wcImage('worldcup43.png'),
+      label: '주얼 블랙 볼룸',
+      desc: '어두운 실내를 화려하고 다채로운 장식으로 채운 공간',
+      image: wcImage('worldcup16.png'),
       weights: { IN: 2 },
+      gaugeWeights: { IN: 1, DARK: 1, FANCY: 1, CHROMA: 1 },
     },
     B: {
       id: 'p2-r7b',
-      label: '선셋 테라스',
-      desc: '탁 트인 야외에서 노을과 바다를 마주하는 공간',
-      image: wcImage('worldcup44.png'),
+      label: '화이트 코스트',
+      desc: '밝은 야외에 절벽과 바다만 남은 무채색 풍경',
+      image: wcImage('worldcup49.png'),
       weights: { OUT: 2 },
+      gaugeWeights: { OUT: 1, LIGHT: 1, SIMPLE: 1, MONO: 1 },
     },
   },
 ]

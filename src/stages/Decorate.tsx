@@ -490,7 +490,7 @@ function LetterShapeBalloon({
 
 type DecorateTransitionTarget = DecorateStep
 
-type BackgroundGuideTarget = 'shop' | 'recommendations'
+type BackgroundGuideTarget = 'shop' | 'recommendations' | 'remaining'
 type BackgroundGuideRect = { x: number; y: number; width: number; height: number }
 
 function BackgroundDecorateGuide({ onContinue }: { onContinue: () => void }) {
@@ -511,7 +511,7 @@ function BackgroundDecorateGuide({ onContinue }: { onContinue: () => void }) {
       const scaleY = rootBounds.height / root.offsetHeight || 1
       const next: Partial<Record<BackgroundGuideTarget, BackgroundGuideRect>> = {}
 
-      ;(['shop', 'recommendations'] as BackgroundGuideTarget[]).forEach((name) => {
+      ;(['shop', 'recommendations', 'remaining'] as BackgroundGuideTarget[]).forEach((name) => {
         const target = root.querySelector<HTMLElement>(`[data-background-guide-target="${name}"]`)
         if (!target) return
         const targets = [target]
@@ -554,6 +554,7 @@ function BackgroundDecorateGuide({ onContinue }: { onContinue: () => void }) {
 
   const shop = targetRects.shop
   const recommendations = targetRects.recommendations
+  const remaining = targetRects.remaining
   const textShadow = { textShadow: '0 2px 5px rgba(0, 0, 0, 0.75)' }
 
   return (
@@ -607,7 +608,37 @@ function BackgroundDecorateGuide({ onContinue }: { onContinue: () => void }) {
             vectorEffect="non-scaling-stroke"
           />
         )}
+        {remaining && (
+          <rect
+            {...remaining}
+            rx="18"
+            fill="none"
+            stroke="#f472b6"
+            strokeWidth="9"
+            vectorEffect="non-scaling-stroke"
+          />
+        )}
       </svg>
+
+      {remaining && (
+        <div
+          className="absolute text-right text-white"
+          style={{
+            right: 44,
+            top: remaining.y + remaining.height + 30,
+            width: 520,
+            ...textShadow,
+          }}
+        >
+          <p className="text-3xl font-black" style={{ color: '#f472b6' }}>
+            남은 예산에 따라 인화가 달라져요
+          </p>
+          <p className="mt-3 text-2xl font-bold leading-relaxed">
+            <span className="block">1,000만 원 이상은 컬러 인화</span>
+            <span className="block">1,000만 원 미만은 흑백 인화</span>
+          </p>
+        </div>
+      )}
 
       <div
         className="absolute left-1/2 w-[920px] -translate-x-1/2 text-center text-white"
@@ -790,10 +821,7 @@ function DecorateStepSpotlightGuide({
         className="absolute left-1/2 w-[1000px] -translate-x-1/2 text-center text-white"
         style={{ top: isCharacters ? 650 : 600, ...textShadow }}
       >
-        <h1
-          className="whitespace-nowrap text-5xl font-black leading-tight"
-          style={{ color: accent }}
-        >
+        <h1 className="whitespace-nowrap text-5xl font-black leading-tight text-brand-300">
           {number}. {title}
         </h1>
         {isCharacters ? (
@@ -1410,7 +1438,10 @@ export default function Decorate({
               <span>사용</span>
               <strong className="font-black">{formatWon(spent)}</strong>
             </span>
-            <span className="flex h-14 items-center justify-center border-l border-gray-200">
+            <span
+              data-background-guide-target="remaining"
+              className="flex h-14 items-center justify-center border-l border-gray-200"
+            >
               <span
                 className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 font-black ${
                   isLowBudget ? 'text-red-500' : 'text-emerald-600'

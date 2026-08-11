@@ -10,6 +10,7 @@ import {
   WORLDCUP_ROUND_SETS,
   getWorldCupRounds,
   type Round,
+  type Weights,
 } from '../data/worldcupRounds'
 import { findTypeByCode } from '../data/types16'
 import {
@@ -50,6 +51,7 @@ export type AxisScores = Record<AxisKey, Record<string, number>>
 export interface PlayerResult {
   resultTypeId: string | null
   resultCode: string | null
+  typeAxisScores: AxisScores | null
   axisScores: AxisScores | null
   budget: number | null
   tierId: string | null
@@ -114,6 +116,7 @@ interface AppState {
 
   // 현재 플레이어의 월드컵 진행
   roundIndex: number
+  typeAxisScores: AxisScores
   axisScores: AxisScores
 
   // 표시용 미러(다른 스테이지가 그대로 읽음): 가장 최근 산출 유형 + 꾸미기 예산(=합계)
@@ -180,6 +183,16 @@ function cloneAxisScores(axisScores: AxisScores): AxisScores {
   ) as AxisScores
 }
 
+function addWeights(axisScores: AxisScores, weights: Weights): AxisScores {
+  const updated = cloneAxisScores(axisScores)
+  for (const [pole, score] of Object.entries(weights)) {
+    const axis = POLE_TO_AXIS[pole as PoleCode]
+    if (!axis || !score) continue
+    updated[axis][pole] = (updated[axis][pole] ?? 0) + score
+  }
+  return updated
+}
+
 function combineAxisScores(scoresList: (AxisScores | null)[]): AxisScores {
   const combined = emptyAxisScores()
   for (const scores of scoresList) {
@@ -197,6 +210,7 @@ function emptyPlayer(): PlayerResult {
   return {
     resultTypeId: null,
     resultCode: null,
+    typeAxisScores: null,
     axisScores: null,
     budget: null,
     tierId: null,
@@ -224,6 +238,30 @@ function computeCode(axisScores: AxisScores): string {
   return codeParts.join('-')
 }
 
+// 유형 방향은 판정 점수로 고정하고, 게이지 강도는 실제로 대비되는 사진 선택만으로 계산한다.
+// 비교 근거가 적은 축은 100%까지 올라가지 않도록 근거 수에 따라 상한을 둔다.
+function alignGaugeScores(gaugeScores: AxisScores, resultCode: string): AxisScores {
+  const aligned = emptyAxisScores()
+  const resultPoles = resultCode.split('-') as PoleCode[]
+
+  AXES.forEach((axis, index) => {
+    const [left, right] = axis.poles
+    const winner = resultPoles[index]
+    const total =
+      (gaugeScores[axis.key][left.code] ?? 0) +
+      (gaugeScores[axis.key][right.code] ?? 0)
+    const support = gaugeScores[axis.key][winner] ?? 0
+    const evidenceCap = 50 + Math.min(total, 5) * 10
+    const supportPercent = total === 0 ? 50 : Math.round((support / total) * 100)
+    const winnerPercent = Math.max(50, Math.min(evidenceCap, supportPercent))
+
+    aligned[axis.key][left.code] = winner === left.code ? winnerPercent : 100 - winnerPercent
+    aligned[axis.key][right.code] = winner === right.code ? winnerPercent : 100 - winnerPercent
+  })
+
+  return aligned
+}
+
 // 다음 배치 z값과 고유 instanceId 생성을 위한 단조 증가 카운터.
 let placeCounter = 0
 const MIN_ITEM_SCALE = 0.5
@@ -247,6 +285,7 @@ const initialState = {
   nextSoloRoundSetIndex: 0,
   players: [] as PlayerResult[],
   roundIndex: 0,
+  typeAxisScores: emptyAxisScores(),
   axisScores: emptyAxisScores(),
   resultTypeId: null as string | null,
   resultCode: null as string | null,
@@ -292,6 +331,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         nextSoloRoundSetIndex,
         players: makePlayers(playerCount),
         roundIndex: 0,
+        typeAxisScores: emptyAxisScores(),
         axisScores: emptyAxisScores(),
         resultTypeId: null,
         resultCode: null,
@@ -316,21 +356,10 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   choose: (round, side) => {
     const choice = side === 'A' ? round.A : round.B
-    set((state) => {
-      // 불변 업데이트: weights 맵의 극마다 소속 축 점수에 누적.
-      const axisScores: AxisScores = {
-        ...state.axisScores,
-        ...Object.fromEntries(
-          Object.entries(state.axisScores).map(([k, v]) => [k, { ...v }]),
-        ),
-      } as AxisScores
-      for (const [pole, score] of Object.entries(choice.weights)) {
-        const axis = POLE_TO_AXIS[pole as PoleCode]
-        if (!axis || !score) continue
-        axisScores[axis][pole] = (axisScores[axis][pole] ?? 0) + score
-      }
-      return { axisScores }
-    })
+    set((state) => ({
+      typeAxisScores: addWeights(state.typeAxisScores, choice.weights),
+      axisScores: addWeights(state.axisScores, choice.gaugeWeights),
+    }))
 
     // 다음 라운드로, 마지막이면 현재 플레이어 유형을 기록한다.
     const nextIndex = get().roundIndex + 1
@@ -343,15 +372,18 @@ export const useAppStore = create<AppState>((set, get) => ({
           currentPlayer: 1,
           roundSetIndex: 1,
           roundIndex: 0,
+          typeAxisScores: emptyAxisScores(),
           axisScores: emptyAxisScores(),
           stage: 'worldcup',
         })
       } else if (playerCount === 2) {
-        const combinedScores = combineAxisScores(players.map((p) => p.axisScores))
-        const code = computeCode(combinedScores)
+        const combinedTypeScores = combineAxisScores(players.map((p) => p.typeAxisScores))
+        const combinedGaugeScores = combineAxisScores(players.map((p) => p.axisScores))
+        const code = computeCode(combinedTypeScores)
         const type = findTypeByCode(code)
         set({
-          axisScores: combinedScores,
+          typeAxisScores: combinedTypeScores,
+          axisScores: alignGaugeScores(combinedGaugeScores, code),
           resultCode: code,
           resultTypeId: type ? type.typeId : null,
           stage: 'result',
@@ -365,17 +397,28 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   computeResult: () => {
-    const { axisScores, currentPlayer, players } = get()
-    const code = computeCode(axisScores)
+    const { typeAxisScores, axisScores, currentPlayer, players } = get()
+    const code = computeCode(typeAxisScores)
     const type = findTypeByCode(code)
     const typeId = type ? type.typeId : null
     const updated = players.map((p, i) =>
       i === currentPlayer
-        ? { ...p, resultCode: code, resultTypeId: typeId, axisScores: cloneAxisScores(axisScores) }
+        ? {
+            ...p,
+            resultCode: code,
+            resultTypeId: typeId,
+            typeAxisScores: cloneAxisScores(typeAxisScores),
+            axisScores: cloneAxisScores(axisScores),
+          }
         : p,
     )
     // 미러도 갱신(다른 스테이지 표시용).
-    set({ players: updated, resultCode: code, resultTypeId: typeId })
+    set({
+      players: updated,
+      resultCode: code,
+      resultTypeId: typeId,
+      axisScores: alignGaugeScores(axisScores, code),
+    })
   },
 
   startBudget: () => set({ currentPlayer: 0, stage: 'budget' }),
@@ -582,6 +625,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({
       ...initialState,
       nextSoloRoundSetIndex,
+      typeAxisScores: emptyAxisScores(),
       axisScores: emptyAxisScores(),
       players: [],
       placedItems: [],

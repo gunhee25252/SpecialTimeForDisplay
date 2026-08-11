@@ -44,9 +44,9 @@ export default function BudgetIntro() {
                   사이의 금액이 나옵니다.
                 </p>
                 <p>
-                  두 금액을 합치면{' '}
+                  합산 예산은{' '}
                   <strong className="font-black text-brand-500">{duoCombinedRange}</strong>
-                  까지의 예산으로 함께 꾸밀 수 있어요.
+                  입니다.
                 </p>
               </>
             ) : (
