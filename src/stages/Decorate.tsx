@@ -39,7 +39,7 @@ import {
 import StageLayout from '../components/StageLayout'
 import Button from '../components/Button'
 import { formatWon } from '../utils/format'
-import { SCENE_HEIGHT, SCENE_WIDTH } from '../data/constants'
+import { BASE_HEIGHT, BASE_WIDTH, SCENE_HEIGHT, SCENE_WIDTH } from '../data/constants'
 import {
   getBackgroundRecommendations,
   type BackgroundRecommendation,
@@ -489,6 +489,188 @@ function LetterShapeBalloon({
 }
 
 type DecorateTransitionTarget = DecorateStep
+
+type BackgroundGuideTarget = 'shop' | 'recommendations'
+type BackgroundGuideRect = { x: number; y: number; width: number; height: number }
+
+function BackgroundDecorateGuide({ onContinue }: { onContinue: () => void }) {
+  const overlayRef = useRef<HTMLDivElement>(null)
+  const [targetRects, setTargetRects] = useState<
+    Partial<Record<BackgroundGuideTarget, BackgroundGuideRect>>
+  >({})
+
+  useLayoutEffect(() => {
+    const overlay = overlayRef.current
+    const root = overlay?.parentElement
+    if (!overlay || !root) return undefined
+
+    let animationFrame = 0
+    const updateTargets = () => {
+      const rootBounds = root.getBoundingClientRect()
+      const scaleX = rootBounds.width / root.offsetWidth || 1
+      const scaleY = rootBounds.height / root.offsetHeight || 1
+      const next: Partial<Record<BackgroundGuideTarget, BackgroundGuideRect>> = {}
+
+      ;(['shop', 'recommendations'] as BackgroundGuideTarget[]).forEach((name) => {
+        const target = root.querySelector<HTMLElement>(`[data-background-guide-target="${name}"]`)
+        if (!target) return
+        const targets = [target]
+        if (name === 'shop') {
+          const shopEnd = root.querySelector<HTMLElement>('[data-background-guide-shop-end]')
+          if (shopEnd) targets.push(shopEnd)
+        }
+        const bounds = targets.map((element) => element.getBoundingClientRect())
+        const left = Math.min(...bounds.map((rect) => rect.left))
+        const top = Math.min(...bounds.map((rect) => rect.top))
+        const right = Math.max(...bounds.map((rect) => rect.right))
+        const bottom = Math.max(...bounds.map((rect) => rect.bottom))
+        const padding = name === 'shop' ? 5 : 4
+        next[name] = {
+          x: (left - rootBounds.left) / scaleX - padding,
+          y: (top - rootBounds.top) / scaleY - padding,
+          width: (right - left) / scaleX + padding * 2,
+          height: (bottom - top) / scaleY + padding * 2,
+        }
+      })
+
+      setTargetRects(next)
+    }
+
+    animationFrame = window.requestAnimationFrame(updateTargets)
+    const observer = new ResizeObserver(updateTargets)
+    observer.observe(root)
+    root
+      .querySelectorAll<HTMLElement>(
+        '[data-background-guide-target], [data-background-guide-shop-end]',
+      )
+      .forEach((target) => observer.observe(target))
+    window.addEventListener('resize', updateTargets)
+    return () => {
+      window.cancelAnimationFrame(animationFrame)
+      observer.disconnect()
+      window.removeEventListener('resize', updateTargets)
+    }
+  }, [])
+
+  const shop = targetRects.shop
+  const recommendations = targetRects.recommendations
+  const textShadow = { textShadow: '0 2px 5px rgba(0, 0, 0, 0.75)' }
+
+  return (
+    <div ref={overlayRef} className="absolute inset-0 z-[30000]">
+      <svg
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 h-full w-full"
+        viewBox={`0 0 ${BASE_WIDTH} ${BASE_HEIGHT}`}
+        preserveAspectRatio="none"
+      >
+        <defs>
+          <mask id="background-decorate-guide-mask">
+            <rect width={BASE_WIDTH} height={BASE_HEIGHT} fill="white" />
+            {Object.values(targetRects).map((rect, index) => (
+              <rect
+                key={index}
+                x={rect.x}
+                y={rect.y}
+                width={rect.width}
+                height={rect.height}
+                rx="18"
+                fill="black"
+              />
+            ))}
+          </mask>
+        </defs>
+        <rect
+          width={BASE_WIDTH}
+          height={BASE_HEIGHT}
+          fill="#1f2937"
+          fillOpacity="0.72"
+          mask="url(#background-decorate-guide-mask)"
+        />
+        {shop && (
+          <rect
+            {...shop}
+            rx="18"
+            fill="none"
+            stroke="#56d6c5"
+            strokeWidth="9"
+            vectorEffect="non-scaling-stroke"
+          />
+        )}
+        {recommendations && (
+          <rect
+            {...recommendations}
+            rx="18"
+            fill="none"
+            stroke="#f6c453"
+            strokeWidth="9"
+            vectorEffect="non-scaling-stroke"
+          />
+        )}
+      </svg>
+
+      <div
+        className="absolute left-1/2 w-[760px] -translate-x-1/2 text-center text-white"
+        style={{ top: 750, ...textShadow }}
+      >
+        <h1 className="text-5xl font-black leading-tight text-brand-300">
+          1. 먼저 배경을 골라볼까요?
+        </h1>
+        <p className="mt-6 text-2xl font-bold leading-relaxed">
+          직접 고르거나 분석한 취향에 맞는 추천을 참고해 보세요.
+        </p>
+      </div>
+
+      {recommendations && (
+        <div
+          className="absolute text-right text-white"
+          style={{
+            left: Math.max(44, recommendations.x - 460),
+            top: recommendations.y + 128,
+            width: 420,
+            ...textShadow,
+          }}
+        >
+          <p className="text-3xl font-black" style={{ color: '#f6c453' }}>
+            취향 추천을 참고해 보세요
+          </p>
+          <p className="mt-3 text-2xl font-bold leading-relaxed">
+            <span className="block">분석한 취향을 바탕으로</span>
+            <span className="block">세 가지 배경을 추천해 드려요.</span>
+          </p>
+        </div>
+      )}
+
+      {shop && (
+        <div
+          className="absolute w-[680px] -translate-x-1/2 text-left text-white"
+          style={{
+            left: 'calc(50% - 55px)',
+            top: Math.max(760, shop.y - 150),
+            ...textShadow,
+          }}
+        >
+          <p className="text-3xl font-black" style={{ color: '#56d6c5' }}>
+            배경을 직접 골라보세요
+          </p>
+          <p className="mt-3 text-2xl font-bold leading-relaxed">
+            <span className="block">단색, 실내, 야외, 지역 중 원하는 배경을</span>
+            <span className="block">직접 선택할 수 있어요.</span>
+          </p>
+        </div>
+      )}
+
+      <div
+        className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2"
+        style={{ top: '50%' }}
+      >
+        <Button onClick={onContinue} className="w-[440px] px-24 py-6 text-3xl">
+          배경 꾸미기 시작
+        </Button>
+      </div>
+    </div>
+  )
+}
 
 const TRANSITION_GUIDES: Record<
   DecorateTransitionTarget,
@@ -1135,13 +1317,15 @@ export default function Decorate({
   return (
     <StageLayout>
       {!suppressTransitionGuide && transitionTarget && (
-        <DecorateTransition
-          target={transitionTarget}
-          onContinue={handleTransitionContinue}
-          onReturn={
-            transitionTarget === 'background' ? undefined : () => setTransitionTarget(null)
-          }
-        />
+        transitionTarget === 'background' ? (
+          <BackgroundDecorateGuide onContinue={handleTransitionContinue} />
+        ) : (
+          <DecorateTransition
+            target={transitionTarget}
+            onContinue={handleTransitionContinue}
+            onReturn={() => setTransitionTarget(null)}
+          />
+        )
       )}
       <div className="flex h-full flex-col gap-4">
         {/* 예산 바 */}
@@ -1612,7 +1796,10 @@ export default function Decorate({
               </div>
             </aside>
 
-            <section className="shrink-0 overflow-hidden rounded-2xl border-2 border-brand-100 bg-white shadow-sm">
+            <section
+              data-background-guide-target="recommendations"
+              className="shrink-0 overflow-hidden rounded-2xl border-2 border-brand-100 bg-white shadow-sm"
+            >
               <h3 className="border-b border-brand-100 px-2.5 py-3 text-center text-base font-black leading-tight text-gray-800">
                 당신의 취향에 어울리는 배경
               </h3>
@@ -1670,7 +1857,10 @@ export default function Decorate({
         </div>
 
         {/* 상점 */}
-        <div className="flex h-[388px] shrink-0 flex-col rounded-2xl bg-white p-3 shadow-sm">
+        <div
+          data-background-guide-target="shop"
+          className="flex h-[388px] shrink-0 flex-col rounded-2xl bg-white p-3 shadow-sm"
+        >
           <div
             className={`mb-2 grid gap-2 ${
               decorateStep === 'characters' ? 'grid-cols-2' : 'grid-cols-1'
@@ -2014,7 +2204,7 @@ export default function Decorate({
           )}
         </div>
 
-        <div className="flex gap-3">
+        <div data-background-guide-shop-end className="flex gap-3">
           {decorateStep !== 'background' && (
             <Button
               variant="secondary"

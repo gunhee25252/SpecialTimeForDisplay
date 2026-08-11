@@ -135,7 +135,7 @@ export default function DecorateIntro() {
         {steps && (
           <>
             <div
-              className="absolute text-right text-white"
+              className="absolute text-left text-white"
               style={{
                 left: 48,
                 top: steps.y + steps.height + 26,
@@ -159,7 +159,7 @@ export default function DecorateIntro() {
               className="absolute text-right text-white"
               style={{
                 left: Math.max(40, frameButton.x + frameButton.width / 2 - 560),
-                top: frameButton.y + frameButton.height - 8,
+                top: frameButton.y + frameButton.height + 42,
                 width: 470,
                 textAlign: 'right',
                 ...textShadow,
@@ -182,7 +182,7 @@ export default function DecorateIntro() {
               className="absolute text-right text-white"
               style={{
                 left: Math.max(40, purchaseList.x - 494),
-                top: purchaseList.y + purchaseList.height * 0.52 - 126,
+                top: purchaseList.y + purchaseList.height * 0.52 - 56,
                 width: 470,
                 textAlign: 'right',
                 ...textShadow,
@@ -201,10 +201,10 @@ export default function DecorateIntro() {
 
         <div
           className="absolute"
-          style={{ left: '50%', top: 'calc(50% + 50px)', transform: 'translate(-50%, -50%)' }}
+          style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}
         >
-          <Button onClick={() => setShowTutorial(false)} className="px-24 py-6 text-3xl">
-            꾸미기 시작
+          <Button onClick={() => setShowTutorial(false)} className="w-[440px] px-24 py-6 text-3xl">
+            다음으로
           </Button>
         </div>
       </div>}
