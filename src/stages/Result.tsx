@@ -123,7 +123,7 @@ export default function Result() {
       return {
         label: '가장 뚜렷한 취향',
         value: `${strongestPercent}%`,
-        caption: `${result.axis.label} · ${result.winner.label}`,
+        caption: result.winner.label,
         centerOnly: false,
       }
     }
@@ -137,7 +137,7 @@ export default function Result() {
         value: `${strongestPercent}%`,
         caption: strongestResults
           .map((result) => result.winner.label)
-          .join(' · '),
+          .join(', '),
         centerOnly: false,
       }
     }

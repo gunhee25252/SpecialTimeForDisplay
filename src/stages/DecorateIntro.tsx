@@ -138,33 +138,27 @@ export default function DecorateIntro() {
               className="absolute text-left text-white"
               style={{
                 left: 48,
-                top: steps.y + steps.height + 26,
+                top: steps.y + steps.height + 62,
                 width: steps.x + steps.width / 2 - 60,
                 ...textShadow,
               }}
             >
-              <p className="text-3xl font-black" style={{ color: '#5a9ef7' }}>
-                꾸미기는 세 단계예요
-              </p>
-              <div className="mt-3 flex items-center gap-5 text-xl font-black">
-                <span className="flex items-center gap-2 whitespace-nowrap">
-                  <strong className="flex h-8 w-8 items-center justify-center rounded-full bg-[#5a9ef7] text-lg text-white">
-                    1
-                  </strong>
-                  배경
+              <div className="flex items-center gap-4 whitespace-nowrap text-3xl font-black">
+                <span>
+                  꾸미기는 <span style={{ color: '#5a9ef7' }}>세 단계</span>예요
                 </span>
-                <span className="flex items-center gap-2 whitespace-nowrap">
-                  <strong className="flex h-8 w-8 items-center justify-center rounded-full bg-[#5a9ef7] text-lg text-white">
-                    2
-                  </strong>
-                  신랑·신부
-                </span>
-                <span className="flex items-center gap-2 whitespace-nowrap">
-                  <strong className="flex h-8 w-8 items-center justify-center rounded-full bg-[#5a9ef7] text-lg text-white">
-                    3
-                  </strong>
-                  오브젝트
-                </span>
+                {[
+                  ['1', '배경'],
+                  ['2', '신랑·신부'],
+                  ['3', '오브젝트'],
+                ].map(([number, label]) => (
+                  <span key={number} className="flex items-center gap-2 text-white">
+                    <strong className="flex h-9 w-9 items-center justify-center rounded-full bg-[#5a9ef7] text-xl text-white">
+                      {number}
+                    </strong>
+                    {label}
+                  </span>
+                ))}
               </div>
             </div>
           </>
@@ -176,18 +170,17 @@ export default function DecorateIntro() {
               className="absolute text-right text-white"
               style={{
                 left: Math.max(40, frameButton.x + frameButton.width / 2 - 560),
-                top: frameButton.y + frameButton.height + 42,
+                top: frameButton.y + frameButton.height + 78,
                 width: 470,
                 textAlign: 'right',
                 ...textShadow,
               }}
             >
-              <p className="text-3xl font-black" style={{ color: '#34d399' }}>
-                프레임 조정도 가능해요
-              </p>
-              <p className="mt-2 text-2xl font-bold leading-relaxed">
-                <span className="block">인화될 사진의 위치·크기 및</span>
-                <span className="block">가로·세로 비율 조정</span>
+              <p className="text-3xl font-black leading-snug">
+                <span style={{ color: '#34d399' }}>프레임 조정</span>으로 인화될 사진의
+                <span className="block">
+                  <span style={{ color: '#34d399' }}>위치·크기·비율</span> 변경
+                </span>
               </p>
             </div>
           </>
@@ -198,19 +191,18 @@ export default function DecorateIntro() {
             <div
               className="absolute text-right text-white"
               style={{
-                left: Math.max(40, purchaseList.x - 494),
-                top: purchaseList.y + purchaseList.height * 0.52 - 56,
-                width: 470,
+                left: Math.max(40, purchaseList.x - 554),
+                top: purchaseList.y + purchaseList.height * 0.52 - 20,
+                width: 530,
                 textAlign: 'right',
                 ...textShadow,
               }}
             >
-              <p className="text-3xl font-black" style={{ color: '#fb7185' }}>
-                구매 목록에서 맨 앞으로
-              </p>
-              <p className="mt-2 text-2xl font-bold leading-relaxed">
-                <span className="block">구매 목록에서 오브젝트를 선택하면</span>
-                <span className="block">사진 속 가장 앞으로 배치</span>
+              <p className="text-3xl font-black leading-snug">
+                <span style={{ color: '#fb7185' }}>구매 목록</span>에서 오브젝트를 선택하면
+                <span className="block">
+                  사진 속 <span style={{ color: '#fb7185' }}>가장 앞으로</span> 배치
+                </span>
               </p>
             </div>
           </>

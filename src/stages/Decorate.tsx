@@ -625,31 +625,29 @@ function BackgroundDecorateGuide({ onContinue }: { onContinue: () => void }) {
           className="absolute text-right text-white"
           style={{
             right: 44,
-            top: remaining.y + remaining.height + 30,
-            width: 520,
+            top: remaining.y + remaining.height + 66,
+            width: 580,
             ...textShadow,
           }}
         >
-          <p className="text-3xl font-black" style={{ color: '#f472b6' }}>
-            남은 예산에 따라 인화가 달라져요
-          </p>
-          <p className="mt-3 text-2xl font-bold leading-relaxed">
-            <span className="block">1,000만 원 이상은 컬러 인화</span>
-            <span className="block">1,000만 원 미만은 흑백 인화</span>
+          <p className="text-3xl font-black leading-snug">
+            남은 예산 <span style={{ color: '#f472b6' }}>1,000만 원 이상</span>은{' '}
+            <span style={{ color: '#f472b6' }}>컬러</span> 인화
+            <span className="block">
+              1,000만 원 <span style={{ color: '#f472b6' }}>미만</span>은{' '}
+              <span style={{ color: '#f472b6' }}>흑백</span> 인화
+            </span>
           </p>
         </div>
       )}
 
       <div
         className="absolute left-1/2 w-[920px] -translate-x-1/2 text-center text-white"
-        style={{ top: 650, ...textShadow }}
+        style={{ top: 686, ...textShadow }}
       >
-        <h1 className="text-5xl font-black leading-tight text-brand-300">
-          1. 먼저 배경을 골라볼까요?
+        <h1 className="whitespace-nowrap text-4xl font-black leading-tight text-brand-300">
+          1. 배경을 골라 사진의 분위기를 정해보세요
         </h1>
-        <p className="mt-6 text-2xl font-bold leading-relaxed">
-          마음에 드는 배경을 골라 사진의 분위기를 정해보세요.
-        </p>
       </div>
 
       {recommendations && (
@@ -657,17 +655,16 @@ function BackgroundDecorateGuide({ onContinue }: { onContinue: () => void }) {
           className="absolute text-right text-white"
           style={{
             left: Math.max(44, recommendations.x - 460),
-            top: recommendations.y + 128,
+            top: recommendations.y + 164,
             width: 420,
             ...textShadow,
           }}
         >
-          <p className="text-3xl font-black" style={{ color: '#f6c453' }}>
-            취향 추천을 참고해 보세요
-          </p>
-          <p className="mt-3 text-2xl font-bold leading-relaxed">
-            <span className="block">참여자의 선택을 분석해서</span>
-            <span className="block">세 가지 배경 추천</span>
+          <p className="text-3xl font-black leading-snug">
+            참여자의 <span style={{ color: '#f6c453' }}>선택을 분석</span>해
+            <span className="block">
+              <span style={{ color: '#f6c453' }}>세 가지 배경</span> 추천
+            </span>
           </p>
         </div>
       )}
@@ -677,16 +674,15 @@ function BackgroundDecorateGuide({ onContinue }: { onContinue: () => void }) {
           className="absolute w-[680px] -translate-x-1/2 text-left text-white"
           style={{
             left: 'calc(50% - 55px)',
-            top: Math.max(760, shop.y - 150),
+            top: Math.max(796, shop.y - 114),
             ...textShadow,
           }}
         >
-          <p className="text-3xl font-black" style={{ color: '#56d6c5' }}>
-            배경을 직접 골라보세요
-          </p>
-          <p className="mt-3 text-2xl font-bold leading-relaxed">
-            <span className="block">단색·실내·야외·지역 카테고리에서</span>
-            <span className="block">원하는 배경 직접 선택</span>
+          <p className="text-3xl font-black leading-snug">
+            <span style={{ color: '#56d6c5' }}>단색·실내·야외·지역</span>에서
+            <span className="block">
+              원하는 배경 <span style={{ color: '#56d6c5' }}>직접 선택</span>
+            </span>
           </p>
         </div>
       )}
@@ -766,12 +762,6 @@ function DecorateStepSpotlightGuide({
   const isCharacters = target === 'characters'
   const accent = isCharacters ? '#fb7185' : '#34d399'
   const number = isCharacters ? 2 : 3
-  const title = isCharacters
-    ? '이제 신랑·신부를 꾸며볼까요?'
-    : '마지막으로 오브젝트를 채워볼까요?'
-  const shopTitle = isCharacters
-    ? '신랑과 신부를 각각 꾸며보세요'
-    : '오브젝트를 배치해 보세요'
   const buttonLabel = isCharacters ? '신랑·신부 꾸미기 시작' : '오브젝트 꾸미기 시작'
   const textShadow = { textShadow: '0 2px 5px rgba(0, 0, 0, 0.75)' }
 
@@ -819,25 +809,24 @@ function DecorateStepSpotlightGuide({
 
       <div
         className="absolute left-1/2 w-[1000px] -translate-x-1/2 text-center text-white"
-        style={{ top: isCharacters ? 650 : 600, ...textShadow }}
+        style={{ top: isCharacters ? 686 : 636, ...textShadow }}
       >
-        <h1 className="whitespace-nowrap text-5xl font-black leading-tight text-brand-300">
-          {number}. {title}
-        </h1>
-        {isCharacters ? (
-          <p className="mt-6 text-2xl font-bold leading-relaxed">
+        <h1 className="whitespace-nowrap text-4xl font-black leading-tight text-brand-300">
+          {isCharacters ? (
             <>
-              <span className="block">신랑과 신부를 원하는 모습으로 꾸민 뒤,</span>
-              <span className="block">
-                두 사람을 끌어 사진에 어울리는 위치로 옮겨보세요.
-              </span>
+              {number}. 신랑·신부를 꾸미고 원하는 위치로 옮겨보세요
             </>
-          </p>
-        ) : (
-          <div className="mt-6 text-2xl font-bold leading-relaxed">
-            <p>오브젝트를 배치해 사진을 자유롭게 꾸며보세요.</p>
-            <p className="mt-2">
-              마지막으로 선택한 오브젝트는 사진 속 가장 앞으로 올라와요.
+          ) : (
+            <>
+              {number}. 오브젝트를 배치해 사진을 자유롭게 꾸며보세요
+            </>
+          )}
+        </h1>
+        {!isCharacters && (
+          <div className="mt-5 text-2xl font-bold leading-relaxed">
+            <p className="font-black">
+              마지막으로 선택한 오브젝트는 사진 속{' '}
+              <span style={{ color: accent }}>가장 앞으로</span> 올라와요
             </p>
             <div className="mt-5 flex items-center justify-center gap-8 text-xl font-black">
               <span className="flex items-center gap-2">
@@ -874,21 +863,21 @@ function DecorateStepSpotlightGuide({
           className="absolute w-[680px] -translate-x-1/2 text-left text-white"
           style={{
             left: 'calc(50% - 55px)',
-            top: Math.max(760, shopRect.y - (isCharacters ? 150 : 110)),
+            top: Math.max(796, shopRect.y - (isCharacters ? 114 : 74)),
             ...textShadow,
           }}
         >
-          <p className="text-3xl font-black" style={{ color: accent }}>
-            {shopTitle}
-          </p>
-          <p className="mt-3 text-2xl font-bold leading-relaxed">
+          <p className="text-3xl font-black leading-snug">
             {isCharacters ? (
               <>
-                <span className="block">신랑과 신부 모두 헤어·염색·얼굴·의상</span>
-                <span className="block">네 가지 카테고리에서 각각 선택</span>
+                신랑·신부 모두 <span style={{ color: accent }}>헤어·염색·얼굴·의상</span>을{' '}
+                <span style={{ color: accent }}>각각 선택</span>
               </>
             ) : (
-              <span className="block">특별한 고가 오브제도 돈만 있다면 선택 가능!</span>
+              <>
+                돈만 있다면 특별한 <span style={{ color: accent }}>고가 오브제</span>도{' '}
+                <span style={{ color: accent }}>선택 가능!</span>
+              </>
             )}
           </p>
         </div>
