@@ -620,7 +620,7 @@ function BackgroundDecorateGuide({ onContinue }: { onContinue: () => void }) {
 
       <div
         className="absolute left-1/2 w-[1040px] -translate-x-1/2 text-center text-white"
-        style={{ top: 820, ...textShadow }}
+        style={{ bottom: 'calc(50% + 66px)', ...textShadow }}
       >
         <h1 className="font-ryuryu whitespace-nowrap text-[50px] font-black leading-tight text-brand-300">
           1. 배경을 골라 사진의 분위기를 정해보세요
@@ -690,6 +690,8 @@ function DecorateStepSpotlightGuide({
 }) {
   const overlayRef = useRef<HTMLDivElement>(null)
   const [shopRect, setShopRect] = useState<BackgroundGuideRect | null>(null)
+  const [purchaseListRect, setPurchaseListRect] = useState<BackgroundGuideRect | null>(null)
+  const [objectGuidePage, setObjectGuidePage] = useState<'main' | 'purchase'>('main')
 
   useLayoutEffect(() => {
     const overlay = overlayRef.current
@@ -720,6 +722,20 @@ function DecorateStepSpotlightGuide({
         width: (right - left) / scaleX + padding * 2,
         height: (bottom - top) / scaleY + padding * 2,
       })
+
+      const purchaseList = root.querySelector<HTMLElement>('[data-tutorial-target="purchase-list"]')
+      if (target === 'objects' && purchaseList) {
+        const purchaseBounds = purchaseList.getBoundingClientRect()
+        const purchasePadding = 4
+        setPurchaseListRect({
+          x: (purchaseBounds.left - rootBounds.left) / scaleX - purchasePadding,
+          y: (purchaseBounds.top - rootBounds.top) / scaleY,
+          width: purchaseBounds.width / scaleX + purchasePadding * 2,
+          height: purchaseBounds.height / scaleY,
+        })
+      } else {
+        setPurchaseListRect(null)
+      }
     }
 
     animationFrame = window.requestAnimationFrame(updateTarget)
@@ -727,7 +743,7 @@ function DecorateStepSpotlightGuide({
     observer.observe(root)
     root
       .querySelectorAll<HTMLElement>(
-        '[data-background-guide-target="shop"], [data-background-guide-shop-end]',
+        '[data-background-guide-target="shop"], [data-background-guide-shop-end], [data-tutorial-target="purchase-list"]',
       )
       .forEach((element) => observer.observe(element))
     window.addEventListener('resize', updateTarget)
@@ -736,13 +752,30 @@ function DecorateStepSpotlightGuide({
       observer.disconnect()
       window.removeEventListener('resize', updateTarget)
     }
-  }, [])
+  }, [target])
+
+  useEffect(() => {
+    setObjectGuidePage('main')
+  }, [target])
 
   const isCharacters = target === 'characters'
+  const isPurchaseGuide = !isCharacters && objectGuidePage === 'purchase'
   const accent = isCharacters ? '#c084fc' : '#a3e635'
   const number = isCharacters ? 2 : 3
-  const buttonLabel = isCharacters ? '신랑·신부 꾸미기 시작' : '오브젝트 꾸미기 시작'
+  const buttonLabel = isCharacters
+    ? '신랑·신부 꾸미기 시작'
+    : isPurchaseGuide
+      ? '오브젝트 꾸미기 시작'
+      : '다음으로'
   const textShadow = { textShadow: '0 2px 5px rgba(0, 0, 0, 0.75)' }
+
+  const handleGuideContinue = () => {
+    if (!isCharacters && objectGuidePage === 'main') {
+      setObjectGuidePage('purchase')
+      return
+    }
+    onContinue()
+  }
 
   return (
     <div ref={overlayRef} className="absolute inset-0 z-[30000]">
@@ -755,12 +788,22 @@ function DecorateStepSpotlightGuide({
         <defs>
           <mask id={`decorate-${target}-guide-mask`}>
             <rect width={BASE_WIDTH} height={BASE_HEIGHT} fill="white" />
-            {shopRect && (
+            {!isPurchaseGuide && shopRect && (
               <rect
                 x={shopRect.x}
                 y={shopRect.y}
                 width={shopRect.width}
                 height={shopRect.height}
+                rx="18"
+                fill="black"
+              />
+            )}
+            {isPurchaseGuide && purchaseListRect && (
+              <rect
+                x={purchaseListRect.x}
+                y={purchaseListRect.y}
+                width={purchaseListRect.width}
+                height={purchaseListRect.height}
                 rx="18"
                 fill="black"
               />
@@ -774,7 +817,7 @@ function DecorateStepSpotlightGuide({
           fillOpacity="0.72"
           mask={`url(#decorate-${target}-guide-mask)`}
         />
-        {shopRect && (
+        {!isPurchaseGuide && shopRect && (
           <rect
             {...shopRect}
             rx="18"
@@ -784,30 +827,80 @@ function DecorateStepSpotlightGuide({
             vectorEffect="non-scaling-stroke"
           />
         )}
+        {isPurchaseGuide && purchaseListRect && (
+          <rect
+            {...purchaseListRect}
+            rx="18"
+            fill="none"
+            stroke="#fb923c"
+            strokeWidth="9"
+            vectorEffect="non-scaling-stroke"
+          />
+        )}
       </svg>
 
       <div
         className="absolute left-1/2 w-[1040px] -translate-x-1/2 text-center text-white"
-        style={{ top: isCharacters ? 820 : 700, ...textShadow }}
+        style={{ bottom: 'calc(50% + 66px)', ...textShadow }}
       >
         <h1 className="font-ryuryu whitespace-nowrap text-[50px] font-black leading-tight text-brand-300">
           {isCharacters ? (
-            <>
-              {number}. 신랑·신부를 꾸미고 원하는 위치로 옮겨보세요
-            </>
+            <>{number}. 신랑·신부를 꾸미고 원하는 위치로 옮겨보세요</>
           ) : (
             <>
-              {number}. 오브젝트를 배치해 사진을 자유롭게 꾸며보세요
+              {number}. 오브젝트를 배치해
+              <span className="block">사진을 자유롭게 꾸며보세요</span>
             </>
           )}
         </h1>
-        {!isCharacters && (
-          <div className="mt-5 text-2xl font-bold leading-relaxed">
-            <p className="font-black">
-              마지막으로 선택한 오브젝트는 사진 속{' '}
-              <span style={{ color: accent }}>가장 앞으로</span> 올라와요
-            </p>
-            <div className="mt-5 flex items-center justify-center gap-8 text-xl font-black">
+      </div>
+
+      {isPurchaseGuide && purchaseListRect && (
+        <div
+          className="absolute text-right text-white"
+          style={{
+            left: Math.max(40, purchaseListRect.x - 554),
+            top: purchaseListRect.y + purchaseListRect.height / 2,
+            width: 530,
+            textAlign: 'right',
+            transform: 'translateY(-50%)',
+            ...textShadow,
+          }}
+        >
+          <p className="text-3xl font-black leading-snug">
+            <span style={{ color: '#fb923c' }}>구매 목록</span>에서 오브젝트를 선택하면
+            <span className="block">
+              사진 속 <span style={{ color: '#fb923c' }}>가장 앞으로</span> 배치
+            </span>
+          </p>
+        </div>
+      )}
+
+      {!isPurchaseGuide && shopRect && (
+        <div
+          className="absolute w-[680px] -translate-x-1/2 text-left text-white"
+          style={{
+            left: 'calc(50% - 55px)',
+            top: shopRect.y - 24,
+            transform: 'translate(-50%, -100%)',
+            ...textShadow,
+          }}
+        >
+          <p className="text-3xl font-black leading-snug">
+            {isCharacters ? (
+              <>
+                신랑·신부 모두 <span style={{ color: accent }}>헤어·염색·얼굴·의상</span>을{' '}
+                <span style={{ color: accent }}>각각</span> 선택
+              </>
+            ) : (
+              <>
+                돈만 있다면 특별한 <span style={{ color: accent }}>고가 오브제</span>도{' '}
+                <span style={{ color: accent }}>선택 가능!</span>
+              </>
+            )}
+          </p>
+          {!isCharacters && (
+            <div className="mt-4 flex items-center gap-6 text-xl font-black">
               <span className="flex items-center gap-2">
                 <strong className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-500 text-3xl text-white shadow-md">
                   +
@@ -833,39 +926,13 @@ function DecorateStepSpotlightGuide({
                 삭제
               </span>
             </div>
-          </div>
-        )}
-      </div>
-
-      {shopRect && (
-        <div
-          className="absolute w-[680px] -translate-x-1/2 text-left text-white"
-          style={{
-            left: 'calc(50% - 55px)',
-            top: shopRect.y - 24,
-            transform: 'translate(-50%, -100%)',
-            ...textShadow,
-          }}
-        >
-          <p className="text-3xl font-black leading-snug">
-            {isCharacters ? (
-              <>
-                신랑·신부 모두 <span style={{ color: accent }}>헤어·염색·얼굴·의상</span>을{' '}
-                <span style={{ color: accent }}>각각 선택</span>
-              </>
-            ) : (
-              <>
-                돈만 있다면 특별한 <span style={{ color: accent }}>고가 오브제</span>도{' '}
-                <span style={{ color: accent }}>선택 가능!</span>
-              </>
-            )}
-          </p>
+          )}
         </div>
       )}
 
       <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
         <Button
-          onClick={onContinue}
+          onClick={handleGuideContinue}
           className="w-[480px] whitespace-nowrap px-8 py-6 text-3xl"
         >
           {buttonLabel}

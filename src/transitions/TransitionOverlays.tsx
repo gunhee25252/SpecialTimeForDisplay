@@ -57,7 +57,7 @@ export function AnalyzingOverlay() {
         animate={{ rotate: 360 }}
         transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
       />
-      <p className="text-5xl font-bold">취향 분석 중...</p>
+      <p className="font-ryuryu text-[64px] font-bold">취향 분석 중...</p>
       <div className="flex gap-3">
         {[0, 1, 2].map((i) => (
           <motion.span

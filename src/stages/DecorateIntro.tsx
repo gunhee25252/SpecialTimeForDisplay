@@ -3,15 +3,14 @@ import { BASE_HEIGHT, BASE_WIDTH } from '../data/constants'
 import Button from '../components/Button'
 import Decorate from './Decorate'
 
-type TutorialTarget = 'steps' | 'remaining' | 'purchase-list' | 'frame-button'
-type TutorialPage = 0 | 1 | 2 | 3
+type TutorialTarget = 'steps' | 'remaining' | 'frame-button'
+type TutorialPage = 0 | 1 | 2
 type TutorialRect = { x: number; y: number; width: number; height: number }
 type TutorialRects = Partial<Record<TutorialTarget, TutorialRect>>
 
 const TARGET_PADDING: Record<TutorialTarget, { x: number; y: number }> = {
   steps: { x: 14, y: 14 },
   remaining: { x: 12, y: 10 },
-  'purchase-list': { x: 4, y: 0 },
   'frame-button': { x: 4, y: 0 },
 }
 
@@ -32,7 +31,7 @@ export default function DecorateIntro() {
       const scaleY = rootBounds.height / root.offsetHeight || 1
       const next: TutorialRects = {}
 
-      ;(['steps', 'remaining', 'purchase-list', 'frame-button'] as TutorialTarget[]).forEach((name) => {
+      ;(['steps', 'remaining', 'frame-button'] as TutorialTarget[]).forEach((name) => {
         const target = root.querySelector<HTMLElement>(`[data-tutorial-target="${name}"]`)
         if (!target) return
         const bounds = target.getBoundingClientRect()
@@ -61,20 +60,17 @@ export default function DecorateIntro() {
 
   const steps = targetRects.steps
   const remaining = targetRects.remaining
-  const purchaseList = targetRects['purchase-list']
   const frameButton = targetRects['frame-button']
   const activeTarget =
     tutorialPage === 0
       ? steps
       : tutorialPage === 1
         ? remaining
-        : tutorialPage === 2
-          ? frameButton
-          : purchaseList
+        : frameButton
   const textShadow = { textShadow: '0 2px 5px rgba(0, 0, 0, 0.75)' }
 
   const handleNextTutorialPage = () => {
-    if (tutorialPage < 3) {
+    if (tutorialPage < 2) {
       setTutorialPage((tutorialPage + 1) as TutorialPage)
       return
     }
@@ -125,16 +121,6 @@ export default function DecorateIntro() {
               rx="18"
               fill="none"
               stroke="#5a9ef7"
-              strokeWidth="9"
-              vectorEffect="non-scaling-stroke"
-            />
-          )}
-          {tutorialPage === 3 && purchaseList && (
-            <rect
-              {...purchaseList}
-              rx="18"
-              fill="none"
-              stroke="#fb923c"
               strokeWidth="9"
               vectorEffect="non-scaling-stroke"
             />
@@ -199,16 +185,32 @@ export default function DecorateIntro() {
             style={{
               right: 44,
               top: remaining.y + remaining.height + 24,
-              width: 580,
+              width: 610,
               ...textShadow,
             }}
           >
             <p className="text-3xl font-black leading-snug">
               남은 예산 <span style={{ color: '#fb7185' }}>1,000만 원 이상</span>은{' '}
-              <span style={{ color: '#fb7185' }}>컬러</span> 인화
+              <span
+                className="inline-flex h-[38px] w-[64px] items-center justify-center rounded-md text-white shadow-sm"
+                style={{
+                  backgroundImage:
+                    'linear-gradient(90deg, #ff5f6d 0%, #ff9f43 20%, #ffd93d 40%, #5dd39e 60%, #4dabf7 80%, #a78bfa 100%)',
+                  textShadow: '0 1px 2px rgba(0, 0, 0, 0.35)',
+                }}
+              >
+                컬러
+              </span>{' '}
+              인화
               <span className="block">
-                1,000만 원 <span style={{ color: '#fb7185' }}>미만</span>은{' '}
-                <span style={{ color: '#fb7185' }}>흑백</span> 인화
+                <span style={{ color: '#fb7185' }}>1,000만 원 미만</span>은{' '}
+                <span
+                  className="isolate inline-flex h-[38px] w-[64px] items-center justify-center overflow-hidden rounded-md align-middle leading-none shadow-sm"
+                  style={{ background: 'linear-gradient(90deg, #fff 0 50%, #000 50% 100%)' }}
+                >
+                  <span className="text-white mix-blend-difference">흑백</span>
+                </span>{' '}
+                인화
               </span>
             </p>
           </div>
@@ -231,29 +233,6 @@ export default function DecorateIntro() {
                 <span style={{ color: '#34d399' }}>프레임 조정</span>으로 인화될 사진의
                 <span className="block">
                   <span style={{ color: '#34d399' }}>위치·크기·비율</span> 변경
-                </span>
-              </p>
-            </div>
-          </>
-        )}
-
-        {tutorialPage === 3 && purchaseList && (
-          <>
-            <div
-              className="absolute text-right text-white"
-              style={{
-                left: Math.max(40, purchaseList.x - 554),
-                top: purchaseList.y + purchaseList.height / 2,
-                width: 530,
-                textAlign: 'right',
-                transform: 'translateY(-50%)',
-                ...textShadow,
-              }}
-            >
-              <p className="text-3xl font-black leading-snug">
-                <span style={{ color: '#fb923c' }}>구매 목록</span>에서 오브젝트를 선택하면
-                <span className="block">
-                  사진 속 <span style={{ color: '#fb923c' }}>가장 앞으로</span> 배치
                 </span>
               </p>
             </div>

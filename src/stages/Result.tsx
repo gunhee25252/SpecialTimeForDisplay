@@ -180,8 +180,8 @@ export default function Result() {
           >
             <div className="w-full max-w-[880px] rounded-[1.25rem] border-4 border-brand-100 bg-white/80 px-6 py-8">
               <p
-                className="font-black leading-none text-brand-500"
-                style={{ fontSize: '46px' }}
+                className="font-ryuryu font-black leading-none text-brand-500"
+                style={{ fontSize: '54px' }}
               >
                 {resultTitle}
               </p>
@@ -269,11 +269,11 @@ function InfoRow({
       }`}
       style={{
         height: '96px',
-        gridTemplateColumns: centerOnly ? undefined : '18rem 12rem minmax(0, 1fr)',
+        gridTemplateColumns: centerOnly ? undefined : '1fr 12rem 1fr',
       }}
     >
       {!centerOnly && (
-        <p className="font-black text-brand-500" style={{ fontSize: '27px' }}>
+        <p className="font-ryuryu font-black text-brand-500" style={{ fontSize: '38px' }}>
           {label}
         </p>
       )}
@@ -284,7 +284,10 @@ function InfoRow({
         {value}
       </p>
       {!centerOnly && (
-        <p className="text-center font-bold text-gray-600" style={{ fontSize: '25px' }}>
+        <p
+          className="font-ryuryu text-center font-bold text-gray-600"
+          style={{ fontSize: '38px' }}
+        >
           {caption}
         </p>
       )}

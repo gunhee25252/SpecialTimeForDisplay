@@ -1,3 +1,4 @@
+import { UserRound, UsersRound } from 'lucide-react'
 import { useAppStore, type PlayerCount } from '../store/useAppStore'
 import StageLayout from '../components/StageLayout'
 
@@ -13,17 +14,15 @@ export default function PlayerSelect() {
     <StageLayout>
       <div className="flex flex-1 flex-col items-center justify-center gap-12 text-center">
         <div className="space-y-4">
-          <p className="text-2xl text-brand-400">시작하기 전에</p>
+          <p className="text-4xl font-semibold text-brand-400">시작하기 전에</p>
           <h1 className="font-ryuryu text-[64px] font-bold leading-tight text-gray-800">
-            누구와 함께
-            <br />
-            진행할까요?
+            어떻게 참여할까요?
           </h1>
         </div>
 
         <div className="grid w-full grid-cols-2 gap-6 px-4">
-          <PlayerOption count={1} title="혼자 해볼게요" caption="내 취향으로 진행" onSelect={selectAndStart} />
-          <PlayerOption count={2} title="둘이 함께할게요" caption="취향과 예산을 함께 합산" onSelect={selectAndStart} />
+          <PlayerOption count={1} title="혼자" caption="내 취향으로 진행" onSelect={selectAndStart} />
+          <PlayerOption count={2} title="둘이" caption="취향과 예산을 함께 합산" onSelect={selectAndStart} />
         </div>
       </div>
     </StageLayout>
@@ -41,16 +40,21 @@ function PlayerOption({
   caption: string
   onSelect: (count: PlayerCount) => void
 }) {
+  const PersonIcon = count === 1 ? UserRound : UsersRound
+
   return (
     <button
       onClick={() => onSelect(count)}
-      className="flex h-56 select-none flex-col items-center justify-center gap-4 rounded-3xl border-4 border-brand-200 bg-white px-5 text-gray-800 shadow-sm transition-colors active:border-brand-500 active:bg-brand-50"
+      className="flex h-64 select-none flex-col items-center justify-center gap-4 rounded-3xl border-4 border-brand-200 bg-white px-5 text-gray-800 shadow-sm transition-colors active:border-brand-500 active:bg-brand-50"
     >
-      <span className="flex h-20 w-20 items-center justify-center rounded-full bg-brand-500 text-5xl font-extrabold tabular-nums text-white">
+      <span className="flex h-16 w-16 items-center justify-center rounded-full bg-brand-500 text-4xl font-extrabold tabular-nums text-white">
         {count}
       </span>
-      <span className="text-3xl font-bold leading-tight">{title}</span>
-      <span className="text-xl font-medium text-gray-400">{caption}</span>
+      <span className="flex items-center justify-center gap-3 text-brand-500">
+        <PersonIcon aria-hidden="true" className="h-12 w-12" strokeWidth={2.4} />
+        <span className="font-ryuryu text-[56px] font-bold leading-none">{title}</span>
+      </span>
+      <span className="text-2xl font-semibold leading-tight text-gray-500">{caption}</span>
     </button>
   )
 }

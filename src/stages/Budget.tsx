@@ -126,7 +126,7 @@ export default function Budget() {
         {/* 헤더: (둘이) 플레이어 인디케이터 + 라벨 + 앞사람 요약 */}
         <div className="space-y-3">
           {isDuo && <PlayerIndicator />}
-          <p className="font-ryuryu text-[48px] font-bold text-brand-500">{budgetTitle}</p>
+          <p className="font-ryuryu text-[60px] font-bold text-brand-500">{budgetTitle}</p>
           {isDuo && currentPlayer === 1 && players[0]?.budget != null && (
             <p className="text-lg text-gray-400">
               {PLAYER_LABELS[0]} 예산 · {players[0].tierLabel} {formatWon(players[0].budget)}
