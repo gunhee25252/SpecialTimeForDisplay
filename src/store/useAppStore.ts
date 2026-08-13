@@ -63,6 +63,7 @@ export interface PlacedItem {
   instanceId: string
   itemId: string
   scale: number
+  rotation: number
   x: number
   y: number
   z: number // 순서(쌓임)
@@ -148,6 +149,7 @@ interface AppState {
   placeItem: (itemId: string, x: number, y: number) => string | null // 예산 초과면 null
   moveItem: (instanceId: string, x: number, y: number) => void
   setItemScale: (instanceId: string, scale: number, anchor?: ItemScaleAnchor) => void
+  setItemRotation: (instanceId: string, rotation: number) => void
   bringItemToFront: (instanceId: string) => void
   removeItem: (instanceId: string) => void
   setCharacterExpr: (who: CharacterKey, exprId: string) => boolean // 표정 교체(가격차 반영, 초과면 false)
@@ -269,6 +271,11 @@ const MAX_ITEM_SCALE = 2
 
 function clampItemScale(scale: number): number {
   return Math.min(MAX_ITEM_SCALE, Math.max(MIN_ITEM_SCALE, Math.round(scale * 10) / 10))
+}
+
+function normalizeItemRotation(rotation: number): number {
+  const normalized = ((rotation + 180) % 360 + 360) % 360 - 180
+  return Math.round(normalized * 10) / 10
 }
 
 function nextZ(placedItems: PlacedItem[], characters: CharactersState): number {
@@ -470,6 +477,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       instanceId: `p${placeCounter}`,
       itemId,
       scale: 1,
+      rotation: 0,
       x,
       y,
       z: nextZ(placedItems, characters),
@@ -513,6 +521,13 @@ export const useAppStore = create<AppState>((set, get) => ({
           scale,
         }
       }),
+    })),
+
+  setItemRotation: (instanceId, rotation) =>
+    set((state) => ({
+      placedItems: state.placedItems.map((p) =>
+        p.instanceId === instanceId ? { ...p, rotation: normalizeItemRotation(rotation) } : p,
+      ),
     })),
 
   bringItemToFront: (instanceId) =>

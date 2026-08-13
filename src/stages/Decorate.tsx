@@ -1,4 +1,5 @@
 import { useRef, useState, useCallback, useEffect, useLayoutEffect, useMemo } from 'react'
+import { RotateCw } from 'lucide-react'
 import {
   useAppStore,
   type DecorateStep,
@@ -104,6 +105,7 @@ const CHARACTER_PART_TABS: { key: CharacterPart; label: string }[] = [
 ]
 
 const OBJECT_PART_TABS: { key: ObjectPart; label: string; itemCat: ItemCategory }[] = [
+  { key: 'accessories', label: '장신구', itemCat: 'object' },
   { key: 'props', label: '오브제', itemCat: 'object' },
   { key: 'stickers', label: '스티커', itemCat: 'sticker' },
   { key: 'presetText', label: '웨딩 문구', itemCat: 'text' },
@@ -162,6 +164,14 @@ type FrameDragState =
       startY: number
       frame: PrintFrame
     }
+
+type ItemRotationDragState = {
+  instanceId: string
+  centerX: number
+  centerY: number
+  lastPointerAngle: number
+  rotation: number
+}
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value))
@@ -660,7 +670,7 @@ function BackgroundDecorateGuide({ onContinue }: { onContinue: () => void }) {
           <p className="text-3xl font-black leading-snug">
             <span style={{ color: '#56d6c5' }}>단색·실내·야외·지역</span>에서
             <span className="block">
-              원하는 배경 <span style={{ color: '#56d6c5' }}>직접 선택</span>
+              원하는 배경 <span>직접 선택</span>
             </span>
           </p>
         </div>
@@ -915,9 +925,9 @@ function DecorateStepSpotlightGuide({
               </span>
               <span className="flex items-center gap-2">
                 <strong className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-2xl text-brand-600 shadow-md ring-2 ring-brand-400">
-                  ↺
+                  ↻
                 </strong>
-                리셋
+                회전
               </span>
               <span className="flex items-center gap-2">
                 <strong className="flex h-12 w-12 items-center justify-center rounded-full bg-red-500 text-xl text-white shadow-md">
@@ -954,6 +964,7 @@ export default function Decorate({
   const placeItem = useAppStore((s) => s.placeItem)
   const moveItem = useAppStore((s) => s.moveItem)
   const setItemScale = useAppStore((s) => s.setItemScale)
+  const setItemRotation = useAppStore((s) => s.setItemRotation)
   const bringItemToFront = useAppStore((s) => s.bringItemToFront)
   const removeItem = useAppStore((s) => s.removeItem)
   const characters = useAppStore((s) => s.characters)
@@ -1004,7 +1015,7 @@ export default function Decorate({
     groom: 'hair',
     bride: 'hair',
   })
-  const [activeObjectPart, setActiveObjectPart] = useState<ObjectPart>('props')
+  const [activeObjectPart, setActiveObjectPart] = useState<ObjectPart>('accessories')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [selectedChar, setSelectedChar] = useState<CharacterKey | null>(null)
   const [warning, setWarning] = useState<string | null>(null)
@@ -1020,6 +1031,7 @@ export default function Decorate({
   const hasInitializedBackgroundRef = useRef(false)
   const [canvasTransform, setCanvasTransform] = useState({ scale: 1, left: 0, top: 0 })
   const dragRef = useRef<{ kind: 'item' | 'char'; key: string; offsetX: number; offsetY: number } | null>(null)
+  const rotationDragRef = useRef<ItemRotationDragState | null>(null)
   const frameDragRef = useRef<FrameDragState | null>(null)
 
   const remaining = budget === null ? null : budget - spent
@@ -1322,6 +1334,18 @@ export default function Decorate({
   }
 
   const handlePointerMove = (e: React.PointerEvent) => {
+    const rotationDrag = rotationDragRef.current
+    if (rotationDrag) {
+      const { x, y } = toCanvasCoords(e.clientX, e.clientY)
+      const pointerAngle = Math.atan2(y - rotationDrag.centerY, x - rotationDrag.centerX) * (180 / Math.PI)
+      let angleDelta = pointerAngle - rotationDrag.lastPointerAngle
+      if (angleDelta > 180) angleDelta -= 360
+      if (angleDelta < -180) angleDelta += 360
+      rotationDrag.rotation += angleDelta
+      rotationDrag.lastPointerAngle = pointerAngle
+      setItemRotation(rotationDrag.instanceId, rotationDrag.rotation)
+      return
+    }
     const frameDrag = frameDragRef.current
     if (frameDrag) {
       const { x, y } = toCanvasCoords(e.clientX, e.clientY)
@@ -1354,6 +1378,7 @@ export default function Decorate({
 
   const handlePointerUp = () => {
     dragRef.current = null
+    rotationDragRef.current = null
     frameDragRef.current = null
   }
 
@@ -1507,6 +1532,7 @@ export default function Decorate({
               ref={canvasRef}
               onPointerMove={handlePointerMove}
               onPointerUp={handlePointerUp}
+              onPointerCancel={handlePointerUp}
               onPointerDown={() => {
                 setSelectedId(null)
                 setSelectedChar(null)
@@ -1640,6 +1666,7 @@ export default function Decorate({
             if (!item) return null
             const isSelected = p.instanceId === selectedId
             const itemScale = p.scale ?? 1
+            const itemRotation = p.rotation ?? 0
             return (
               <div
                 key={p.instanceId}
@@ -1661,6 +1688,8 @@ export default function Decorate({
                       : item.thumbnail,
                   borderRadius: item.shape === 'circle' ? '9999px' : '12px',
                   touchAction: 'none',
+                  transform: `rotate(${itemRotation}deg)`,
+                  transformOrigin: 'center',
                 }}
               >
                 {item.image ? (
@@ -1668,6 +1697,7 @@ export default function Decorate({
                     src={item.image}
                     alt={item.name}
                     className="pointer-events-none h-full w-full object-contain drop-shadow"
+                    style={{ opacity: item.imageOpacity ?? 1 }}
                     draggable={false}
                   />
                 ) : item.renderStyle === 'weddingPhrase' ? (
@@ -1717,17 +1747,28 @@ export default function Decorate({
                     </button>
                     <button
                       type="button"
-                      aria-label="크기 초기화"
-                      title="크기 초기화"
-                      disabled={itemScale === 1}
+                      aria-label="자유 회전"
+                      title="드래그해서 회전"
                       onPointerDown={(e) => {
                         e.preventDefault()
                         e.stopPropagation()
-                        setItemScale(p.instanceId, 1)
+                        const { x, y } = toCanvasCoords(e.clientX, e.clientY)
+                        const centerX = p.x + (item.defaultWidth * itemScale) / 2
+                        const centerY = p.y + (item.defaultHeight * itemScale) / 2
+                        rotationDragRef.current = {
+                          instanceId: p.instanceId,
+                          centerX,
+                          centerY,
+                          lastPointerAngle: Math.atan2(y - centerY, x - centerX) * (180 / Math.PI),
+                          rotation: itemRotation,
+                        }
+                        dragRef.current = null
+                        e.currentTarget.setPointerCapture(e.pointerId)
                       }}
-                      className="absolute -bottom-3 -right-3 flex h-9 w-9 items-center justify-center rounded-full bg-white text-xl font-black text-brand-600 shadow-md ring-2 ring-brand-400 disabled:text-gray-300 disabled:ring-gray-300"
+                      className="absolute -bottom-3 -right-3 flex h-9 w-9 items-center justify-center rounded-full bg-white text-brand-600 shadow-md ring-2 ring-brand-400"
+                      style={{ transform: `rotate(${-itemRotation}deg)`, touchAction: 'none' }}
                     >
-                      ↺
+                      <RotateCw aria-hidden="true" className="h-5 w-5" strokeWidth={2.6} />
                     </button>
                     <button
                       type="button"
@@ -2012,7 +2053,7 @@ export default function Decorate({
                   <button
                     key={t.key}
                     onClick={() => handleCharacterPartClick(activeMainTab.who!, t.key)}
-                    className={`select-none rounded-md py-1.5 text-base font-bold transition ${
+                    className={`select-none whitespace-nowrap rounded-md py-1.5 text-base font-bold transition ${
                       t.key === activeCharacterPart
                         ? 'bg-white text-gray-900 shadow-sm'
                         : 'text-gray-500 active:bg-white/70'
@@ -2023,12 +2064,12 @@ export default function Decorate({
                 ))}
               </div>
             ) : activeMainTab.key === 'objects' ? (
-              <div className="grid w-full grid-cols-4 gap-1">
+              <div className="grid w-full grid-cols-5 gap-1">
                 {OBJECT_PART_TABS.map((t) => (
                   <button
                     key={t.key}
                     onClick={() => setActiveObjectPart(t.key)}
-                    className={`select-none rounded-md py-1.5 text-base font-bold transition ${
+                    className={`select-none whitespace-nowrap rounded-md py-1.5 text-base font-bold transition ${
                       t.key === activeObjectPart
                         ? 'bg-white text-gray-900 shadow-sm'
                         : 'text-gray-500 active:bg-white/70'
@@ -2277,6 +2318,7 @@ export default function Decorate({
                           src={item.image}
                           alt={item.name}
                           className={`h-16 w-16 rounded-lg ${isBg ? 'object-cover' : 'object-contain'}`}
+                          style={{ opacity: item.imageOpacity ?? 1 }}
                           draggable={false}
                         />
                         {recommendation && (
@@ -2286,11 +2328,18 @@ export default function Decorate({
                         )}
                       </span>
                     ) : item.renderStyle === 'weddingPhrase' ? (
-                      <WeddingPhrase
-                        text={item.text ?? ''}
-                        color={item.thumbnail}
-                        className="h-16 w-16"
-                      />
+                      <span className="flex h-16 w-24 items-center justify-center">
+                        <span
+                          className="block w-24"
+                          style={{ aspectRatio: `${item.defaultWidth} / ${item.defaultHeight}` }}
+                        >
+                          <WeddingPhrase
+                            text={item.text ?? ''}
+                            color={item.thumbnail}
+                            className="h-full w-full"
+                          />
+                        </span>
+                      </span>
                     ) : item.renderStyle === 'letterShapeBalloon' ? (
                       <LetterShapeBalloon
                         letter={item.text ?? ''}

@@ -130,10 +130,12 @@ async function drawImage(
   width: number,
   height: number,
   filter = 'none',
+  opacity = 1,
 ) {
   const img = await loadImage(src)
   ctx.save()
   ctx.filter = filter
+  ctx.globalAlpha = opacity
   ctx.drawImage(img, x, y, width, height)
   ctx.restore()
 }
@@ -326,48 +328,41 @@ async function drawPlacedItem(ctx: CanvasRenderingContext2D, placed: PlacedItem)
   const scale = placed.scale ?? 1
   const width = item.defaultWidth * scale
   const height = item.defaultHeight * scale
-
-  if (item.image) {
-    await drawImage(ctx, item.image, placed.x, placed.y, width, height)
-    return
-  }
-  if (item.renderStyle === 'weddingPhrase') {
-    drawWeddingPhrase(
-      ctx,
-      item.text ?? '',
-      item.thumbnail,
-      placed.x,
-      placed.y,
-      width,
-      height,
-    )
-    return
-  }
-  if (item.renderStyle === 'letterShapeBalloon') {
-    drawLetterShapeBalloon(
-      ctx,
-      item.text ?? '',
-      item.thumbnail,
-      placed.x,
-      placed.y,
-      width,
-      height,
-    )
-    return
-  }
+  const rotation = placed.rotation ?? 0
+  const drawX = -width / 2
+  const drawY = -height / 2
 
   ctx.save()
-  ctx.fillStyle = item.thumbnail
-  const radius = item.shape === 'circle' ? Math.min(width, height) / 2 : 12 * scale
-  ctx.beginPath()
-  ctx.roundRect(placed.x, placed.y, width, height, radius)
-  ctx.fill()
-  ctx.fillStyle = 'rgba(255,255,255,0.9)'
-  ctx.font = `700 ${16 * scale}px sans-serif`
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-  ctx.fillText(item.name, placed.x + width / 2, placed.y + height / 2)
-  ctx.restore()
+  ctx.translate(placed.x + width / 2, placed.y + height / 2)
+  ctx.rotate((rotation * Math.PI) / 180)
+
+  try {
+    if (item.image) {
+      await drawImage(ctx, item.image, drawX, drawY, width, height, 'none', item.imageOpacity ?? 1)
+      return
+    }
+    if (item.renderStyle === 'weddingPhrase') {
+      drawWeddingPhrase(ctx, item.text ?? '', item.thumbnail, drawX, drawY, width, height)
+      return
+    }
+    if (item.renderStyle === 'letterShapeBalloon') {
+      drawLetterShapeBalloon(ctx, item.text ?? '', item.thumbnail, drawX, drawY, width, height)
+      return
+    }
+
+    ctx.fillStyle = item.thumbnail
+    const radius = item.shape === 'circle' ? Math.min(width, height) / 2 : 12 * scale
+    ctx.beginPath()
+    ctx.roundRect(drawX, drawY, width, height, radius)
+    ctx.fill()
+    ctx.fillStyle = 'rgba(255,255,255,0.9)'
+    ctx.font = `700 ${16 * scale}px sans-serif`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(item.name, 0, 0)
+  } finally {
+    ctx.restore()
+  }
 }
 
 function clamp(value: number, min: number, max: number) {

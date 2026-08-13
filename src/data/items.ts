@@ -54,6 +54,24 @@ const PROP_IMAGES = {
   prop17: assetUrl('images/props/prop17.png'),
 }
 
+const ACCESSORY_IMAGES = {
+  pearlEarring: assetUrl('images/accessories/accessory-pearl-earring.png'),
+  goldHoop: assetUrl('images/accessories/accessory-gold-hoop.png'),
+  crystalTiara: assetUrl('images/accessories/accessory-crystal-tiara.png'),
+  floralHairpin: assetUrl('images/accessories/accessory-floral-hairpin.png'),
+  pearlNecklace: assetUrl('images/accessories/accessory-pearl-necklace.png'),
+  topHat: assetUrl('images/accessories/accessory-top-hat.png'),
+  ribbonHat: assetUrl('images/accessories/accessory-ribbon-hat.png'),
+  heartSunglasses: assetUrl('images/accessories/accessory-heart-sunglasses.png'),
+  catEyeSunglasses: assetUrl('images/accessories/accessory-cat-eye-sunglasses.png'),
+  aviatorSunglasses: assetUrl('images/accessories/accessory-aviator-sunglasses.png'),
+  ovalSunglasses: assetUrl('images/accessories/accessory-oval-sunglasses.png'),
+  slimSunglasses: assetUrl('images/accessories/accessory-slim-sunglasses.png'),
+  roundSunglasses: assetUrl('images/accessories/accessory-round-sunglasses.png'),
+  starSunglasses: assetUrl('images/accessories/accessory-star-sunglasses.png'),
+  rimlessSunglasses: assetUrl('images/accessories/accessory-rimless-sunglasses.png'),
+}
+
 const STICKER_IMAGES = {
   sticker00: assetUrl('images/stickers/sticker00.png'),
   sticker01: assetUrl('images/stickers/sticker01.png'),
@@ -80,6 +98,7 @@ export type ItemCategory = 'background' | 'object' | 'sticker' | 'text'
 export type BackgroundGroup = 'indoor' | 'outdoor' | 'solid' | 'regional'
 export type ObjectShopGroup =
   | 'props'
+  | 'accessories'
   | 'stickers'
   | 'presetText'
   | 'letterBalloons'
@@ -91,6 +110,7 @@ export interface DecorItem {
   price: number // 원
   thumbnail: string // 이미지 없을 때의 색상 블록
   image?: string // 실제 이미지 경로(있으면 우선)
+  imageOpacity?: number // 반투명 렌즈처럼 이미지 전체 합성이 필요한 항목
   // 캔버스 배치 시 기본 크기(px, 캔버스 좌표 기준)
   defaultWidth: number
   defaultHeight: number
@@ -168,6 +188,26 @@ const WEDDING_PHRASE_DEFINITIONS = [
   { id: 'together-for-life', text: '평생 함께할게요', price: 500_000, color: '#4d8f7a' },
   { id: 'happy-together', text: '함께라서 행복해', price: 500_000, color: '#cf647c' },
   { id: 'happily-for-a-long-time', text: '오래오래 행복하게', price: 600_000, color: '#6675b8' },
+  { id: 'our-special-day', text: '우리의 특별한 날', price: 300_000, color: '#d95f8d' },
+  { id: 'our-new-beginning', text: '우리 둘의 시작', price: 300_000, color: '#4f86c6' },
+  { id: 'we-are-one-team', text: '오늘부터 한 팀', price: 300_000, color: '#4d8f7a' },
+  { id: 'finally-married', text: '드디어 부부', price: 300_000, color: '#b05779' },
+  { id: 'always-on-your-side', text: '서로의 편이 될게요', price: 400_000, color: '#367f87' },
+  { id: 'laugh-together-every-day', text: '매일 같이 웃자', price: 400_000, color: '#cf647c' },
+  { id: 'love-like-today', text: '오늘처럼 사랑하자', price: 500_000, color: '#8b6bb1' },
+  { id: 'every-step-together', text: '함께 걷는 모든 날', price: 500_000, color: '#486f9f' },
+  { id: 'live-happily-ever-after-ko', text: '행복하게 잘 살겠습니다', price: 600_000, color: '#a87832' },
+  { id: 'we-look-good-together', text: '우리 꽤 잘 어울림', price: 200_000, color: '#d95f8d' },
+  { id: 'main-character-today', text: '오늘의 주인공', price: 200_000, color: '#4f86c6' },
+  { id: 'just-happy', text: '아무튼 행복함', price: 200_000, color: '#4d8f7a' },
+  { id: 'take-the-picture-first', text: '일단 찍고 보자', price: 200_000, color: '#b05779' },
+  { id: 'photo-did-all-the-work', text: '사진이 다 했다', price: 300_000, color: '#367f87' },
+  { id: 'this-combination-approved', text: '이 조합 찬성', price: 300_000, color: '#cf647c' },
+  { id: 'budget-is-just-a-helper', text: '예산은 거들 뿐', price: 300_000, color: '#8b6bb1' },
+  { id: 'going-according-to-plan', text: '계획대로 되고 있어', price: 400_000, color: '#486f9f' },
+  { id: 'looking-great-today', text: '오늘 제법 멋짐', price: 400_000, color: '#a87832' },
+  { id: 'perfect-for-today', text: '오늘만큼은 완벽', price: 400_000, color: '#6675b8' },
+  { id: 'good-vibes-here', text: '여기 분위기 좋다', price: 400_000, color: '#d95f8d' },
 ] as const
 
 const WEDDING_PHRASES: DecorItem[] = WEDDING_PHRASE_DEFINITIONS.map(
@@ -233,8 +273,25 @@ export const ITEMS: DecorItem[] = [
   { id: 'bg-solid-navy', category: 'background', name: '딥 네이비', price: 0, thumbnail: '#293852', defaultWidth: 1080, defaultHeight: 1620, backgroundGroup: 'solid' },
   { id: 'bg-solid-burgundy', category: 'background', name: '버건디', price: 0, thumbnail: '#713d4a', defaultWidth: 1080, defaultHeight: 1620, backgroundGroup: 'solid' },
 
+  // 장신구: 인물 위에 독립적으로 배치하며 오브젝트처럼 이동/크기 조절/회전한다.
+  { id: 'prop17', category: 'object', name: '동그리 안경', price: 500_000, thumbnail: '#2e2b31', image: PROP_IMAGES.prop17, defaultWidth: 170, defaultHeight: 65, shape: 'rect', objectGroup: 'accessories' },
+  { id: 'accessory-pearl-earring', category: 'object', name: '진주 귀걸이', price: 200_000, thumbnail: '#f4e8d7', image: ACCESSORY_IMAGES.pearlEarring, defaultWidth: 48, defaultHeight: 57, shape: 'rect', objectGroup: 'accessories' },
+  { id: 'accessory-gold-hoop', category: 'object', name: '골드 링 귀걸이', price: 200_000, thumbnail: '#e7b23e', image: ACCESSORY_IMAGES.goldHoop, defaultWidth: 48, defaultHeight: 57, shape: 'rect', objectGroup: 'accessories' },
+  { id: 'accessory-floral-hairpin', category: 'object', name: '꽃 헤어핀', price: 400_000, thumbnail: '#f3a7b5', image: ACCESSORY_IMAGES.floralHairpin, defaultWidth: 160, defaultHeight: 70, shape: 'rect', objectGroup: 'accessories' },
+  { id: 'accessory-pearl-necklace', category: 'object', name: '진주 목걸이', price: 500_000, thumbnail: '#eadfce', image: ACCESSORY_IMAGES.pearlNecklace, defaultWidth: 150, defaultHeight: 78, shape: 'rect', objectGroup: 'accessories' },
+  { id: 'accessory-heart-sunglasses', category: 'object', name: '하트 선글라스', price: 500_000, thumbnail: '#f06b9b', image: ACCESSORY_IMAGES.heartSunglasses, imageOpacity: 0.68, defaultWidth: 175, defaultHeight: 77, shape: 'rect', objectGroup: 'accessories' },
+  { id: 'accessory-cat-eye-sunglasses', category: 'object', name: '캣아이 선글라스', price: 500_000, thumbnail: '#252329', image: ACCESSORY_IMAGES.catEyeSunglasses, defaultWidth: 180, defaultHeight: 70, shape: 'rect', objectGroup: 'accessories' },
+  { id: 'accessory-aviator-sunglasses', category: 'object', name: '보잉 선글라스', price: 500_000, thumbnail: '#d6a447', image: ACCESSORY_IMAGES.aviatorSunglasses, defaultWidth: 180, defaultHeight: 74, shape: 'rect', objectGroup: 'accessories' },
+  { id: 'accessory-oval-sunglasses', category: 'object', name: '타원 선글라스', price: 500_000, thumbnail: '#77cfd9', image: ACCESSORY_IMAGES.ovalSunglasses, imageOpacity: 0.68, defaultWidth: 178, defaultHeight: 70, shape: 'rect', objectGroup: 'accessories' },
+  { id: 'accessory-slim-sunglasses', category: 'object', name: '슬림 선글라스', price: 500_000, thumbnail: '#d93b4f', image: ACCESSORY_IMAGES.slimSunglasses, imageOpacity: 0.68, defaultWidth: 180, defaultHeight: 54, shape: 'rect', objectGroup: 'accessories' },
+  { id: 'accessory-round-sunglasses', category: 'object', name: '레트로 선글라스', price: 500_000, thumbnail: '#d7a16e', image: ACCESSORY_IMAGES.roundSunglasses, defaultWidth: 176, defaultHeight: 78, shape: 'rect', objectGroup: 'accessories' },
+  { id: 'accessory-star-sunglasses', category: 'object', name: '별 선글라스', price: 500_000, thumbnail: '#f5c84c', image: ACCESSORY_IMAGES.starSunglasses, defaultWidth: 180, defaultHeight: 86, shape: 'rect', objectGroup: 'accessories' },
+  { id: 'accessory-rimless-sunglasses', category: 'object', name: '반무테 선글라스', price: 500_000, thumbnail: '#e79aa6', image: ACCESSORY_IMAGES.rimlessSunglasses, defaultWidth: 180, defaultHeight: 72, shape: 'rect', objectGroup: 'accessories' },
+  { id: 'accessory-ribbon-hat', category: 'object', name: '리본 모자', price: 600_000, thumbnail: '#efb4bb', image: ACCESSORY_IMAGES.ribbonHat, defaultWidth: 180, defaultHeight: 125, shape: 'rect', objectGroup: 'accessories' },
+  { id: 'accessory-top-hat', category: 'object', name: '탑햇', price: 700_000, thumbnail: '#252329', image: ACCESSORY_IMAGES.topHat, defaultWidth: 180, defaultHeight: 135, shape: 'rect', objectGroup: 'accessories' },
+  { id: 'accessory-crystal-tiara', category: 'object', name: '크리스털 티아라', price: 800_000, thumbnail: '#d9dce5', image: ACCESSORY_IMAGES.crystalTiara, defaultWidth: 180, defaultHeight: 90, shape: 'rect', objectGroup: 'accessories' },
+
   // 오브제: 공간에 실제로 놓이는 물건. 가격 오름차순으로 표시한다.
-  { id: 'prop17', category: 'object', name: '동그리 안경', price: 500_000, thumbnail: '#2e2b31', image: PROP_IMAGES.prop17, defaultWidth: 170, defaultHeight: 65, shape: 'rect', objectGroup: 'props' },
   { id: 'prop06', category: 'object', name: '촛대 세트', price: 500_000, thumbnail: '#e8b94b', image: PROP_IMAGES.prop06, defaultWidth: 145, defaultHeight: 243, shape: 'rect', objectGroup: 'props' },
   { id: 'prop05', category: 'object', name: '장미 화병', price: 1_000_000, thumbnail: '#e999a4', image: PROP_IMAGES.prop05, defaultWidth: 180, defaultHeight: 214, shape: 'rect', objectGroup: 'props' },
   { id: 'prop01', category: 'object', name: '핑크 하트 케이크', price: 2_000_000, thumbnail: '#e7c8a0', image: PROP_IMAGES.prop01, defaultWidth: 186, defaultHeight: 246, shape: 'rect', objectGroup: 'props' },
