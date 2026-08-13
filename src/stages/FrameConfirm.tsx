@@ -186,7 +186,7 @@ export default function FrameConfirm() {
     <StageLayout>
       <div className="flex flex-1 flex-col items-center justify-center gap-6 text-center">
         <div>
-          <p className="text-5xl font-black text-gray-800">사진 프레임 확인</p>
+          <p className="font-ryuryu text-[64px] font-black text-gray-800">사진 프레임 확인</p>
           <p className="mt-4 text-2xl font-bold text-gray-600">
             사각형을 움직이고 모서리를 잡아 크기를 조절해 주세요.
           </p>

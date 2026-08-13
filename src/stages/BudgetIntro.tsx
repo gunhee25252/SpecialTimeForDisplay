@@ -25,7 +25,7 @@ export default function BudgetIntro() {
           </div>
 
           <p className="mt-12 text-3xl font-black text-brand-500">다음 단계</p>
-          <h1 className="mt-5 text-6xl font-black leading-tight text-gray-800">
+          <h1 className="font-ryuryu mt-5 text-[76px] font-black leading-tight text-gray-800">
             {isDuo ? '두 분의 웨딩 예산을' : '나의 웨딩 예산을'}
             <br />
             뽑아볼까요?

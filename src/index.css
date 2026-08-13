@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: 'Ownglyph Ryuryu';
+  src: url('/fonts/ongleip-ryuryu.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
 /* 터치 키오스크 운영용 전역 설정: 텍스트 선택/드래그·확대·스크롤바·우클릭 메뉴 억제 */
 html,
 body,
@@ -20,7 +28,12 @@ body,
 body {
   overscroll-behavior: none;
   touch-action: manipulation;
-  font-family: 'Pretendard', system-ui, -apple-system, 'Malgun Gothic', sans-serif;
+  font-family: 'Pretendard Variable', Pretendard, 'Malgun Gothic', sans-serif;
+}
+
+.font-ryuryu {
+  font-family: 'Ownglyph Ryuryu', 'Pretendard Variable', Pretendard, sans-serif;
+  line-height: 1.1;
 }
 
 /* 스크롤바 숨김 */

@@ -124,7 +124,7 @@ export default function Complete() {
       <StageLayout showReset={false}>
         <div className="flex flex-1 flex-col items-center justify-center text-center">
           <div className="w-full rounded-3xl border-4 border-brand-200 bg-white px-10 py-20 shadow-sm">
-            <p className="text-7xl font-black text-brand-500">인쇄 중입니다</p>
+            <p className="font-ryuryu text-[92px] font-black text-brand-500">인쇄 중입니다</p>
             <p className="mt-10 text-4xl font-bold text-gray-800">
               사진이 바로 여기에서 나옵니다. 잠시만 기다려 주세요.
             </p>
@@ -141,7 +141,7 @@ export default function Complete() {
     <StageLayout>
       <div className="flex flex-1 flex-col items-center justify-center gap-6 text-center">
         <div>
-          <p className="text-5xl font-black text-brand-500">완성!</p>
+          <p className="font-ryuryu text-[64px] font-black text-brand-500">완성!</p>
           <p className="mt-3 text-2xl font-bold text-gray-600">
             {isDuo ? '두 분의 합친 취향 유형' : '취향 유형'} · {type ? type.name : '유형 없음'}
           </p>

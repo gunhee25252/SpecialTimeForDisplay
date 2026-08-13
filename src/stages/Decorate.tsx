@@ -490,11 +490,12 @@ function LetterShapeBalloon({
 
 type DecorateTransitionTarget = DecorateStep
 
-type BackgroundGuideTarget = 'shop' | 'recommendations' | 'remaining'
+type BackgroundGuideTarget = 'shop' | 'recommendations'
 type BackgroundGuideRect = { x: number; y: number; width: number; height: number }
 
 function BackgroundDecorateGuide({ onContinue }: { onContinue: () => void }) {
   const overlayRef = useRef<HTMLDivElement>(null)
+  const [guidePage, setGuidePage] = useState<'recommendations' | 'shop'>('recommendations')
   const [targetRects, setTargetRects] = useState<
     Partial<Record<BackgroundGuideTarget, BackgroundGuideRect>>
   >({})
@@ -511,7 +512,7 @@ function BackgroundDecorateGuide({ onContinue }: { onContinue: () => void }) {
       const scaleY = rootBounds.height / root.offsetHeight || 1
       const next: Partial<Record<BackgroundGuideTarget, BackgroundGuideRect>> = {}
 
-      ;(['shop', 'recommendations', 'remaining'] as BackgroundGuideTarget[]).forEach((name) => {
+      ;(['shop', 'recommendations'] as BackgroundGuideTarget[]).forEach((name) => {
         const target = root.querySelector<HTMLElement>(`[data-background-guide-target="${name}"]`)
         if (!target) return
         const targets = [target]
@@ -554,8 +555,16 @@ function BackgroundDecorateGuide({ onContinue }: { onContinue: () => void }) {
 
   const shop = targetRects.shop
   const recommendations = targetRects.recommendations
-  const remaining = targetRects.remaining
+  const activeTarget = guidePage === 'recommendations' ? recommendations : shop
   const textShadow = { textShadow: '0 2px 5px rgba(0, 0, 0, 0.75)' }
+
+  const handleGuideContinue = () => {
+    if (guidePage === 'recommendations') {
+      setGuidePage('shop')
+      return
+    }
+    onContinue()
+  }
 
   return (
     <div ref={overlayRef} className="absolute inset-0 z-[30000]">
@@ -568,17 +577,16 @@ function BackgroundDecorateGuide({ onContinue }: { onContinue: () => void }) {
         <defs>
           <mask id="background-decorate-guide-mask">
             <rect width={BASE_WIDTH} height={BASE_HEIGHT} fill="white" />
-            {Object.values(targetRects).map((rect, index) => (
+            {activeTarget && (
               <rect
-                key={index}
-                x={rect.x}
-                y={rect.y}
-                width={rect.width}
-                height={rect.height}
+                x={activeTarget.x}
+                y={activeTarget.y}
+                width={activeTarget.width}
+                height={activeTarget.height}
                 rx="18"
                 fill="black"
               />
-            ))}
+            )}
           </mask>
         </defs>
         <rect
@@ -588,7 +596,7 @@ function BackgroundDecorateGuide({ onContinue }: { onContinue: () => void }) {
           fillOpacity="0.72"
           mask="url(#background-decorate-guide-mask)"
         />
-        {shop && (
+        {guidePage === 'shop' && shop && (
           <rect
             {...shop}
             rx="18"
@@ -598,7 +606,7 @@ function BackgroundDecorateGuide({ onContinue }: { onContinue: () => void }) {
             vectorEffect="non-scaling-stroke"
           />
         )}
-        {recommendations && (
+        {guidePage === 'recommendations' && recommendations && (
           <rect
             {...recommendations}
             rx="18"
@@ -608,55 +616,25 @@ function BackgroundDecorateGuide({ onContinue }: { onContinue: () => void }) {
             vectorEffect="non-scaling-stroke"
           />
         )}
-        {remaining && (
-          <rect
-            {...remaining}
-            rx="18"
-            fill="none"
-            stroke="#f472b6"
-            strokeWidth="9"
-            vectorEffect="non-scaling-stroke"
-          />
-        )}
       </svg>
 
-      {remaining && (
-        <div
-          className="absolute text-right text-white"
-          style={{
-            right: 44,
-            top: remaining.y + remaining.height + 66,
-            width: 580,
-            ...textShadow,
-          }}
-        >
-          <p className="text-3xl font-black leading-snug">
-            남은 예산 <span style={{ color: '#f472b6' }}>1,000만 원 이상</span>은{' '}
-            <span style={{ color: '#f472b6' }}>컬러</span> 인화
-            <span className="block">
-              1,000만 원 <span style={{ color: '#f472b6' }}>미만</span>은{' '}
-              <span style={{ color: '#f472b6' }}>흑백</span> 인화
-            </span>
-          </p>
-        </div>
-      )}
-
       <div
-        className="absolute left-1/2 w-[920px] -translate-x-1/2 text-center text-white"
-        style={{ top: 686, ...textShadow }}
+        className="absolute left-1/2 w-[1040px] -translate-x-1/2 text-center text-white"
+        style={{ top: 820, ...textShadow }}
       >
-        <h1 className="whitespace-nowrap text-4xl font-black leading-tight text-brand-300">
+        <h1 className="font-ryuryu whitespace-nowrap text-[50px] font-black leading-tight text-brand-300">
           1. 배경을 골라 사진의 분위기를 정해보세요
         </h1>
       </div>
 
-      {recommendations && (
+      {guidePage === 'recommendations' && recommendations && (
         <div
           className="absolute text-right text-white"
           style={{
-            left: Math.max(44, recommendations.x - 460),
-            top: recommendations.y + 164,
+            left: Math.max(44, recommendations.x - 444),
+            top: recommendations.y + recommendations.height / 2,
             width: 420,
+            transform: 'translateY(-50%)',
             ...textShadow,
           }}
         >
@@ -669,12 +647,13 @@ function BackgroundDecorateGuide({ onContinue }: { onContinue: () => void }) {
         </div>
       )}
 
-      {shop && (
+      {guidePage === 'shop' && shop && (
         <div
           className="absolute w-[680px] -translate-x-1/2 text-left text-white"
           style={{
             left: 'calc(50% - 55px)',
-            top: Math.max(796, shop.y - 114),
+            top: shop.y - 24,
+            transform: 'translate(-50%, -100%)',
             ...textShadow,
           }}
         >
@@ -692,10 +671,10 @@ function BackgroundDecorateGuide({ onContinue }: { onContinue: () => void }) {
         style={{ top: '50%' }}
       >
         <Button
-          onClick={onContinue}
+          onClick={handleGuideContinue}
           className="w-[480px] whitespace-nowrap px-8 py-6 text-3xl"
         >
-          배경 꾸미기 시작
+          {guidePage === 'recommendations' ? '다음으로' : '배경 꾸미기 시작'}
         </Button>
       </div>
     </div>
@@ -760,7 +739,7 @@ function DecorateStepSpotlightGuide({
   }, [])
 
   const isCharacters = target === 'characters'
-  const accent = isCharacters ? '#fb7185' : '#34d399'
+  const accent = isCharacters ? '#c084fc' : '#a3e635'
   const number = isCharacters ? 2 : 3
   const buttonLabel = isCharacters ? '신랑·신부 꾸미기 시작' : '오브젝트 꾸미기 시작'
   const textShadow = { textShadow: '0 2px 5px rgba(0, 0, 0, 0.75)' }
@@ -808,10 +787,10 @@ function DecorateStepSpotlightGuide({
       </svg>
 
       <div
-        className="absolute left-1/2 w-[1000px] -translate-x-1/2 text-center text-white"
-        style={{ top: isCharacters ? 686 : 636, ...textShadow }}
+        className="absolute left-1/2 w-[1040px] -translate-x-1/2 text-center text-white"
+        style={{ top: isCharacters ? 820 : 700, ...textShadow }}
       >
-        <h1 className="whitespace-nowrap text-4xl font-black leading-tight text-brand-300">
+        <h1 className="font-ryuryu whitespace-nowrap text-[50px] font-black leading-tight text-brand-300">
           {isCharacters ? (
             <>
               {number}. 신랑·신부를 꾸미고 원하는 위치로 옮겨보세요
@@ -863,7 +842,8 @@ function DecorateStepSpotlightGuide({
           className="absolute w-[680px] -translate-x-1/2 text-left text-white"
           style={{
             left: 'calc(50% - 55px)',
-            top: Math.max(796, shopRect.y - (isCharacters ? 114 : 74)),
+            top: shopRect.y - 24,
+            transform: 'translate(-50%, -100%)',
             ...textShadow,
           }}
         >
@@ -1428,7 +1408,7 @@ export default function Decorate({
               <strong className="font-black">{formatWon(spent)}</strong>
             </span>
             <span
-              data-background-guide-target="remaining"
+              data-tutorial-target="remaining"
               className="flex h-14 items-center justify-center border-l border-gray-200"
             >
               <span

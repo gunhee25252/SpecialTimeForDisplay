@@ -39,7 +39,7 @@ export default function Intro() {
     <StageLayout showReset={false}>
       <div className="flex flex-1 flex-col items-center text-center">
         <div className="mt-[300px] space-y-6">
-          <h1 className="text-6xl font-bold leading-tight text-gray-800">
+          <h1 className="font-ryuryu text-[76px] font-bold leading-tight text-gray-800">
             나만의
             <br />
             웨딩 사진 만들기

@@ -49,7 +49,7 @@ export default function WorldCup() {
               style={{ width: `${((roundIndex + 1) / total) * 100}%` }}
             />
           </div>
-          <h2 className="mt-8 text-5xl font-bold leading-snug text-gray-800">
+          <h2 className="font-ryuryu mt-8 text-[64px] font-bold leading-snug text-gray-800">
             {round.question}
           </h2>
         </header>

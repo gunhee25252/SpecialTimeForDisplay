@@ -186,8 +186,8 @@ export default function Result() {
                 {resultTitle}
               </p>
               <h2
-                className="mt-5 whitespace-nowrap font-black leading-[1.08] text-gray-800"
-                style={{ fontSize: '60px' }}
+                className="font-ryuryu mt-5 whitespace-nowrap font-black leading-[1.08] text-gray-800"
+                style={{ fontSize: '76px' }}
               >
                 {type ? type.name : '유형 없음'}
               </h2>

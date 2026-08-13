@@ -14,7 +14,7 @@ export default function PlayerSelect() {
       <div className="flex flex-1 flex-col items-center justify-center gap-12 text-center">
         <div className="space-y-4">
           <p className="text-2xl text-brand-400">시작하기 전에</p>
-          <h1 className="text-5xl font-bold leading-tight text-gray-800">
+          <h1 className="font-ryuryu text-[64px] font-bold leading-tight text-gray-800">
             누구와 함께
             <br />
             진행할까요?

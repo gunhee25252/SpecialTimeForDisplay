@@ -3,12 +3,14 @@ import { BASE_HEIGHT, BASE_WIDTH } from '../data/constants'
 import Button from '../components/Button'
 import Decorate from './Decorate'
 
-type TutorialTarget = 'steps' | 'purchase-list' | 'frame-button'
+type TutorialTarget = 'steps' | 'remaining' | 'purchase-list' | 'frame-button'
+type TutorialPage = 0 | 1 | 2 | 3
 type TutorialRect = { x: number; y: number; width: number; height: number }
 type TutorialRects = Partial<Record<TutorialTarget, TutorialRect>>
 
 const TARGET_PADDING: Record<TutorialTarget, { x: number; y: number }> = {
   steps: { x: 14, y: 14 },
+  remaining: { x: 12, y: 10 },
   'purchase-list': { x: 4, y: 0 },
   'frame-button': { x: 4, y: 0 },
 }
@@ -16,6 +18,7 @@ const TARGET_PADDING: Record<TutorialTarget, { x: number; y: number }> = {
 export default function DecorateIntro() {
   const previewRef = useRef<HTMLDivElement>(null)
   const [showTutorial, setShowTutorial] = useState(true)
+  const [tutorialPage, setTutorialPage] = useState<TutorialPage>(0)
   const [targetRects, setTargetRects] = useState<TutorialRects>({})
 
   useLayoutEffect(() => {
@@ -29,7 +32,7 @@ export default function DecorateIntro() {
       const scaleY = rootBounds.height / root.offsetHeight || 1
       const next: TutorialRects = {}
 
-      ;(['steps', 'purchase-list', 'frame-button'] as TutorialTarget[]).forEach((name) => {
+      ;(['steps', 'remaining', 'purchase-list', 'frame-button'] as TutorialTarget[]).forEach((name) => {
         const target = root.querySelector<HTMLElement>(`[data-tutorial-target="${name}"]`)
         if (!target) return
         const bounds = target.getBoundingClientRect()
@@ -57,9 +60,26 @@ export default function DecorateIntro() {
   }, [])
 
   const steps = targetRects.steps
+  const remaining = targetRects.remaining
   const purchaseList = targetRects['purchase-list']
   const frameButton = targetRects['frame-button']
+  const activeTarget =
+    tutorialPage === 0
+      ? steps
+      : tutorialPage === 1
+        ? remaining
+        : tutorialPage === 2
+          ? frameButton
+          : purchaseList
   const textShadow = { textShadow: '0 2px 5px rgba(0, 0, 0, 0.75)' }
+
+  const handleNextTutorialPage = () => {
+    if (tutorialPage < 3) {
+      setTutorialPage((tutorialPage + 1) as TutorialPage)
+      return
+    }
+    setShowTutorial(false)
+  }
 
   return (
     <div ref={previewRef} className="relative h-full w-full overflow-hidden">
@@ -80,17 +100,16 @@ export default function DecorateIntro() {
           <defs>
             <mask id="decorate-tutorial-mask">
               <rect width={BASE_WIDTH} height={BASE_HEIGHT} fill="white" />
-              {Object.values(targetRects).map((rect, index) => (
+              {activeTarget && (
                 <rect
-                  key={index}
-                  x={rect.x}
-                  y={rect.y}
-                  width={rect.width}
-                  height={rect.height}
+                  x={activeTarget.x}
+                  y={activeTarget.y}
+                  width={activeTarget.width}
+                  height={activeTarget.height}
                   rx="18"
                   fill="black"
                 />
-              ))}
+              )}
             </mask>
           </defs>
           <rect
@@ -100,7 +119,7 @@ export default function DecorateIntro() {
             fillOpacity="0.72"
             mask="url(#decorate-tutorial-mask)"
           />
-          {steps && (
+          {tutorialPage === 0 && steps && (
             <rect
               {...steps}
               rx="18"
@@ -110,9 +129,19 @@ export default function DecorateIntro() {
               vectorEffect="non-scaling-stroke"
             />
           )}
-          {purchaseList && (
+          {tutorialPage === 3 && purchaseList && (
             <rect
               {...purchaseList}
+              rx="18"
+              fill="none"
+              stroke="#fb923c"
+              strokeWidth="9"
+              vectorEffect="non-scaling-stroke"
+            />
+          )}
+          {tutorialPage === 1 && remaining && (
+            <rect
+              {...remaining}
               rx="18"
               fill="none"
               stroke="#fb7185"
@@ -120,7 +149,7 @@ export default function DecorateIntro() {
               vectorEffect="non-scaling-stroke"
             />
           )}
-          {frameButton && (
+          {tutorialPage === 2 && frameButton && (
             <rect
               {...frameButton}
               rx="16"
@@ -132,13 +161,13 @@ export default function DecorateIntro() {
           )}
         </svg>
 
-        {steps && (
+        {tutorialPage === 0 && steps && (
           <>
             <div
               className="absolute text-left text-white"
               style={{
                 left: 48,
-                top: steps.y + steps.height + 62,
+                top: steps.y + steps.height + 24,
                 width: steps.x + steps.width / 2 - 60,
                 ...textShadow,
               }}
@@ -164,15 +193,37 @@ export default function DecorateIntro() {
           </>
         )}
 
-        {frameButton && (
+        {tutorialPage === 1 && remaining && (
+          <div
+            className="absolute text-right text-white"
+            style={{
+              right: 44,
+              top: remaining.y + remaining.height + 24,
+              width: 580,
+              ...textShadow,
+            }}
+          >
+            <p className="text-3xl font-black leading-snug">
+              남은 예산 <span style={{ color: '#fb7185' }}>1,000만 원 이상</span>은{' '}
+              <span style={{ color: '#fb7185' }}>컬러</span> 인화
+              <span className="block">
+                1,000만 원 <span style={{ color: '#fb7185' }}>미만</span>은{' '}
+                <span style={{ color: '#fb7185' }}>흑백</span> 인화
+              </span>
+            </p>
+          </div>
+        )}
+
+        {tutorialPage === 2 && frameButton && (
           <>
             <div
               className="absolute text-right text-white"
               style={{
-                left: Math.max(40, frameButton.x + frameButton.width / 2 - 560),
-                top: frameButton.y + frameButton.height + 78,
+                left: Math.max(40, frameButton.x - 494),
+                top: frameButton.y + frameButton.height / 2,
                 width: 470,
                 textAlign: 'right',
+                transform: 'translateY(-50%)',
                 ...textShadow,
               }}
             >
@@ -186,22 +237,23 @@ export default function DecorateIntro() {
           </>
         )}
 
-        {purchaseList && (
+        {tutorialPage === 3 && purchaseList && (
           <>
             <div
               className="absolute text-right text-white"
               style={{
                 left: Math.max(40, purchaseList.x - 554),
-                top: purchaseList.y + purchaseList.height * 0.52 - 20,
+                top: purchaseList.y + purchaseList.height / 2,
                 width: 530,
                 textAlign: 'right',
+                transform: 'translateY(-50%)',
                 ...textShadow,
               }}
             >
               <p className="text-3xl font-black leading-snug">
-                <span style={{ color: '#fb7185' }}>구매 목록</span>에서 오브젝트를 선택하면
+                <span style={{ color: '#fb923c' }}>구매 목록</span>에서 오브젝트를 선택하면
                 <span className="block">
-                  사진 속 <span style={{ color: '#fb7185' }}>가장 앞으로</span> 배치
+                  사진 속 <span style={{ color: '#fb923c' }}>가장 앞으로</span> 배치
                 </span>
               </p>
             </div>
@@ -213,7 +265,7 @@ export default function DecorateIntro() {
           style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}
         >
           <Button
-            onClick={() => setShowTutorial(false)}
+            onClick={handleNextTutorialPage}
             className="w-[480px] whitespace-nowrap px-8 py-6 text-3xl"
           >
             다음으로
