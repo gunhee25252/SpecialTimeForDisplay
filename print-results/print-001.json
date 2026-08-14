@@ -2,18 +2,18 @@
   "printId": 1,
   "imageFile": "print-001.png",
   "copies": 1,
-  "grayscale": true,
+  "grayscale": false,
   "size": "4x6",
   "sheetRatio": "2:3",
   "pixelWidth": 1200,
   "pixelHeight": 1800,
   "dpi": 300,
-  "rotationDegrees": 90,
-  "frameRatio": "3:2",
+  "rotationDegrees": 0,
+  "frameRatio": "2:3",
   "frame": {
-    "x": 34,
-    "y": 546,
-    "width": 999,
-    "height": 666
+    "x": 213,
+    "y": 148,
+    "width": 624,
+    "height": 936
   }
 }

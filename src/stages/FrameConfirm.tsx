@@ -187,7 +187,7 @@ export default function FrameConfirm() {
       <div className="flex flex-1 flex-col items-center justify-center gap-6 text-center">
         <div>
           <p className="font-ryuryu text-[64px] font-black text-gray-800">사진 프레임 확인</p>
-          <p className="mt-4 text-2xl font-bold text-gray-600">
+          <p className="font-gyeongyeong mt-4 text-[32px] font-bold leading-snug text-gray-600">
             사각형을 움직이고 모서리를 잡아 크기를 조절해 주세요.
           </p>
         </div>
@@ -235,7 +235,7 @@ export default function FrameConfirm() {
             <button
               key={option.ratio}
               onClick={() => updatePreset(option.ratio)}
-              className={`flex min-h-[170px] items-center justify-center gap-8 rounded-2xl border-4 px-8 py-7 text-left transition ${
+              className={`flex min-h-[190px] items-center justify-center gap-8 rounded-2xl border-4 px-8 py-7 text-left transition ${
                 option.ratio === printFrameRatio
                   ? 'border-brand-500 bg-white text-gray-900 shadow-sm'
                   : 'border-brand-100 bg-white/70 text-gray-500'
@@ -248,9 +248,9 @@ export default function FrameConfirm() {
                 }`}
               />
               <span className="block min-w-0">
-                <span className="block text-2xl font-bold">{option.label}</span>
-                <span className="mt-1 block text-lg font-semibold">{option.ratio}</span>
-                <span className="mt-2 block text-base">{option.description}</span>
+                <span className="block text-[32px] font-bold leading-tight">{option.label}</span>
+                <span className="mt-2 block text-3xl font-bold leading-tight">{option.ratio}</span>
+                <span className="mt-2 block text-3xl leading-tight">{option.description}</span>
               </span>
             </button>
           ))}

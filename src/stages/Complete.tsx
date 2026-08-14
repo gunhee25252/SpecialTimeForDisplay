@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useAppStore } from '../store/useAppStore'
-import { findTypeByCode } from '../data/types16'
 import StageLayout from '../components/StageLayout'
 import Button from '../components/Button'
-import { formatWon } from '../utils/format'
 import {
   calculatePrintSpec,
   commitPrintId,
@@ -18,7 +16,6 @@ const PRINTING_DELAY_MS = 5_000
 const PRINT_DONE_DELAY_MS = 10_000
 
 export default function Complete() {
-  const resultCode = useAppStore((s) => s.resultCode)
   const playerCount = useAppStore((s) => s.playerCount)
   const budget = useAppStore((s) => s.budget)
   const spent = useAppStore((s) => s.spent)
@@ -34,9 +31,7 @@ export default function Complete() {
   const [printError, setPrintError] = useState<string | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
-  const type = resultCode ? findTypeByCode(resultCode) : undefined
   const isDuo = playerCount === 2
-  const remaining = Math.max(0, (budget ?? 0) - spent)
   const printSpec = useMemo(
     () => ({ ...calculatePrintSpec(printId, budget, spent, printFrameRatio), frame: printFrame }),
     [budget, printFrame, printFrameRatio, printId, spent],
@@ -142,9 +137,6 @@ export default function Complete() {
       <div className="flex flex-1 flex-col items-center justify-center gap-6 text-center">
         <div>
           <p className="font-ryuryu text-[64px] font-black text-brand-500">완성!</p>
-          <p className="mt-3 text-2xl font-bold text-gray-600">
-            {isDuo ? '두 분의 합친 취향 유형' : '취향 유형'} · {type ? type.name : '유형 없음'}
-          </p>
         </div>
 
         <div className="flex w-full flex-col items-center justify-center gap-4">
@@ -165,16 +157,17 @@ export default function Complete() {
             )}
           </div>
 
-          <div className="w-full rounded-2xl bg-white px-8 py-6 shadow-sm">
-            <p className="text-2xl font-bold text-gray-800">
-              출력 정보: {printSpec.grayscale ? '흑백' : '컬러'} / 사진 {printFrameRatio}
-              {printSpec.rotationDegrees === 90 ? ' / 가로 인화' : ' / 세로 인화'}
+          <p className="text-[32px] font-bold leading-snug text-gray-700">
+            {isDuo
+              ? '두 사람의 선택으로 완성한 웨딩 사진'
+              : '나의 선택으로 완성한 웨딩 사진'}
+          </p>
+
+          {printError && (
+            <p className="w-full rounded-2xl bg-white px-8 py-5 text-3xl font-semibold text-red-500 shadow-sm">
+              {printError}
             </p>
-            <p className="mt-3 text-xl font-semibold text-gray-500">
-              남은 예산 {formatWon(remaining)}
-            </p>
-            {printError && <p className="mt-3 text-xl font-semibold text-red-500">{printError}</p>}
-          </div>
+          )}
         </div>
 
         <div className="flex w-full flex-col gap-3">
