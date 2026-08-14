@@ -68,7 +68,9 @@ export function AnalyzingOverlay() {
           />
         ))}
       </div>
-      <p className="mt-4 text-xl text-white/70">화면을 터치하면 결과로 넘어가요</p>
+      <p className="mt-5 text-3xl font-semibold text-white/80">
+        화면을 터치하면 결과로 넘어가요
+      </p>
     </motion.div>
   )
 }
@@ -191,7 +193,7 @@ export function PlayerIntroCard({ player }: { player: number }) {
       >
         {PLAYER_INTRO_MESSAGES[player]}
       </motion.p>
-      <p className="mt-4 text-xl text-white/70">{PLAYER_INTRO_HINT}</p>
+      <p className="mt-5 text-3xl font-semibold text-white/80">{PLAYER_INTRO_HINT}</p>
     </motion.div>
   )
 }

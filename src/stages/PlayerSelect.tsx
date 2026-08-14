@@ -54,7 +54,7 @@ function PlayerOption({
         <PersonIcon aria-hidden="true" className="h-12 w-12" strokeWidth={2.4} />
         <span className="font-ryuryu text-[56px] font-bold leading-none">{title}</span>
       </span>
-      <span className="text-2xl font-semibold leading-tight text-gray-500">{caption}</span>
+      <span className="text-3xl font-semibold leading-tight text-gray-500">{caption}</span>
     </button>
   )
 }

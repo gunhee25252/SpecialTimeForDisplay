@@ -27,9 +27,9 @@ export default function PlayerIndicator() {
         return (
           <div
             key={i}
-            className={`flex items-center gap-2 rounded-full px-4 py-2 text-lg font-semibold ${tone}`}
+            className={`flex items-center gap-3 rounded-full px-5 py-3 text-3xl font-semibold ${tone}`}
           >
-            <span className={`flex h-7 w-7 items-center justify-center rounded-full text-base ${badge}`}>
+            <span className={`flex h-12 w-12 items-center justify-center rounded-full text-3xl ${badge}`}>
               {done ? '✓' : i + 1}
             </span>
             {PLAYER_LABELS[i]}

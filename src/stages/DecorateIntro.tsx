@@ -86,7 +86,7 @@ export default function DecorateIntro() {
         <Decorate suppressTransitionGuide={showTutorial} />
       </div>
 
-      {showTutorial && <div className="absolute inset-0 z-[40000]">
+      {showTutorial && <div className="font-gyeongyeong absolute inset-0 z-[40000]">
         <svg
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 h-full w-full"
@@ -167,7 +167,7 @@ export default function DecorateIntro() {
                   ['2', '신랑·신부'],
                   ['3', '오브젝트'],
                 ].map(([number, label]) => (
-                  <span key={number} className="flex items-center gap-2 text-white">
+                  <span key={number} className="font-gothic flex items-center gap-2 text-white">
                     <strong className="flex h-9 w-9 items-center justify-center rounded-full bg-[#5a9ef7] text-xl text-white">
                       {number}
                     </strong>
@@ -245,7 +245,7 @@ export default function DecorateIntro() {
         >
           <Button
             onClick={handleNextTutorialPage}
-            className="w-[480px] whitespace-nowrap px-8 py-6 text-3xl"
+            className="font-gyeongyeong w-[480px] whitespace-nowrap px-8 py-6 text-3xl"
           >
             다음으로
           </Button>

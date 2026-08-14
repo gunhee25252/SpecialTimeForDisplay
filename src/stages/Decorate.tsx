@@ -580,7 +580,7 @@ function BackgroundDecorateGuide({ onContinue }: { onContinue: () => void }) {
   }
 
   return (
-    <div ref={overlayRef} className="absolute inset-0 z-[30000]">
+    <div ref={overlayRef} className="font-gyeongyeong absolute inset-0 z-[30000]">
       <svg
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 h-full w-full"
@@ -685,7 +685,7 @@ function BackgroundDecorateGuide({ onContinue }: { onContinue: () => void }) {
       >
         <Button
           onClick={handleGuideContinue}
-          className="w-[480px] whitespace-nowrap px-8 py-6 text-3xl"
+          className="font-gyeongyeong w-[480px] whitespace-nowrap px-8 py-6 text-3xl"
         >
           {guidePage === 'recommendations' ? '다음으로' : '배경 꾸미기 시작'}
         </Button>
@@ -791,7 +791,7 @@ function DecorateStepSpotlightGuide({
   }
 
   return (
-    <div ref={overlayRef} className="absolute inset-0 z-[30000]">
+    <div ref={overlayRef} className="font-gyeongyeong absolute inset-0 z-[30000]">
       <svg
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 h-full w-full"
@@ -881,7 +881,8 @@ function DecorateStepSpotlightGuide({
           }}
         >
           <p className="text-3xl font-black leading-snug">
-            <span style={{ color: '#fb923c' }}>구매 목록</span>에서 오브젝트를 선택하면
+            <span style={{ color: '#fb923c' }}>구매 목록</span>에서 오브젝트를{' '}
+            <span style={{ color: '#fb923c' }}>선택</span>하면
             <span className="block">
               사진 속 <span style={{ color: '#fb923c' }}>가장 앞으로</span> 배치
             </span>
@@ -913,7 +914,7 @@ function DecorateStepSpotlightGuide({
             )}
           </p>
           {!isCharacters && (
-            <div className="mt-4 flex items-center gap-6 text-xl font-black">
+            <div className="font-gothic mt-4 flex items-center gap-6 text-xl font-black">
               <span className="flex items-center gap-2">
                 <strong className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-500 text-3xl text-white shadow-md">
                   +
@@ -946,7 +947,7 @@ function DecorateStepSpotlightGuide({
       <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
         <Button
           onClick={handleGuideContinue}
-          className="w-[480px] whitespace-nowrap px-8 py-6 text-3xl"
+          className="font-gyeongyeong w-[480px] whitespace-nowrap px-8 py-6 text-3xl"
         >
           {buttonLabel}
         </Button>
@@ -1492,7 +1493,7 @@ export default function Decorate({
               </div>
             ))}
           </div>
-          <div className="grid grid-cols-3 text-3xl font-black">
+          <div className="font-gyeongyeong grid grid-cols-3 text-3xl font-black">
             <span className="flex h-14 items-center justify-center gap-2 text-gray-800">
               <span>예산</span>
               <strong className="font-black">

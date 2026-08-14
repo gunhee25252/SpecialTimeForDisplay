@@ -3,6 +3,15 @@
 @tailwind utilities;
 
 @font-face {
+  font-family: 'Ownglyph Gyeongyeong';
+  src: url('/fonts/ongleip-gyeongyeong.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  size-adjust: 110%;
+}
+
+@font-face {
   font-family: 'Ownglyph Ryuryu';
   src: url('/fonts/ongleip-ryuryu.ttf') format('truetype');
   font-style: normal;
@@ -44,12 +53,35 @@ body,
 body {
   overscroll-behavior: none;
   touch-action: manipulation;
-  font-family: 'Pretendard Variable', Pretendard, 'Malgun Gothic', sans-serif;
+}
+
+body,
+button,
+input,
+select,
+textarea {
+  font-family: 'Ownglyph Gyeongyeong', 'Pretendard Variable', Pretendard, 'Malgun Gothic', sans-serif;
 }
 
 .font-ryuryu {
-  font-family: 'Ownglyph Ryuryu', 'Pretendard Variable', Pretendard, sans-serif !important;
+  font-family: 'Ownglyph Ryuryu', 'Ownglyph Gyeongyeong', 'Pretendard Variable', Pretendard, sans-serif !important;
   line-height: 1.1;
+}
+
+.font-gyeongyeong {
+  font-family: 'Ownglyph Gyeongyeong', 'Pretendard Variable', Pretendard, 'Malgun Gothic', sans-serif !important;
+}
+
+.font-gothic {
+  font-family: 'Pretendard Variable', Pretendard, 'Malgun Gothic', sans-serif;
+}
+
+.font-gothic-stage,
+.font-gothic-stage button,
+.font-gothic-stage input,
+.font-gothic-stage select,
+.font-gothic-stage textarea {
+  font-family: 'Pretendard Variable', Pretendard, 'Malgun Gothic', sans-serif;
 }
 
 /* 스크롤바 숨김 */

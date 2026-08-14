@@ -45,7 +45,7 @@ export default function Intro() {
             <br />
             웨딩 사진 만들기
           </h1>
-          <p className="text-[27px] font-extrabold leading-relaxed text-brand-700">
+          <p className="text-[34px] font-extrabold leading-relaxed text-brand-700">
             마음에 드는 장면을 고르고
             <br />
             나만의 웨딩 사진을 완성해 보세요.

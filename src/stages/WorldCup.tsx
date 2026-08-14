@@ -38,7 +38,7 @@ export default function WorldCup() {
               <PlayerIndicator />
             </div>
           )}
-          <p className="text-2xl font-medium text-brand-500">
+          <p className="text-3xl font-semibold text-brand-500">
             {isDuo && <span className="text-gray-500">{PLAYER_LABELS[currentPlayer]} · </span>}
             {roundIndex + 1} <span className="text-brand-300">/ {total}</span>
           </p>
@@ -92,7 +92,7 @@ function ChoiceCard({
         />
       ) : (
         <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-brand-50 to-brand-100">
-          <span className="text-2xl font-medium text-brand-300">
+          <span className="text-3xl font-medium text-brand-300">
             이미지 placeholder ({side})
           </span>
         </div>
@@ -108,7 +108,11 @@ function ChoiceCard({
       >
         <p className="text-4xl font-bold drop-shadow-sm">{choice.label}</p>
         {choice.desc && (
-          <p className={`mt-2 text-2xl ${hasImage ? 'text-white/85' : 'text-gray-400'}`}>
+          <p
+            className={`mt-3 text-3xl leading-snug ${
+              hasImage ? 'text-white/90' : 'text-gray-500'
+            }`}
+          >
             {choice.desc}
           </p>
         )}

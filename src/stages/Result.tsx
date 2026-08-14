@@ -178,7 +178,7 @@ export default function Result() {
             className="relative z-10 flex min-h-0 flex-1 items-center justify-center"
             style={{ transform: 'translateY(50px)' }}
           >
-            <div className="w-full max-w-[880px] rounded-[1.25rem] border-4 border-brand-100 bg-white/80 px-6 py-8">
+            <div className="w-full max-w-[940px] rounded-[1.25rem] border-4 border-brand-100 bg-white/80 px-6 py-8">
               <p
                 className="font-ryuryu font-black leading-none text-brand-500"
                 style={{ fontSize: '54px' }}
@@ -193,8 +193,8 @@ export default function Result() {
               </h2>
 
               <p
-                className="mx-auto mt-5 w-full max-w-[940px] font-semibold leading-[1.45] text-gray-600"
-                style={{ fontSize: '25px' }}
+                className="mx-auto mt-5 w-full max-w-[940px] font-bold leading-[1.4] text-gray-600"
+                style={{ fontSize: '32px' }}
               >
                 {type
                   ? descriptionLines.map((sentence, index) => (
@@ -242,7 +242,10 @@ export default function Result() {
         </section>
 
         <div className="flex min-h-0 items-center justify-center">
-          <Button onClick={() => setStage('budgetIntro')} className="px-16 py-5">
+          <Button
+            onClick={() => setStage('budgetIntro')}
+            className="font-gyeongyeong px-16 py-5 text-3xl"
+          >
             다음으로
           </Button>
         </div>
@@ -279,7 +282,7 @@ function InfoRow({
       )}
       <p
         className="font-black leading-none text-gray-800"
-        style={{ fontSize: centerOnly ? '32px' : '38px' }}
+        style={{ fontSize: centerOnly ? '32px' : '48px' }}
       >
         {value}
       </p>
@@ -341,7 +344,7 @@ function AxisGauge({
           <span
             className="px-5 font-black leading-none"
             style={{
-              fontSize: '36px',
+              fontSize: '46px',
               color: isBalanced ? '#111827' : isLeftWinner ? '#168e84' : '#db5676',
             }}
           >
@@ -371,7 +374,10 @@ function AxisGauge({
             }}
           />
         </div>
-        <p className="mt-2 text-center text-lg font-semibold leading-snug text-gray-500">
+        <p
+          className="mt-2 text-center font-bold leading-snug text-gray-500"
+          style={{ fontSize: '26px', textWrap: 'balance' }}
+        >
           {caption}
         </p>
       </div>

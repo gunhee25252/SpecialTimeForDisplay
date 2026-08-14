@@ -16,6 +16,8 @@ import FrameConfirm from './stages/FrameConfirm'
 import Complete from './stages/Complete'
 
 // 단일 페이지 + stage 상태로 화면 전환. 전환 연출은 TransitionController가 얹는다.
+const GOTHIC_STAGES = new Set<Stage>(['decorateIntro', 'decorate', 'frameConfirm', 'complete'])
+
 export default function App() {
   const stage = useAppStore((s) => s.stage)
 
@@ -27,7 +29,15 @@ export default function App() {
 
   return (
     <KioskFrame>
-      <TransitionController>{(s) => <StageView stage={s} />}</TransitionController>
+      <TransitionController>
+        {(s) => (
+          <div
+            className={`absolute inset-0 ${GOTHIC_STAGES.has(s) ? 'font-gothic-stage' : ''}`}
+          >
+            <StageView stage={s} />
+          </div>
+        )}
+      </TransitionController>
     </KioskFrame>
   )
 }

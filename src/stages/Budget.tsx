@@ -128,7 +128,7 @@ export default function Budget() {
           {isDuo && <PlayerIndicator />}
           <p className="font-ryuryu text-[60px] font-bold text-brand-500">{budgetTitle}</p>
           {isDuo && currentPlayer === 1 && players[0]?.budget != null && (
-            <p className="text-lg text-gray-400">
+            <p className="text-3xl font-semibold text-gray-400">
               {PLAYER_LABELS[0]} 예산 · {players[0].tierLabel} {formatWon(players[0].budget)}
             </p>
           )}
@@ -137,8 +137,8 @@ export default function Budget() {
         {/* 합산 단계(둘이 마지막) */}
         {phase === 'summing' ? (
           <button onClick={skipSum} className="flex w-full flex-col items-center gap-4">
-            <p className="text-2xl text-gray-500">두 사람의 예산을 합치면</p>
-            <div className="flex items-end gap-3 text-2xl text-gray-400">
+            <p className="text-3xl font-bold text-gray-500">두 사람의 예산을 합치면</p>
+            <div className="flex items-end gap-4 text-3xl font-semibold text-gray-400">
               <span>{formatWon(players[0]?.budget ?? 0)}</span>
               <span className="text-brand-400">+</span>
               <span>{formatWon(players[1]?.budget ?? 0)}</span>
@@ -173,7 +173,7 @@ export default function Budget() {
                 className={
                   isDream
                     ? 'rounded-full bg-gradient-to-r from-amber-400 to-yellow-500 px-12 py-5 text-4xl font-extrabold text-white shadow-lg'
-                    : 'rounded-full bg-brand-100 px-8 py-3 text-2xl font-bold text-brand-600'
+                    : 'rounded-full bg-brand-100 px-8 py-3 text-3xl font-bold text-brand-600'
                 }
               >
                 {isDream && '✨ '}
@@ -192,10 +192,14 @@ export default function Budget() {
             </Button>
           )}
           {phase === 'revealed' && !isLastPlayer && (
-            <Button onClick={nextAfterBudget}>두 번째 예산 뽑기</Button>
+            <Button onClick={nextAfterBudget} className="text-3xl">
+              두 번째 예산 뽑기
+            </Button>
           )}
           {phase === 'revealed' && isLastPlayer && isDuo && (
-            <Button onClick={() => setPhase('summing')}>두 사람 예산 합치기</Button>
+            <Button onClick={() => setPhase('summing')} className="text-3xl">
+              두 사람 예산 합치기
+            </Button>
           )}
           {phase === 'revealed' && isLastPlayer && !isDuo && (
             <div className="flex gap-4">
@@ -203,13 +207,20 @@ export default function Budget() {
                 variant="secondary"
                 onClick={() => setIsRerollConfirming(true)}
                 disabled={soloBudgetRerollUsed}
+                className="text-3xl"
               >
                 예산 다시 돌리기 · {soloBudgetRerollUsed ? '0회 남음' : '1회 남음'}
               </Button>
-              <Button onClick={nextAfterBudget}>사진 만들러 가기</Button>
+              <Button onClick={nextAfterBudget} className="text-3xl">
+                사진 만들러 가기
+              </Button>
             </div>
           )}
-          {phase === 'summing' && <Button onClick={nextAfterBudget}>사진 만들러 가기</Button>}
+          {phase === 'summing' && (
+            <Button onClick={nextAfterBudget} className="px-12 py-6 text-3xl">
+              사진 만들러 가기
+            </Button>
+          )}
         </div>
       </div>
 
@@ -236,14 +247,14 @@ export default function Budget() {
             >
               정말 예산을 다시 돌리시겠습니까?
             </h2>
-            <p className="mt-6 whitespace-pre-line text-2xl font-bold leading-relaxed text-red-500">
+            <p className="mt-6 whitespace-pre-line text-3xl font-bold leading-relaxed text-red-500">
               {'현재 예산은 사라지고 다시 뽑은 예산으로 변경됩니다.\n예산 다시 돌리기는 한 번만 사용할 수 있습니다.'}
             </p>
             <div className="mt-10 grid grid-cols-2 gap-5">
               <button
                 type="button"
                 onClick={() => setIsRerollConfirming(false)}
-                className="rounded-2xl border-2 border-gray-300 bg-white px-8 py-5 text-2xl font-black text-gray-600 active:bg-gray-100"
+                className="rounded-2xl border-2 border-gray-300 bg-white px-8 py-5 text-3xl font-black text-gray-600 active:bg-gray-100"
               >
                 아니요
               </button>
@@ -253,7 +264,7 @@ export default function Budget() {
                   setIsRerollConfirming(false)
                   handleDraw(true)
                 }}
-                className="rounded-2xl bg-brand-500 px-8 py-5 text-2xl font-black text-white active:bg-brand-600"
+                className="rounded-2xl bg-brand-500 px-8 py-5 text-3xl font-black text-white active:bg-brand-600"
               >
                 네
               </button>
