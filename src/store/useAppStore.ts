@@ -31,7 +31,7 @@ import {
   type CharacterKey,
 } from '../data/characters'
 
-export type Stage = 'intro' | 'playerSelect' | 'worldcup' | 'result' | 'budgetIntro' | 'budget' | 'decorateIntro' | 'decorate' | 'frameConfirm' | 'complete'
+export type Stage = 'intro' | 'photoBooth' | 'playerSelect' | 'worldcup' | 'result' | 'budgetIntro' | 'budget' | 'decorateIntro' | 'decorate' | 'frameConfirm' | 'complete'
 
 export type PlayerCount = 1 | 2
 export type PrintFrameRatio = '2:3' | '3:2'

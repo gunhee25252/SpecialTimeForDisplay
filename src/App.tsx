@@ -5,6 +5,7 @@ import { useGlobalClickSound } from './hooks/useGlobalClickSound'
 import KioskFrame from './components/KioskFrame'
 import TransitionController from './transitions/TransitionController'
 import Intro from './stages/Intro'
+import PhotoBooth from './stages/PhotoBooth'
 import PlayerSelect from './stages/PlayerSelect'
 import WorldCup from './stages/WorldCup'
 import Result from './stages/Result'
@@ -16,7 +17,7 @@ import FrameConfirm from './stages/FrameConfirm'
 import Complete from './stages/Complete'
 
 // 단일 페이지 + stage 상태로 화면 전환. 전환 연출은 TransitionController가 얹는다.
-const GOTHIC_STAGES = new Set<Stage>(['decorateIntro', 'decorate', 'frameConfirm', 'complete'])
+const GOTHIC_STAGES = new Set<Stage>(['photoBooth', 'decorateIntro', 'decorate', 'frameConfirm', 'complete'])
 
 export default function App() {
   const stage = useAppStore((s) => s.stage)
@@ -46,6 +47,8 @@ function StageView({ stage }: { stage: Stage }) {
   switch (stage) {
     case 'intro':
       return <Intro />
+    case 'photoBooth':
+      return <PhotoBooth />
     case 'playerSelect':
       return <PlayerSelect />
     case 'worldcup':

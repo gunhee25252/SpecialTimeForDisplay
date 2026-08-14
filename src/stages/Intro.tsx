@@ -3,6 +3,7 @@ import StageLayout from '../components/StageLayout'
 import Button from '../components/Button'
 import { assetUrl } from '../utils/asset'
 import { startBackgroundMusic } from '../hooks/useBackgroundMusic'
+import { Camera } from 'lucide-react'
 
 const INTRO_RESULTS = [
   {
@@ -36,9 +37,25 @@ const INTRO_RESULTS = [
 export default function Intro() {
   const setStage = useAppStore((s) => s.setStage)
 
+  const openPhotoBooth = () => {
+    setStage('photoBooth')
+    startBackgroundMusic()
+  }
+
   return (
     <StageLayout showReset={false}>
       <div className="flex flex-1 flex-col items-center text-center">
+        <button
+          type="button"
+          onPointerDown={openPhotoBooth}
+          onClick={openPhotoBooth}
+          aria-label="한 컷 사진 촬영"
+          title="한 컷 사진"
+          className="absolute bottom-5 right-5 z-[70] flex h-16 w-16 touch-manipulation items-center justify-center rounded-full text-brand-400/60 transition-colors active:bg-white/70 active:text-brand-600"
+        >
+          <Camera aria-hidden="true" className="h-8 w-8" strokeWidth={2.2} />
+        </button>
+
         <div className="mt-[300px] space-y-6">
           <h1 className="font-ryuryu text-[76px] font-bold leading-tight text-gray-800">
             나만의
