@@ -101,11 +101,16 @@ export default function Complete() {
         grayscale: printSpec.grayscale,
         rotateLandscapeForOutput: true,
       })
-      await savePrintFiles(imageBlob, printSpec)
-      await openPrintDialog(imageBlob)
+      // 폴더 보관에 실패해도 인쇄는 그대로 진행한다(저장된 경우에만 번호를 소진).
+      try {
+        await savePrintFiles(imageBlob, printSpec)
+        commitPrintId(printId)
+        setPrintId(printId + 1)
+      } catch {
+        // 저장 실패는 인쇄를 막지 않는다.
+      }
 
-      commitPrintId(printId)
-      setPrintId(printId + 1)
+      await openPrintDialog(imageBlob)
       setPrintStatus('printing')
     } catch (error) {
       setPrintError(error instanceof Error ? error.message : '저장 중 문제가 생겼어요.')

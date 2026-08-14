@@ -27,7 +27,7 @@ internal static class Program
 
             if (await IsServerRunningAsync(url))
             {
-                if (settings.OpenBrowser) OpenBrowser(url);
+                if (settings.OpenBrowser) OpenBrowser(url, settings);
                 return;
             }
 
@@ -72,7 +72,7 @@ internal static class Program
             app.Lifetime.ApplicationStarted.Register(() =>
             {
                 WriteLog(baseDirectory, $"서버 시작: {url}");
-                if (settings.OpenBrowser) OpenBrowser(url);
+                if (settings.OpenBrowser) OpenBrowser(url, settings);
             });
 
             await app.RunAsync();
@@ -174,8 +174,46 @@ internal static class Program
         }
     }
 
-    private static void OpenBrowser(string url)
+    private static void OpenBrowser(string url, KioskSettings settings)
     {
+        // 브라우저를 지정했으면 인수와 함께 직접 실행한다(--kiosk-printing으로 인쇄 대화상자 제거).
+        var browserPath = settings.BrowserPath?.Trim() ?? string.Empty;
+        if (browserPath.Length > 0)
+        {
+            if (!File.Exists(browserPath))
+            {
+                WriteLog(AppContext.BaseDirectory, $"브라우저를 찾을 수 없습니다: {browserPath}");
+            }
+            else
+            {
+                try
+                {
+                    var arguments = settings.BrowserArguments?.Trim() ?? string.Empty;
+
+                    // 이미 실행 중인 Edge/Chrome이 있으면 새 프로세스가 뜨지 않고 기존 창에 URL만
+                    // 전달되어 --kiosk, --kiosk-printing 같은 실행 인수가 통째로 무시된다.
+                    // 전용 프로필을 지정하면 별개의 브라우저로 실행되어 인수가 적용된다.
+                    if (!arguments.Contains("--user-data-dir", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var profileDirectory = Path.Combine(AppContext.BaseDirectory, "browser-profile");
+                        arguments = $"{arguments} --user-data-dir=\"{profileDirectory}\"".Trim();
+                    }
+
+                    Process.Start(new ProcessStartInfo(browserPath)
+                    {
+                        Arguments = arguments.Length > 0 ? $"{arguments} {url}" : url,
+                        UseShellExecute = false,
+                    });
+                    WriteLog(AppContext.BaseDirectory, $"브라우저 실행: {browserPath} {arguments}");
+                    return;
+                }
+                catch (Exception error)
+                {
+                    WriteLog(AppContext.BaseDirectory, $"브라우저 실행 실패: {error.Message}");
+                }
+            }
+        }
+
         try
         {
             Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
@@ -213,4 +251,16 @@ internal sealed class KioskSettings
 {
     public int Port { get; set; } = 4173;
     public bool OpenBrowser { get; set; } = true;
+
+    /// <summary>
+    /// 실행할 브라우저의 전체 경로. 비워 두면 지금까지처럼 기본 브라우저를 옵션 없이 연다.
+    /// Edge/Chrome 경로를 지정하면 BrowserArguments를 붙여 실행하므로 인쇄 대화상자를 없앨 수 있다.
+    /// </summary>
+    public string BrowserPath { get; set; } = string.Empty;
+
+    /// <summary>
+    /// BrowserPath를 지정했을 때 함께 넘길 실행 인수.
+    /// --kiosk는 전체화면, --kiosk-printing은 인쇄 대화상자 없이 기본 프린터로 바로 출력한다.
+    /// </summary>
+    public string BrowserArguments { get; set; } = "--kiosk --kiosk-printing";
 }
