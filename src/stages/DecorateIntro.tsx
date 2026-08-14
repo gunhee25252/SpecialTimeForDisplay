@@ -167,7 +167,10 @@ export default function DecorateIntro() {
                   ['2', '신랑·신부'],
                   ['3', '오브젝트'],
                 ].map(([number, label]) => (
-                  <span key={number} className="font-gothic flex items-center gap-2 text-white">
+                  <span
+                    key={number}
+                    className="font-gothic flex items-center gap-2 text-xl text-white"
+                  >
                     <strong className="flex h-9 w-9 items-center justify-center rounded-full bg-[#5a9ef7] text-xl text-white">
                       {number}
                     </strong>

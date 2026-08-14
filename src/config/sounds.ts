@@ -12,13 +12,13 @@ export const SOUNDS = {
 } as const
 
 export const BGM_PATH = assetUrl('sounds/bgm/ribbon-heart-loop.mp3')
-export const BGM_VOLUME = 0.36
+export const BGM_VOLUME = 0.5
 
 export const EFFECT_VOLUMES = {
-  default: 0.6,
-  click: 0.54,
+  default: 0.8,
+  click: 0.75,
   drumRoll: 1,
-  tada: 0.6,
+  tada: 0.85,
 } as const
 
 export type SoundName = keyof typeof SOUNDS
