@@ -37,6 +37,7 @@ export type PlayerCount = 1 | 2
 export type PrintFrameRatio = '2:3' | '3:2'
 export type DecorateStep = 'background' | 'characters' | 'objects'
 export type ItemScaleAnchor = 'center' | 'top-left' | 'bottom-left'
+export const DEFAULT_ACCESSORY_SCALE = 0.9
 export interface PrintFrame {
   x: number
   y: number
@@ -476,7 +477,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     const placed: PlacedItem = {
       instanceId: `p${placeCounter}`,
       itemId,
-      scale: 1,
+      scale: item.objectGroup === 'accessories' ? DEFAULT_ACCESSORY_SCALE : 1,
       rotation: 0,
       x,
       y,

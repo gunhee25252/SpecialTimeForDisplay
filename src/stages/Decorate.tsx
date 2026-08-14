@@ -1,6 +1,7 @@
 import { useRef, useState, useCallback, useEffect, useLayoutEffect, useMemo } from 'react'
 import { RotateCw } from 'lucide-react'
 import {
+  DEFAULT_ACCESSORY_SCALE,
   useAppStore,
   type DecorateStep,
   type PrintFrame,
@@ -148,6 +149,8 @@ const CHARACTER_MIN_VISIBLE_WIDTH = FIGURE_WIDTH * CHARACTER_MIN_VISIBLE_RATIO
 const CHARACTER_MIN_VISIBLE_HEIGHT = FIGURE_HEIGHT * CHARACTER_MIN_VISIBLE_RATIO
 const MIN_PRINT_FRAME_SIZE = SCENE_WIDTH * 0.18
 const DEFAULT_PRINT_FRAME_SCALE = 0.85
+const MIN_ITEM_TOUCH_SIZE = 96
+const MIN_ITEM_CONTROL_SIZE = 112
 
 const PRINT_FRAME_OPTIONS: { ratio: PrintFrameRatio; label: string; ratioLabel: string; value: number }[] = [
   { ratio: '2:3', label: '세로 사진', ratioLabel: '2:3', value: 2 / 3 },
@@ -1248,8 +1251,9 @@ export default function Decorate({
       return
     }
     const jitter = (placedItems.length % 5) * 24
-    const x = SCENE_WIDTH / 2 - item.defaultWidth / 2 + jitter
-    const y = SCENE_HEIGHT / 2 - item.defaultHeight / 2 + jitter
+    const initialScale = item.objectGroup === 'accessories' ? DEFAULT_ACCESSORY_SCALE : 1
+    const x = SCENE_WIDTH / 2 - (item.defaultWidth * initialScale) / 2 + jitter
+    const y = SCENE_HEIGHT / 2 - (item.defaultHeight * initialScale) / 2 + jitter
     const instanceId = placeItem(item.id, x, y)
     if (!instanceId) {
       warn('예산을 초과해서 배치할 수 없어요.')
@@ -1667,6 +1671,8 @@ export default function Decorate({
             const isSelected = p.instanceId === selectedId
             const itemScale = p.scale ?? 1
             const itemRotation = p.rotation ?? 0
+            const itemWidth = item.defaultWidth * itemScale
+            const itemHeight = item.defaultHeight * itemScale
             return (
               <div
                 key={p.instanceId}
@@ -1677,8 +1683,8 @@ export default function Decorate({
                 style={{
                   left: p.x,
                   top: p.y,
-                  width: item.defaultWidth * itemScale,
-                  height: item.defaultHeight * itemScale,
+                  width: itemWidth,
+                  height: itemHeight,
                   zIndex: p.z,
                   backgroundColor:
                     item.image ||
@@ -1692,6 +1698,14 @@ export default function Decorate({
                   transformOrigin: 'center',
                 }}
               >
+                <span
+                  aria-hidden="true"
+                  className="absolute left-1/2 top-1/2 block -translate-x-1/2 -translate-y-1/2"
+                  style={{
+                    width: Math.max(itemWidth, MIN_ITEM_TOUCH_SIZE),
+                    height: Math.max(itemHeight, MIN_ITEM_TOUCH_SIZE),
+                  }}
+                />
                 {item.image ? (
                   <img
                     src={item.image}
@@ -1716,7 +1730,14 @@ export default function Decorate({
                   <span className="pointer-events-none px-1">{item.name}</span>
                 )}
                 {isSelected && (
-                  <>
+                  <div
+                    className="pointer-events-none absolute left-1/2 top-1/2"
+                    style={{
+                      width: Math.max(itemWidth, MIN_ITEM_CONTROL_SIZE),
+                      height: Math.max(itemHeight, MIN_ITEM_CONTROL_SIZE),
+                      transform: 'translate(-50%, -50%)',
+                    }}
+                  >
                     <button
                       type="button"
                       aria-label="크게"
@@ -1727,7 +1748,7 @@ export default function Decorate({
                         e.stopPropagation()
                         setItemScale(p.instanceId, itemScale + 0.1, 'top-left')
                       }}
-                      className="absolute -left-3 -top-3 flex h-9 w-9 items-center justify-center rounded-full bg-brand-500 text-2xl font-black text-white shadow-md disabled:bg-gray-300"
+                      className="pointer-events-auto absolute -left-3 -top-3 flex h-9 w-9 items-center justify-center rounded-full bg-brand-500 text-2xl font-black text-white shadow-md disabled:bg-gray-300"
                     >
                       +
                     </button>
@@ -1741,7 +1762,7 @@ export default function Decorate({
                         e.stopPropagation()
                         setItemScale(p.instanceId, itemScale - 0.1, 'bottom-left')
                       }}
-                      className="absolute -bottom-3 -left-3 flex h-9 w-9 items-center justify-center rounded-full bg-brand-500 text-2xl font-black text-white shadow-md disabled:bg-gray-300"
+                      className="pointer-events-auto absolute -bottom-3 -left-3 flex h-9 w-9 items-center justify-center rounded-full bg-brand-500 text-2xl font-black text-white shadow-md disabled:bg-gray-300"
                     >
                       −
                     </button>
@@ -1765,7 +1786,7 @@ export default function Decorate({
                         dragRef.current = null
                         e.currentTarget.setPointerCapture(e.pointerId)
                       }}
-                      className="absolute -bottom-3 -right-3 flex h-9 w-9 items-center justify-center rounded-full bg-white text-brand-600 shadow-md ring-2 ring-brand-400"
+                      className="pointer-events-auto absolute -bottom-3 -right-3 flex h-9 w-9 items-center justify-center rounded-full bg-white text-brand-600 shadow-md ring-2 ring-brand-400"
                       style={{ transform: `rotate(${-itemRotation}deg)`, touchAction: 'none' }}
                     >
                       <RotateCw aria-hidden="true" className="h-5 w-5" strokeWidth={2.6} />
@@ -1780,11 +1801,11 @@ export default function Decorate({
                         removeItem(p.instanceId)
                         setSelectedId(null)
                       }}
-                      className="absolute -right-3 -top-3 flex h-9 w-9 items-center justify-center rounded-full bg-red-500 text-base font-bold text-white shadow-md"
+                      className="pointer-events-auto absolute -right-3 -top-3 flex h-9 w-9 items-center justify-center rounded-full bg-red-500 text-base font-bold text-white shadow-md"
                     >
                       ✕
                     </button>
-                  </>
+                  </div>
                 )}
               </div>
             )
@@ -2313,12 +2334,17 @@ export default function Decorate({
                     }`}
                   >
                     {item.image ? (
-                      <span className="relative h-16 w-16">
+                      <span className="relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-lg">
                         <img
                           src={item.image}
                           alt={item.name}
-                          className={`h-16 w-16 rounded-lg ${isBg ? 'object-cover' : 'object-contain'}`}
-                          style={{ opacity: item.imageOpacity ?? 1 }}
+                          className={isBg ? 'h-full w-full object-cover' : 'block max-h-full max-w-full object-contain'}
+                          style={{
+                            opacity: item.imageOpacity ?? 1,
+                            aspectRatio: `${item.defaultWidth} / ${item.defaultHeight}`,
+                            width: isBg || item.defaultWidth >= item.defaultHeight ? '100%' : 'auto',
+                            height: isBg || item.defaultHeight > item.defaultWidth ? '100%' : 'auto',
+                          }}
                           draggable={false}
                         />
                         {recommendation && (

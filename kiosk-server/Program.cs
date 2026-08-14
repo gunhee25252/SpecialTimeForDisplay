@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Microsoft.AspNetCore.StaticFiles;
 
 namespace SpecialTimeKiosk;
 
@@ -49,8 +50,19 @@ internal static class Program
             });
 
             var app = builder.Build();
+            var contentTypes = new FileExtensionContentTypeProvider();
+            contentTypes.Mappings[".ttf"] = "font/ttf";
             app.UseDefaultFiles();
-            app.UseStaticFiles();
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                ContentTypeProvider = contentTypes,
+                OnPrepareResponse = context =>
+                {
+                    context.Context.Response.Headers["Cache-Control"] = "no-store, no-cache, must-revalidate";
+                    context.Context.Response.Headers["Pragma"] = "no-cache";
+                    context.Context.Response.Headers["Expires"] = "0";
+                },
+            });
 
             app.MapGet("/health", () => Results.Ok(new { ok = true }));
             app.MapPost("/api/prints", async (HttpRequest request) =>

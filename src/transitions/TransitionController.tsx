@@ -18,6 +18,7 @@ import { fireCelebration } from './confetti'
 import { TRANSITIONS } from '../config/transitions'
 import { PLAYER_INTRO_AUTO_MS } from '../config/players'
 import { useSound } from '../hooks/useSound'
+import { EFFECT_VOLUMES } from '../config/sounds'
 
 const ms = (s: number) => s * 1000
 
@@ -65,7 +66,7 @@ export default function TransitionController({
     setRevealed(true)
     setShowStamp(true)
     fireCelebration()
-    play('fanfare')
+    play('tada', { volume: EFFECT_VOLUMES.tada })
     after(TRANSITIONS.signature.stamp.duration + 0.4, () => setShowStamp(false))
   }, [after, clearTimers, play])
 

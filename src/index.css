@@ -7,7 +7,23 @@
   src: url('/fonts/ongleip-ryuryu.ttf') format('truetype');
   font-style: normal;
   font-weight: 400;
-  font-display: swap;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'Ownglyph Ryuryu';
+  src: url('/fonts/ongleip-ryuryu.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'Ownglyph Ryuryu';
+  src: url('/fonts/ongleip-ryuryu.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 900;
+  font-display: block;
 }
 
 /* 터치 키오스크 운영용 전역 설정: 텍스트 선택/드래그·확대·스크롤바·우클릭 메뉴 억제 */
@@ -32,7 +48,7 @@ body {
 }
 
 .font-ryuryu {
-  font-family: 'Ownglyph Ryuryu', 'Pretendard Variable', Pretendard, sans-serif;
+  font-family: 'Ownglyph Ryuryu', 'Pretendard Variable', Pretendard, sans-serif !important;
   line-height: 1.1;
 }
 
@@ -100,11 +116,6 @@ body {
 .character-shop-row > button > span:nth-child(3) {
   font-size: 1.05rem;
   line-height: 1.35rem;
-}
-
-.object-shop-row > button > span:first-child > img {
-  width: 100%;
-  height: 100%;
 }
 
 .object-shop-row > button > span:nth-child(2) {

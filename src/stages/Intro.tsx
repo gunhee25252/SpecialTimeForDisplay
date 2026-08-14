@@ -2,6 +2,7 @@ import { useAppStore } from '../store/useAppStore'
 import StageLayout from '../components/StageLayout'
 import Button from '../components/Button'
 import { assetUrl } from '../utils/asset'
+import { startBackgroundMusic } from '../hooks/useBackgroundMusic'
 
 const INTRO_RESULTS = [
   {
@@ -68,7 +69,10 @@ export default function Intro() {
         </div>
 
         <Button
-          onClick={() => setStage('playerSelect')}
+          onClick={() => {
+            startBackgroundMusic()
+            setStage('playerSelect')
+          }}
           className="mb-[210px] mt-auto px-16 py-7 text-3xl"
         >
           시작하기
