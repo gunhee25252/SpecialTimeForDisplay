@@ -2,5 +2,8 @@
   "port": 4173,
   "openBrowser": true,
   "browserPath": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
-  "browserArguments": "--kiosk --kiosk-printing --no-first-run --no-default-browser-check"
+  "browserArguments": "--kiosk --no-first-run --no-default-browser-check",
+  "silentPrint": true,
+  "printerName": "",
+  "paperSizeName": ""
 }

@@ -37,16 +37,37 @@ Windows 로그인 시 `SpecialTimeKiosk.exe`가 먼저 자동 실행되도록 �
 http://127.0.0.1:4173
 ```
 
-## 인쇄 대화상자 없이 바로 출력
+## 인쇄 방식 (중요)
 
-`kiosk-settings.json`의 `browserPath`에 Edge 또는 Chrome의 전체 경로를 넣으면, 실행파일이 그 브라우저를 `browserArguments`와 함께 직접 실행합니다. 기본 인수 `--kiosk --kiosk-printing`이 전체화면과 무대화상자 인쇄를 함께 처리합니다.
+인쇄는 **브라우저가 아니라 실행파일이 직접** 처리합니다. `인쇄하기`를 누르면 완성된 이미지가 실행파일로 전송되고, 실행파일이 `print-results`에 저장한 뒤 곧바로 프린터로 보냅니다. 브라우저는 인쇄에 관여하지 않으므로 **인쇄 대화상자가 나타나지 않습니다.**
+
+관련 설정은 `kiosk-settings.json`에 있습니다.
+
+| 항목 | 설명 |
+| --- | --- |
+| `silentPrint` | `true`면 실행파일이 직접 인쇄합니다. `false`로 두면 브라우저가 인쇄하며 이때는 대화상자가 나타납니다. |
+| `printerName` | 사용할 프린터 이름. 비워 두면 Windows 기본 프린터를 씁니다. |
+| `paperSizeName` | 용지 이름을 강제로 지정할 때만 입력합니다. 비워 두면 4×6인치에 가장 가까운 용지를 자동으로 고릅니다. |
+| `printToFilePath` | 확인용. 경로를 넣으면 용지 대신 그 파일로 출력합니다. 운영 시에는 반드시 비워 두십시오. |
+
+인쇄 결과와 실패 사유는 실행파일과 같은 폴더의 `kiosk-server.log`에 남습니다.
+
+```text
+[2026-08-17 17:04:12] 인쇄 전송: print-901.png → Microsoft Print to PDF (용지 North America 4x 6 400x600)
+```
+
+### 종이를 쓰지 않고 확인하기
+
+`printerName`을 `Microsoft Print to PDF`로, `printToFilePath`를 `C:\SpecialTimeKiosk\test.pdf`처럼 지정하고 한 번 인쇄해 보십시오. 대화상자 없이 PDF가 만들어지면 정상입니다. 확인 후 두 값을 다시 비워 둡니다.
+
+## 브라우저 전체화면
+
+`kiosk-settings.json`의 `browserPath`에 Edge 또는 Chrome의 전체 경로를 넣으면, 실행파일이 그 브라우저를 `browserArguments`와 함께 직접 실행합니다. `--kiosk`가 전체화면을 담당합니다. 인쇄는 위에서 설명한 대로 실행파일이 처리하므로 브라우저 인쇄 옵션은 필요하지 않습니다.
 
 ```json
 {
-  "port": 4173,
-  "openBrowser": true,
   "browserPath": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
-  "browserArguments": "--kiosk --kiosk-printing --no-first-run --no-default-browser-check"
+  "browserArguments": "--kiosk --no-first-run --no-default-browser-check"
 }
 ```
 
@@ -65,12 +86,10 @@ Chrome을 쓴다면 `C:\Program Files\Google\Chrome\Application\chrome.exe`를 �
 브라우저 버전에 따라 `--kiosk`만으로 전체화면이 되지 않으면 Edge 전용 인수를 함께 씁니다.
 
 ```text
---kiosk --edge-kiosk-type=fullscreen --kiosk-idle-timeout-minutes=0 --kiosk-printing --no-first-run
+--kiosk --edge-kiosk-type=fullscreen --kiosk-idle-timeout-minutes=0 --no-first-run
 ```
 
 `--kiosk-idle-timeout-minutes=0`은 Edge가 일정 시간 뒤 세션을 초기화하는 동작을 끕니다. 이 값을 빼면 인쇄 번호와 카메라 권한이 초기화될 수 있습니다.
-
-`--kiosk-printing`은 대화상자를 건너뛰고 **Windows 기본 프린터의 현재 설정 그대로** 출력합니다. 따라서 사진 프린터를 기본 프린터로 지정하고, 그 프린터의 인쇄 기본 설정에서 용지를 4×6인치, 여백 없음으로 미리 맞춰 두어야 합니다. 시험 인화로 확인한 뒤 고정합니다.
 
 전체화면을 종료할 때는 `Alt`+`F4`를 사용합니다.
 
@@ -95,13 +114,15 @@ Chrome을 쓴다면 `C:\Program Files\Google\Chrome\Application\chrome.exe`를 �
 
 ## 프린터 준비
 
-`--kiosk-printing`은 인쇄 대화상자를 건너뛰고 기본 프린터의 현재 설정 그대로 출력하므로, 아래 설정을 미리 마쳐야 합니다.
+실행파일이 용지 크기를 4×6인치로 지정해 인쇄하지만, 용지 종류와 여백 없음(Borderless) 설정은 프린터 쪽에 따릅니다. 아래를 미리 마쳐 두십시오.
 
-1. 설정 → 블루투스 및 장치 → 프린터 및 스캐너에서 **"Windows에서 기본 프린터 관리"를 끄고** 사진 프린터를 기본 프린터로 지정합니다.
+1. 설정 → 블루투스 및 장치 → 프린터 및 스캐너에서 **"Windows에서 기본 프린터 관리"를 끄고** 사진 프린터를 기본 프린터로 지정합니다. (또는 `kiosk-settings.json`의 `printerName`에 프린터 이름을 정확히 입력합니다.)
 2. 해당 프린터의 **인쇄 기본 설정**에서 용지 크기 `4×6인치(10×15cm)`, 여백 `없음(Borderless)`, 방향 `세로`, 용지 종류 `사진 용지`로 지정합니다.
 3. 시험 인화를 한 장 뽑아 잘림이나 여백이 없는지 확인한 뒤 고정합니다.
 
 프린터 속성 창에서 일시적으로 바꾼 값은 적용되지 않을 수 있으므로, 반드시 프린터의 기본 설정 자체를 변경해야 합니다.
+
+인쇄가 되지 않으면 `kiosk-server.log`에 `인쇄 실패:`로 시작하는 줄이 남습니다.
 
 ## 자동 실행
 

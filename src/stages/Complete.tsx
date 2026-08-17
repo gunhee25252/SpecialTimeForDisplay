@@ -101,16 +101,22 @@ export default function Complete() {
         grayscale: printSpec.grayscale,
         rotateLandscapeForOutput: true,
       })
-      // 폴더 보관에 실패해도 인쇄는 그대로 진행한다(저장된 경우에만 번호를 소진).
+      // 서버가 저장과 인쇄를 함께 처리한다. 폴더 보관에 실패해도 인쇄는 그대로 진행한다
+      // (저장된 경우에만 번호를 소진).
+      let printedByServer = false
       try {
-        await savePrintFiles(imageBlob, printSpec)
+        const result = await savePrintFiles(imageBlob, printSpec)
+        printedByServer = result.printed === true
         commitPrintId(printId)
         setPrintId(printId + 1)
       } catch {
         // 저장 실패는 인쇄를 막지 않는다.
       }
 
-      await openPrintDialog(imageBlob)
+      // 서버가 프린터로 직접 보냈으면 브라우저 인쇄 대화상자를 열지 않는다.
+      if (!printedByServer) {
+        await openPrintDialog(imageBlob)
+      }
       setPrintStatus('printing')
     } catch (error) {
       setPrintError(error instanceof Error ? error.message : '저장 중 문제가 생겼어요.')

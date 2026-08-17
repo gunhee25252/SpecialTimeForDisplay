@@ -155,9 +155,10 @@ export default function Result() {
 
   return (
     <StageLayout>
+      {/* 위 칸은 여백이 남고 아래 게이지 칸이 빠듯해서, 글씨를 키울 수 있도록 비중을 조금 옮겼다. */}
       <div
         className="grid h-full min-h-0 gap-5"
-        style={{ gridTemplateRows: 'minmax(0, 1fr) minmax(0, 1fr) 7rem' }}
+        style={{ gridTemplateRows: 'minmax(0, 0.9fr) minmax(0, 1.1fr) 7rem' }}
       >
         <section
           className="relative flex min-h-0 flex-col overflow-hidden rounded-[1.75rem] bg-white px-10 text-center shadow-sm"
@@ -194,7 +195,7 @@ export default function Result() {
 
               <p
                 className="mx-auto mt-5 w-full max-w-[940px] font-bold leading-[1.4] text-gray-600"
-                style={{ fontSize: '32px' }}
+                style={{ fontSize: '38px' }}
               >
                 {type
                   ? descriptionLines.map((sentence, index) => (
@@ -228,7 +229,7 @@ export default function Result() {
           style={{ padding: '24px' }}
         >
           <div className="mb-3 flex h-12 shrink-0 items-center">
-            <p className="text-3xl font-black text-gray-800">취향 게이지</p>
+            <p className="text-[34px] font-black text-gray-800">취향 게이지</p>
           </div>
 
           <div
@@ -276,20 +277,20 @@ function InfoRow({
       }}
     >
       {!centerOnly && (
-        <p className="font-ryuryu font-black text-brand-500" style={{ fontSize: '38px' }}>
+        <p className="font-ryuryu font-black text-brand-500" style={{ fontSize: '40px' }}>
           {label}
         </p>
       )}
       <p
         className="font-black leading-none text-gray-800"
-        style={{ fontSize: centerOnly ? '32px' : '48px' }}
+        style={{ fontSize: centerOnly ? '36px' : '50px' }}
       >
         {value}
       </p>
       {!centerOnly && (
         <p
           className="font-ryuryu text-center font-bold text-gray-600"
-          style={{ fontSize: '38px' }}
+          style={{ fontSize: '40px' }}
         >
           {caption}
         </p>
@@ -327,7 +328,7 @@ function AxisGauge({
       style={{ gridTemplateColumns: '8.5rem minmax(0, 1fr)' }}
     >
       <div className="flex h-[72%] flex-col items-center justify-center border-r-2 border-brand-200 pr-6 text-center">
-        <p className="font-black leading-none text-gray-800" style={{ fontSize: '34px' }}>
+        <p className="font-black leading-none text-gray-800" style={{ fontSize: '37px' }}>
           {result.axis.label}
         </p>
       </div>
@@ -335,7 +336,7 @@ function AxisGauge({
       <div className="min-w-0">
         <div
           className="mb-2 grid items-center font-bold text-gray-600"
-          style={{ fontSize: '26px', gridTemplateColumns: '1fr auto 1fr' }}
+          style={{ fontSize: '28px', gridTemplateColumns: '1fr auto 1fr' }}
         >
           <span className="flex items-center gap-2 justify-self-start" style={{ color: '#168e84' }}>
             <span className="h-4 w-4 rounded-sm bg-[#66d9cc]" aria-hidden="true" />
@@ -344,7 +345,7 @@ function AxisGauge({
           <span
             className="px-5 font-black leading-none"
             style={{
-              fontSize: '46px',
+              fontSize: '50px',
               color: isBalanced ? '#111827' : isLeftWinner ? '#168e84' : '#db5676',
             }}
           >
@@ -376,7 +377,7 @@ function AxisGauge({
         </div>
         <p
           className="mt-2 text-center font-bold leading-snug text-gray-500"
-          style={{ fontSize: '26px', textWrap: 'balance' }}
+          style={{ fontSize: '29px', textWrap: 'balance' }}
         >
           {caption}
         </p>

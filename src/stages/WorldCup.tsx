@@ -106,10 +106,11 @@ function ChoiceCard({
             : 'text-gray-800'
         }`}
       >
-        <p className="text-4xl font-bold drop-shadow-sm">{choice.label}</p>
+        {/* 사진 제목·설명은 정보 전달이 목적이라 손글씨체 대신 고딕으로 읽힘을 우선한다. */}
+        <p className="font-gothic text-[32px] font-bold drop-shadow-sm">{choice.label}</p>
         {choice.desc && (
           <p
-            className={`mt-3 text-3xl leading-snug ${
+            className={`font-gothic mt-2 text-[26px] leading-snug ${
               hasImage ? 'text-white/90' : 'text-gray-500'
             }`}
           >

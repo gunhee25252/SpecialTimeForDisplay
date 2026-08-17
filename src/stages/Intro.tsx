@@ -12,9 +12,10 @@ const INTRO_RESULTS = [
     imageClassName: 'absolute left-1/2 top-1/2 h-[150%] w-auto max-w-none -translate-x-1/2 -translate-y-1/2 -rotate-90',
   },
   {
-    src: assetUrl('images/intro-results/intro-landscape-02.png?v=night-20260810'),
+    src: assetUrl('images/intro-results/intro-landscape-02.png?v=santorini-20260817'),
     className: 'right-6 top-[510px] z-30 aspect-[3/2] w-[470px] rotate-[3deg]',
-    imageClassName: 'absolute inset-0 h-full w-full object-cover',
+    // 인쇄용으로 90도 돌려 저장된 1200×1800 파일이라, 왼쪽 가로 사진과 같이 되돌려서 보여준다.
+    imageClassName: 'absolute left-1/2 top-1/2 h-[150%] w-auto max-w-none -translate-x-1/2 -translate-y-1/2 -rotate-90',
   },
   {
     src: assetUrl('images/intro-results/intro-result-02.png?v=recent-20260807'),
@@ -27,7 +28,7 @@ const INTRO_RESULTS = [
     imageClassName: 'aspect-[2/3] w-full',
   },
   {
-    src: assetUrl('images/intro-results/intro-result-03.png?v=alternate-20260810'),
+    src: assetUrl('images/intro-results/intro-result-03.png?v=ballroom-20260817'),
     className: 'right-8 top-[120px] z-10 w-[340px] rotate-[6deg]',
     imageClassName: 'aspect-[2/3] w-full',
   },
@@ -56,13 +57,15 @@ export default function Intro() {
           <Camera aria-hidden="true" className="h-8 w-8" strokeWidth={2.2} />
         </button>
 
-        <div className="mt-[300px] space-y-6">
-          <h1 className="font-ryuryu text-[76px] font-bold leading-tight text-gray-800">
+        {/* 이 여백이 제목·설명·사진 묶음 전체를 아래로 밀어낸다. 버튼은 mt-auto로 바닥에
+            고정되어 있어서, 이 값을 줄이면 화면이 위로 올라가면서 사진과 버튼 사이가 벌어진다. */}
+        <div className="mt-[220px] space-y-6">
+          <h1 className="font-ryuryu text-[88px] font-bold leading-tight text-gray-800">
             나만의
             <br />
             웨딩 사진 만들기
           </h1>
-          <p className="text-[34px] font-extrabold leading-relaxed text-brand-700">
+          <p className="text-[42px] font-extrabold leading-relaxed text-brand-700">
             마음에 드는 장면을 고르고
             <br />
             나만의 웨딩 사진을 완성해 보세요.
@@ -90,7 +93,7 @@ export default function Intro() {
             startBackgroundMusic()
             setStage('playerSelect')
           }}
-          className="mb-[210px] mt-auto px-16 py-7 text-3xl"
+          className="mb-[210px] mt-auto px-16 py-7 text-[42px] leading-[1.2]"
         >
           시작하기
         </Button>

@@ -584,7 +584,15 @@ function blobToDataUrl(blob: Blob): Promise<string> {
   })
 }
 
-export async function savePrintFiles(imageBlob: Blob, spec: PrintSpec): Promise<{ imageFile: string; jsonFile: string }> {
+export interface SavePrintResult {
+  imageFile: string
+  jsonFile: string
+  // 서버가 프린터로 직접 보냈는지. true면 브라우저 인쇄 대화상자를 열 필요가 없다.
+  printed?: boolean
+  printError?: string | null
+}
+
+export async function savePrintFiles(imageBlob: Blob, spec: PrintSpec): Promise<SavePrintResult> {
   const response = await fetch('./api/prints', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -598,5 +606,5 @@ export async function savePrintFiles(imageBlob: Blob, spec: PrintSpec): Promise<
     throw new Error('결과물을 폴더에 바로 저장하지 못했어요.')
   }
 
-  return response.json() as Promise<{ imageFile: string; jsonFile: string }>
+  return response.json() as Promise<SavePrintResult>
 }

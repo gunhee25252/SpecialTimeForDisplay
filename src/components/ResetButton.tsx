@@ -28,24 +28,25 @@ export default function ResetButton() {
           className="absolute inset-0 z-[50000] flex items-center justify-center bg-gray-900/60 px-12"
         >
           <div className="w-full max-w-[760px] rounded-2xl border-4 border-brand-100 bg-white px-12 py-14 text-center shadow-2xl">
-            <h2 id="reset-confirm-title" className="font-gyeongyeong text-4xl font-black leading-tight text-gray-800">
+            <h2 id="reset-confirm-title" className="font-gyeongyeong text-[46px] font-black leading-tight text-gray-800">
               정말 처음으로 돌아가시겠습니까?
             </h2>
-            <p className="font-gothic mt-6 text-2xl font-bold leading-relaxed text-red-500">
+            {/* 길어지면 한 단어만 다음 줄로 떨어지지 않도록 고르게 나눈다. */}
+            <p className="font-gothic mt-6 text-[30px] font-bold leading-relaxed text-red-500 [text-wrap:balance]">
               지금까지 진행한 내용은 저장되지 않고 모두 사라집니다.
             </p>
             <div className="mt-10 grid grid-cols-2 gap-5">
               <button
                 type="button"
                 onClick={() => setIsConfirming(false)}
-                className="font-gothic rounded-2xl border-2 border-gray-300 bg-white px-8 py-5 text-2xl font-black text-gray-600 active:bg-gray-100"
+                className="font-gothic rounded-2xl border-2 border-gray-300 bg-white px-8 py-5 text-[28px] font-black text-gray-600 active:bg-gray-100"
               >
                 아니요
               </button>
               <button
                 type="button"
                 onClick={handleConfirm}
-                className="font-gothic rounded-2xl bg-brand-500 px-8 py-5 text-2xl font-black text-white active:bg-brand-600"
+                className="font-gothic rounded-2xl bg-brand-500 px-8 py-5 text-[28px] font-black text-white active:bg-brand-600"
               >
                 네
               </button>

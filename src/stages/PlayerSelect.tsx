@@ -12,11 +12,12 @@ export default function PlayerSelect() {
 
   return (
     <StageLayout>
-      <div className="flex flex-1 flex-col items-center justify-center gap-12 text-center">
+      {/* 세로 가운데 정렬 대신 위쪽 여백으로 위치를 잡아 화면 전체를 위로 올린다. */}
+      <div className="flex flex-1 flex-col items-center gap-12 pt-[520px] text-center">
         <div className="space-y-4">
-          <p className="text-4xl font-semibold text-brand-400">시작하기 전에</p>
-          <h1 className="font-ryuryu text-[64px] font-bold leading-tight text-gray-800">
-            어떻게 참여할까요?
+          <p className="text-[46px] font-semibold text-brand-400">시작하기 전에</p>
+          <h1 className="font-ryuryu text-[80px] font-bold leading-tight text-gray-800">
+            몇 명에서 참여할까요?
           </h1>
         </div>
 

@@ -24,14 +24,16 @@ export default function BudgetIntro() {
             ₩
           </div>
 
-          <p className="mt-12 text-3xl font-black text-brand-500">다음 단계</p>
+          <p className="mt-12 text-[38px] font-black text-brand-500">다음 단계</p>
           <h1 className="font-ryuryu mt-5 text-[76px] font-black leading-tight text-gray-800">
             {isDuo ? '두 분의 웨딩 예산을' : '나의 웨딩 예산을'}
             <br />
             뽑아볼까요?
           </h1>
 
-          <div className="mt-12 space-y-5 text-3xl font-semibold leading-relaxed text-gray-600">
+          {/* 혼자·둘이 설명 문구가 같은 컨테이너를 쓰므로 여기서 두 경우 모두 적용된다.
+              가장 긴 문장이 36px에서 684px이라 카드 안쪽 폭 904px 안에 한 줄로 들어간다. */}
+          <div className="mt-12 space-y-6 text-[36px] font-semibold leading-relaxed text-gray-600">
             {isDuo ? (
               <>
                 <p>
