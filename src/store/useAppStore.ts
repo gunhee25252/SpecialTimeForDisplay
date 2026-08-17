@@ -9,6 +9,7 @@ import {
 import {
   WORLDCUP_ROUND_SETS,
   getWorldCupRounds,
+  hasBonusRound,
   type Round,
   type Weights,
 } from '../data/worldcupRounds'
@@ -113,7 +114,7 @@ interface AppState {
   playerCount: PlayerCount
   currentPlayer: number // 0-based
   roundSetIndex: number // 현재 플레이어에게 보여줄 사진 세트
-  nextSoloRoundSetIndex: number // 다음 혼자 체험에서 사용할 사진 세트
+  nextRoundSetIndex: number // 다음 사람이 받을 사진 세트(혼자·둘이 공용 로테이션)
   players: PlayerResult[]
 
   // 현재 플레이어의 월드컵 진행
@@ -290,7 +291,7 @@ const initialState = {
   playerCount: 1 as PlayerCount,
   currentPlayer: 0,
   roundSetIndex: 0,
-  nextSoloRoundSetIndex: 0,
+  nextRoundSetIndex: 0,
   players: [] as PlayerResult[],
   roundIndex: 0,
   typeAxisScores: emptyAxisScores(),
@@ -325,18 +326,17 @@ export const useAppStore = create<AppState>((set, get) => ({
   start: (count) =>
     set((state) => {
       const playerCount = count ?? state.playerCount
-      const roundSetIndex = playerCount === 1 ? state.nextSoloRoundSetIndex : 0
-      const nextSoloRoundSetIndex =
-        playerCount === 1
-          ? (state.nextSoloRoundSetIndex + 1) % WORLDCUP_ROUND_SETS.length
-          : state.nextSoloRoundSetIndex
+      // 인원과 관계없이 한 사람이 시작할 때마다 세트를 하나 소비한다.
+      // 앞사람이 혼자 A를 봤다면 이어지는 2인 세션은 B → A 순서가 된다.
+      const roundSetIndex = state.nextRoundSetIndex
+      const nextRoundSetIndex = (roundSetIndex + 1) % WORLDCUP_ROUND_SETS.length
 
       return {
         stage: 'worldcup',
         playerCount,
         currentPlayer: 0,
         roundSetIndex,
-        nextSoloRoundSetIndex,
+        nextRoundSetIndex,
         players: makePlayers(playerCount),
         roundIndex: 0,
         typeAxisScores: emptyAxisScores(),
@@ -364,21 +364,30 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   choose: (round, side) => {
     const choice = side === 'A' ? round.A : round.B
+    // 두 사진이 네 축 모두 반대라 한 번의 선택이 네 축을 동시에 가리킨다.
+    // 유형 판정과 게이지가 같은 점수를 쓴다.
     set((state) => ({
       typeAxisScores: addWeights(state.typeAxisScores, choice.weights),
-      axisScores: addWeights(state.axisScores, choice.gaugeWeights),
+      axisScores: addWeights(state.axisScores, choice.weights),
     }))
 
     // 다음 라운드로, 마지막이면 현재 플레이어 유형을 기록한다.
-    const nextIndex = get().roundIndex + 1
-    if (nextIndex >= getWorldCupRounds(get().roundSetIndex).length) {
+    const { roundIndex, roundSetIndex, playerCount, currentPlayer } = get()
+    const roundCount = getWorldCupRounds(
+      roundSetIndex,
+      hasBonusRound(playerCount, currentPlayer),
+    ).length
+    const nextIndex = roundIndex + 1
+    if (nextIndex >= roundCount) {
       get().computeResult()
-      const { playerCount, currentPlayer, players } = get()
+      const { players, nextRoundSetIndex } = get()
       if (playerCount === 2 && currentPlayer === 0) {
+        // 두 번째 사람은 로테이션의 다음 세트를 이어받고, 거기에 보너스 문항이 붙는다.
         // 두 사람의 사진 선택을 모두 마친 뒤 합친 취향 결과를 보여준다.
         set({
           currentPlayer: 1,
-          roundSetIndex: 1,
+          roundSetIndex: nextRoundSetIndex,
+          nextRoundSetIndex: (nextRoundSetIndex + 1) % WORLDCUP_ROUND_SETS.length,
           roundIndex: 0,
           typeAxisScores: emptyAxisScores(),
           axisScores: emptyAxisScores(),
@@ -637,10 +646,10 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   reset: () => {
     placeCounter = 0
-    const { nextSoloRoundSetIndex } = get()
+    const { nextRoundSetIndex } = get()
     set({
       ...initialState,
-      nextSoloRoundSetIndex,
+      nextRoundSetIndex,
       typeAxisScores: emptyAxisScores(),
       axisScores: emptyAxisScores(),
       players: [],

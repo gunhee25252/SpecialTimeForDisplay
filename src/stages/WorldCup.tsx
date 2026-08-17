@@ -1,5 +1,5 @@
 import { useAppStore } from '../store/useAppStore'
-import { getWorldCupRounds, type Choice } from '../data/worldcupRounds'
+import { getWorldCupRounds, hasBonusRound, type Choice } from '../data/worldcupRounds'
 import StageLayout from '../components/StageLayout'
 import PlayerIndicator from '../components/PlayerIndicator'
 import { PLAYER_LABELS } from '../config/players'
@@ -12,7 +12,8 @@ export default function WorldCup() {
   const currentPlayer = useAppStore((s) => s.currentPlayer)
   const roundSetIndex = useAppStore((s) => s.roundSetIndex)
 
-  const rounds = getWorldCupRounds(roundSetIndex)
+  // 2인 모드의 두 번째 사람만 8문항(7 + 보너스)이라 진행 표시도 여기서 함께 맞춰진다.
+  const rounds = getWorldCupRounds(roundSetIndex, hasBonusRound(playerCount, currentPlayer))
   const round = rounds[roundIndex]
   const total = rounds.length
   const isDuo = playerCount === 2
