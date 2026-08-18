@@ -472,3 +472,24 @@ export function findOutfit(who: CharacterKey, id: string | null | undefined): Ou
 export function outfitPrice(who: CharacterKey, id: string | null | undefined): number {
   return findOutfit(who, id)?.price ?? 0
 }
+
+// 한 인물을 최고가 조합으로 꾸몄을 때 드는 금액(현재 신부 370만원).
+// 랜덤 꾸미기는 어떤 조합이 뽑혀도 예산을 넘지 않아야 하므로, 이 금액이 남아 있을 때만 켠다.
+// 가격표가 바뀌어도 따라오도록 상수로 적지 않고 옵션 목록에서 직접 계산한다.
+function maxPrice(options: { price: number }[]): number {
+  return options.reduce((max, option) => Math.max(max, option.price), 0)
+}
+
+export function maxCharacterCost(who: CharacterKey): number {
+  return (
+    maxPrice(OUTFIT_OPTIONS[who]) +
+    maxPrice(HAIR_OPTIONS[who]) +
+    maxPrice(HAIR_COLOR_OPTIONS) +
+    maxPrice(FACE_EXPRESSIONS)
+  )
+}
+
+export const RANDOM_STYLE_MIN_BUDGET = Math.max(
+  maxCharacterCost('groom'),
+  maxCharacterCost('bride'),
+)

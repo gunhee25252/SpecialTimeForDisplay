@@ -46,7 +46,7 @@ export interface PrintRenderState {
   rotateLandscapeForOutput?: boolean
 }
 
-const CONTENT = { x0: 0, x1: 1, y0: 0.12, y1: 0.98 }
+const CONTENT = { x0: 0, x1: 1, y0: 0.12, y1: 1 }
 const CW_FRAC = CONTENT.x1 - CONTENT.x0
 const CH_FRAC = CONTENT.y1 - CONTENT.y0
 const IMG_W_PCT = 100 / CW_FRAC

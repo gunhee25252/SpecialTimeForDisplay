@@ -6,10 +6,11 @@ import {
   type ChangeEvent,
   type PointerEvent as ReactPointerEvent,
 } from 'react'
-import { Camera, Home, ImagePlus, Minus, Plus, Printer, RotateCcw, Trash2 } from 'lucide-react'
+import { Camera, Home, ImagePlus, Printer, RotateCcw, RotateCw } from 'lucide-react'
 import StageLayout from '../components/StageLayout'
 import { useAppStore } from '../store/useAppStore'
 import { assetUrl } from '../utils/asset'
+import { findItem } from '../data/items'
 import {
   commitPrintId,
   getNextPrintId,
@@ -27,9 +28,15 @@ const PREVIEW_HEIGHT = 1200
 // 미리보기(800×1200) 좌표 → 인화 이미지(1200×1800) 좌표 변환 배율.
 const PRINT_SCALE = CAPTURE_WIDTH / PREVIEW_WIDTH
 const PRINT_DPI = 300
-const STICKER_BOX = 100
-const STICKER_FONT = 88
+// 미리보기(800×1200) 기준 스티커의 긴 변 길이. 원본 비율은 그대로 유지한다.
+const STICKER_BASE_SIZE = 130
+// 스티커가 작아도 네 모서리 손잡이를 누를 수 있도록 보장하는 최소 조작 영역.
+const STICKER_MIN_CONTROL = 112
+const STICKER_MIN_SCALE = 0.5
+const STICKER_MAX_SCALE = 2
 const PRINT_DONE_DELAY_MS = 10_000
+// 촬영 버튼을 누른 뒤 셔터가 눌리기까지의 카운트다운(초).
+const COUNTDOWN_SECONDS = 10
 // 정지 사진 촬영이 이 시간 안에 끝나지 않으면 영상 프레임으로 되돌아간다.
 const STILL_PHOTO_TIMEOUT_MS = 4_000
 
@@ -47,14 +54,20 @@ const CAMERA_CONSTRAINTS: MediaStreamConstraints = {
 
 type CameraStatus = 'requesting' | 'ready' | 'unavailable'
 type PrintStatus = 'idle' | 'working' | 'printing'
-type Sticker = { id: number; symbol: string; x: number; y: number; scale: number; color: string }
+type Sticker = { id: number; image: string; width: number; height: number; x: number; y: number; scale: number; rotation: number }
+type StickerRotationDrag = { id: number; centerX: number; centerY: number; lastAngle: number; rotation: number }
 
 const FILTERS = [
   { id: 'normal', label: '기본', css: 'none' },
-  { id: 'bright', label: '화사', css: 'brightness(1.13) contrast(0.94) saturate(1.08)' },
-  { id: 'warm', label: '따뜻', css: 'sepia(0.2) saturate(1.12) brightness(1.06)' },
-  { id: 'cool', label: '청량', css: 'brightness(1.08) contrast(0.96) saturate(0.86)' },
-  { id: 'mono', label: '흑백', css: 'grayscale(1) contrast(1.06)' },
+  // 밝고 부드럽게. 인물 사진에서 가장 무난하게 잘 나온다.
+  { id: 'glow', label: '뽀샤시', css: 'brightness(1.16) contrast(0.9) saturate(1.06)' },
+  // 색과 대비를 올려 또렷하게.
+  { id: 'vivid', label: '선명', css: 'contrast(1.18) saturate(1.32) brightness(1.03)' },
+  // 검정을 살짝 들어올린 필름 느낌.
+  { id: 'film', label: '필름', css: 'sepia(0.14) contrast(0.9) brightness(1.07) saturate(1.04)' },
+  // 노을빛으로 따뜻하게.
+  { id: 'sunset', label: '노을', css: 'sepia(0.3) saturate(1.3) brightness(1.05) hue-rotate(-8deg)' },
+  { id: 'mono', label: '흑백', css: 'grayscale(1) contrast(1.12) brightness(1.04)' },
 ] as const
 
 type FrameOption = {
@@ -69,14 +82,30 @@ const FRAMES: FrameOption[] = [
   { id: 'birthday', label: '생일', image: assetUrl('images/photo-booth-frames/birthday-single-01.png') },
   { id: 'frame01', label: 'MBTI', image: assetUrl('images/photo-booth-frames/frame01.png') },
   { id: 'frame02', label: '공주', image: assetUrl('images/photo-booth-frames/frame02.png') },
+  { id: 'frame03', label: '자기소개', image: assetUrl('images/photo-booth-frames/frame03.png') },
+  { id: 'frame04', label: '클로버', image: assetUrl('images/photo-booth-frames/frame04.png') },
 ]
 
-const STICKERS = [
-  { symbol: '♥', color: '#ff6f91', label: '하트' },
-  { symbol: '★', color: '#ffd04d', label: '별' },
-  { symbol: '✿', color: '#ff9fba', label: '꽃' },
-  { symbol: '✦', color: '#8ecbff', label: '반짝이' },
-] as const
+// 꾸미기 단계 스티커 중 A조(sticker00~16)만 쓴다. 선 없는 파스텔 음영 계열이라
+// 서로 그림체가 맞고, 사진 위에 얹어도 인물을 해치지 않는다.
+const STICKER_ITEM_IDS = [
+  'sticker00', 'sticker04', 'sticker02', 'sticker05', 'sticker08',
+  'sticker03', 'sticker06', 'sticker01', 'sticker15', 'sticker16',
+]
+
+const STICKERS = STICKER_ITEM_IDS.flatMap((itemId) => {
+  const item = findItem(itemId)
+  if (!item?.image) return []
+  // 원본 비율을 지키면서 긴 변을 STICKER_BASE_SIZE로 맞춘다.
+  const ratio = STICKER_BASE_SIZE / Math.max(item.defaultWidth, item.defaultHeight)
+  return [{
+    id: itemId,
+    label: item.name,
+    image: item.image,
+    width: Math.round(item.defaultWidth * ratio),
+    height: Math.round(item.defaultHeight * ratio),
+  }]
+})
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -199,19 +228,21 @@ async function composePhotoPrint(options: {
   }
 
   for (const sticker of options.stickers) {
+    const image = await loadImage(sticker.image)
+    const width = sticker.width * sticker.scale * PRINT_SCALE
+    const height = sticker.height * sticker.scale * PRINT_SCALE
+    // 화면에서는 가운데를 기준으로 확대되므로 인화에서도 중심을 맞춘다.
+    const centerX = (sticker.x + sticker.width / 2) * PRINT_SCALE
+    const centerY = (sticker.y + sticker.height / 2) * PRINT_SCALE
+
     context.save()
-    context.translate(
-      (sticker.x + STICKER_BOX / 2) * PRINT_SCALE,
-      (sticker.y + STICKER_BOX / 2) * PRINT_SCALE,
-    )
-    context.font = `900 ${Math.round(STICKER_FONT * sticker.scale * PRINT_SCALE)}px sans-serif`
-    context.fillStyle = sticker.color
-    context.textAlign = 'center'
-    context.textBaseline = 'middle'
     context.shadowColor = 'rgba(0, 0, 0, 0.18)'
     context.shadowBlur = 7 * PRINT_SCALE
     context.shadowOffsetY = 3 * PRINT_SCALE
-    context.fillText(sticker.symbol, 0, 0)
+    // 화면과 같이 중심을 기준으로 회전시킨다.
+    context.translate(centerX, centerY)
+    context.rotate((sticker.rotation * Math.PI) / 180)
+    context.drawImage(image, -width / 2, -height / 2, width, height)
     context.restore()
   }
 
@@ -296,6 +327,7 @@ export default function PhotoBooth() {
   const countdownTimerRef = useRef<number | null>(null)
   const stickerIdRef = useRef(0)
   const dragRef = useRef<{ id: number; offsetX: number; offsetY: number } | null>(null)
+  const rotationDragRef = useRef<StickerRotationDrag | null>(null)
 
   const [cameraStatus, setCameraStatus] = useState<CameraStatus>('requesting')
   const [countdown, setCountdown] = useState<number | null>(null)
@@ -443,7 +475,7 @@ export default function PhotoBooth() {
 
   const startCountdown = () => {
     if (cameraStatus !== 'ready' || countdown !== null) return
-    let value = 3
+    let value = COUNTDOWN_SECONDS
     setCountdown(value)
     countdownTimerRef.current = window.setInterval(() => {
       value -= 1
@@ -529,13 +561,15 @@ export default function PhotoBooth() {
     }
   }
 
-  const addSticker = (symbol: string, color: string) => {
+  const addSticker = (option: (typeof STICKERS)[number]) => {
     stickerIdRef.current += 1
     const offset = (stickerIdRef.current % 4) * 36
     const sticker: Sticker = {
       id: stickerIdRef.current,
-      symbol,
-      color,
+      image: option.image,
+      width: option.width,
+      height: option.height,
+      rotation: 0,
       x: 280 + offset,
       y: 500 + offset,
       scale: 1,
@@ -544,17 +578,18 @@ export default function PhotoBooth() {
     setSelectedStickerId(sticker.id)
   }
 
-  const updateSelectedSticker = (update: (sticker: Sticker) => Sticker) => {
-    if (selectedStickerId === null) return
-    setStickers((current) =>
-      current.map((sticker) => (sticker.id === selectedStickerId ? update(sticker) : sticker)),
-    )
+  const updateSticker = (id: number, update: (sticker: Sticker) => Sticker) => {
+    setStickers((current) => current.map((sticker) => (sticker.id === id ? update(sticker) : sticker)))
   }
 
-  const deleteSelectedSticker = () => {
-    if (selectedStickerId === null) return
-    setStickers((current) => current.filter((sticker) => sticker.id !== selectedStickerId))
-    setSelectedStickerId(null)
+  const scaleSticker = (sticker: Sticker, delta: number) => {
+    const next = Math.min(STICKER_MAX_SCALE, Math.max(STICKER_MIN_SCALE, sticker.scale + delta))
+    updateSticker(sticker.id, (current) => ({ ...current, scale: next }))
+  }
+
+  const deleteSticker = (id: number) => {
+    setStickers((current) => current.filter((sticker) => sticker.id !== id))
+    setSelectedStickerId((current) => (current === id ? null : current))
   }
 
   // KioskFrame이 화면 전체를 scale()하므로 포인터 좌표를 미리보기(800×1200) 좌표로 환산한다.
@@ -572,14 +607,53 @@ export default function PhotoBooth() {
     setSelectedStickerId(sticker.id)
   }
 
+  const endStickerDrag = () => {
+    dragRef.current = null
+    rotationDragRef.current = null
+  }
+
+  const startStickerRotate = (event: ReactPointerEvent<HTMLButtonElement>, sticker: Sticker) => {
+    event.preventDefault()
+    event.stopPropagation()
+    const point = toStageCoordinates(event.clientX, event.clientY)
+    const centerX = sticker.x + sticker.width / 2
+    const centerY = sticker.y + sticker.height / 2
+    rotationDragRef.current = {
+      id: sticker.id,
+      centerX,
+      centerY,
+      lastAngle: (Math.atan2(point.y - centerY, point.x - centerX) * 180) / Math.PI,
+      rotation: sticker.rotation,
+    }
+    dragRef.current = null
+    setSelectedStickerId(sticker.id)
+    event.currentTarget.setPointerCapture(event.pointerId)
+  }
+
   const moveSticker = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    const rotate = rotationDragRef.current
+    if (rotate) {
+      const point = toStageCoordinates(event.clientX, event.clientY)
+      const angle = (Math.atan2(point.y - rotate.centerY, point.x - rotate.centerX) * 180) / Math.PI
+      let delta = angle - rotate.lastAngle
+      if (delta > 180) delta -= 360
+      if (delta < -180) delta += 360
+      rotate.rotation += delta
+      rotate.lastAngle = angle
+      updateSticker(rotate.id, (current) => ({ ...current, rotation: rotate.rotation }))
+      return
+    }
+
     const drag = dragRef.current
     if (!drag) return
     const point = toStageCoordinates(event.clientX, event.clientY)
-    const nextX = Math.min(PREVIEW_WIDTH - STICKER_BOX, Math.max(0, point.x - drag.offsetX))
-    const nextY = Math.min(PREVIEW_HEIGHT - STICKER_BOX, Math.max(0, point.y - drag.offsetY))
     setStickers((current) =>
-      current.map((sticker) => (sticker.id === drag.id ? { ...sticker, x: nextX, y: nextY } : sticker)),
+      current.map((sticker) => {
+        if (sticker.id !== drag.id) return sticker
+        const x = Math.min(PREVIEW_WIDTH - sticker.width, Math.max(0, point.x - drag.offsetX))
+        const y = Math.min(PREVIEW_HEIGHT - sticker.height, Math.max(0, point.y - drag.offsetY))
+        return { ...sticker, x, y }
+      }),
     )
   }
 
@@ -617,7 +691,7 @@ export default function PhotoBooth() {
           onClick={() => setStage('intro')}
           aria-label="메인 화면으로 돌아가기"
           title="메인 화면"
-          className="absolute left-5 top-5 z-30 flex h-16 w-16 items-center justify-center rounded-full bg-white text-gray-600 shadow-md active:bg-gray-100"
+          className="absolute right-4 top-4 z-30 flex h-16 w-16 items-center justify-center rounded-full bg-white text-gray-600 shadow-md active:bg-gray-100"
         >
           <Home aria-hidden="true" className="h-8 w-8" strokeWidth={2.5} />
         </button>
@@ -705,23 +779,92 @@ export default function PhotoBooth() {
                 type="button"
                 onPointerDown={(event) => startStickerDrag(event, sticker)}
                 onPointerMove={moveSticker}
-                onPointerUp={() => { dragRef.current = null }}
-                onPointerCancel={() => { dragRef.current = null }}
+                onPointerUp={endStickerDrag}
+                onPointerCancel={endStickerDrag}
                 aria-label="장식 이동"
-                className={`absolute z-10 flex touch-none select-none items-center justify-center rounded-full border-4 bg-transparent leading-none ${selectedStickerId === sticker.id ? 'border-white/90' : 'border-transparent'}`}
+                className={`absolute z-10 touch-none select-none rounded ring-4 ${selectedStickerId === sticker.id ? 'ring-white/90' : 'ring-transparent'}`}
                 style={{
                   left: sticker.x,
                   top: sticker.y,
-                  width: STICKER_BOX,
-                  height: STICKER_BOX,
-                  color: sticker.color,
-                  fontSize: STICKER_FONT,
-                  transform: `scale(${sticker.scale})`,
+                  width: sticker.width,
+                  height: sticker.height,
+                  transform: `scale(${sticker.scale}) rotate(${sticker.rotation}deg)`,
                   transformOrigin: 'center',
-                  textShadow: '0 3px 7px rgba(0, 0, 0, 0.18)',
                 }}
               >
-                {sticker.symbol}
+                <img
+                  src={sticker.image}
+                  alt=""
+                  draggable={false}
+                  className="pointer-events-none h-full w-full select-none object-contain drop-shadow"
+                />
+
+                {/* 선택하면 네 모서리에 조작 손잡이가 붙는다(꾸미기 단계와 같은 방식). */}
+                {selectedStickerId === sticker.id && (
+                  <span
+                    className="pointer-events-none absolute left-1/2 top-1/2"
+                    style={{
+                      width: Math.max(sticker.width, STICKER_MIN_CONTROL),
+                      height: Math.max(sticker.height, STICKER_MIN_CONTROL),
+                      transform: 'translate(-50%, -50%)',
+                    }}
+                  >
+                    <button
+                      type="button"
+                      aria-label="크게"
+                      title="크게"
+                      disabled={sticker.scale >= STICKER_MAX_SCALE}
+                      onPointerDown={(event) => {
+                        event.preventDefault()
+                        event.stopPropagation()
+                        scaleSticker(sticker, 0.1)
+                      }}
+                      className="pointer-events-auto absolute -left-3 -top-3 flex h-9 w-9 items-center justify-center rounded-full bg-pink-500 text-2xl font-black text-white shadow-md disabled:bg-gray-300"
+                    >
+                      +
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="작게"
+                      title="작게"
+                      disabled={sticker.scale <= STICKER_MIN_SCALE}
+                      onPointerDown={(event) => {
+                        event.preventDefault()
+                        event.stopPropagation()
+                        scaleSticker(sticker, -0.1)
+                      }}
+                      className="pointer-events-auto absolute -bottom-3 -left-3 flex h-9 w-9 items-center justify-center rounded-full bg-pink-500 text-2xl font-black text-white shadow-md disabled:bg-gray-300"
+                    >
+                      −
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="자유 회전"
+                      title="드래그해서 회전"
+                      onPointerDown={(event) => startStickerRotate(event, sticker)}
+                      onPointerMove={moveSticker}
+                      onPointerUp={endStickerDrag}
+                      onPointerCancel={endStickerDrag}
+                      className="pointer-events-auto absolute -bottom-3 -right-3 flex h-9 w-9 items-center justify-center rounded-full bg-white text-pink-600 shadow-md ring-2 ring-pink-400"
+                      style={{ transform: `rotate(${-sticker.rotation}deg)`, touchAction: 'none' }}
+                    >
+                      <RotateCw aria-hidden="true" className="h-5 w-5" strokeWidth={2.6} />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="삭제"
+                      title="삭제"
+                      onPointerDown={(event) => {
+                        event.preventDefault()
+                        event.stopPropagation()
+                        deleteSticker(sticker.id)
+                      }}
+                      className="pointer-events-auto absolute -right-3 -top-3 flex h-9 w-9 items-center justify-center rounded-full bg-red-500 text-base font-bold text-white shadow-md"
+                    >
+                      ✕
+                    </button>
+                  </span>
+                )}
               </button>
             ))}
 
@@ -756,54 +899,26 @@ export default function PhotoBooth() {
                 <FramePicker frameId={frameId} onSelect={setFrameId} compact />
               </div>
 
-              <div className="mt-3 flex items-center justify-between gap-4 border-t border-gray-200 pt-3">
+              <div className="mt-3 flex items-center gap-3 border-t border-gray-200 pt-3">
                 <div className="flex items-center gap-2">
-                  <span className="mr-1 text-[25px] font-black text-gray-700">장식</span>
+                  <span className="mr-1 shrink-0 text-[25px] font-black text-gray-700">장식</span>
                   {STICKERS.map((sticker) => (
                     <button
-                      key={sticker.label}
+                      key={sticker.id}
                       type="button"
-                      onClick={() => addSticker(sticker.symbol, sticker.color)}
+                      onClick={() => addSticker(sticker)}
                       aria-label={`${sticker.label} 추가`}
                       title={sticker.label}
-                      className="flex h-12 w-14 items-center justify-center rounded bg-gray-100 text-[34px] font-black leading-none"
-                      style={{ color: sticker.color }}
+                      className="flex h-12 w-14 items-center justify-center rounded bg-gray-100 p-1"
                     >
-                      {sticker.symbol}
+                      <img
+                        src={sticker.image}
+                        alt=""
+                        draggable={false}
+                        className="h-full w-full select-none object-contain"
+                      />
                     </button>
                   ))}
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => updateSelectedSticker((sticker) => ({ ...sticker, scale: Math.max(0.55, sticker.scale - 0.15) }))}
-                    disabled={selectedStickerId === null}
-                    aria-label="선택한 장식 축소"
-                    title="축소"
-                    className="flex h-12 w-12 items-center justify-center rounded bg-sky-100 text-sky-600 disabled:opacity-30"
-                  >
-                    <Minus className="h-7 w-7" strokeWidth={3} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => updateSelectedSticker((sticker) => ({ ...sticker, scale: Math.min(2.2, sticker.scale + 0.15) }))}
-                    disabled={selectedStickerId === null}
-                    aria-label="선택한 장식 확대"
-                    title="확대"
-                    className="flex h-12 w-12 items-center justify-center rounded bg-sky-100 text-sky-600 disabled:opacity-30"
-                  >
-                    <Plus className="h-7 w-7" strokeWidth={3} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={deleteSelectedSticker}
-                    disabled={selectedStickerId === null}
-                    aria-label="선택한 장식 삭제"
-                    title="삭제"
-                    className="flex h-12 w-12 items-center justify-center rounded bg-pink-100 text-pink-500 disabled:opacity-30"
-                  >
-                    <Trash2 className="h-7 w-7" strokeWidth={2.6} />
-                  </button>
                 </div>
               </div>
             </section>

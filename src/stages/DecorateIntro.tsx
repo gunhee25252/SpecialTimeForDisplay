@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState } from 'react'
-import { BASE_HEIGHT, BASE_WIDTH } from '../data/constants'
+import { BASE_HEIGHT, BASE_WIDTH, COLOR_PRINT_MAX_REMAINING } from '../data/constants'
+import { formatWon } from '../utils/format'
 import Button from '../components/Button'
 import Decorate from './Decorate'
 
@@ -193,7 +194,7 @@ export default function DecorateIntro() {
             }}
           >
             <p className="text-[40px] font-black leading-snug">
-              남은 예산 <span style={{ color: '#fb7185' }}>1,000만 원 넘게</span> 남으면{' '}
+              남은 예산 <span style={{ color: '#fb7185' }}>{formatWon(COLOR_PRINT_MAX_REMAINING)} 초과</span>로 남으면{' '}
               <span
                 className="isolate inline-flex h-[48px] w-[80px] items-center justify-center overflow-hidden rounded-md align-middle leading-none shadow-sm"
                 style={{ background: 'linear-gradient(90deg, #fff 0 50%, #000 50% 100%)' }}
@@ -202,7 +203,7 @@ export default function DecorateIntro() {
               </span>{' '}
               인화
               <span className="block">
-                <span style={{ color: '#fb7185' }}>1,000만 원 이하</span>로 남기면{' '}
+                <span style={{ color: '#fb7185' }}>{formatWon(COLOR_PRINT_MAX_REMAINING)} 이하</span>로 남기면{' '}
                 <span
                   className="inline-flex h-[48px] w-[80px] items-center justify-center rounded-md text-white shadow-sm"
                   style={{

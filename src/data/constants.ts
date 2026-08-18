@@ -13,4 +13,4 @@ export const SCENE_HEIGHT = 1620
 
 // 예산을 남김없이 쓸수록 좋다: 남은 예산이 이 금액 이하로 내려가면 컬러로 인화하고,
 // 넘게 남으면 흑백으로 인화한다.
-export const COLOR_PRINT_MAX_REMAINING = 10_000_000
+export const COLOR_PRINT_MAX_REMAINING = 30_000_000

@@ -22,7 +22,7 @@ const GOTHIC_STAGES = new Set<Stage>(['photoBooth', 'decorateIntro', 'decorate',
 export default function App() {
   const stage = useAppStore((s) => s.stage)
 
-  useBackgroundMusic()
+  useBackgroundMusic(stage)
   useGlobalClickSound()
 
   // intro에서는 자동 리셋 불필요. 그 외 스테이지에서만 무입력 타이머 동작.

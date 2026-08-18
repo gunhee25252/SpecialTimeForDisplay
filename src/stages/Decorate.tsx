@@ -1,5 +1,5 @@
 import { useRef, useState, useCallback, useEffect, useLayoutEffect, useMemo } from 'react'
-import { RotateCw } from 'lucide-react'
+import { RotateCw, Shuffle } from 'lucide-react'
 import {
   DEFAULT_ACCESSORY_SCALE,
   useAppStore,
@@ -27,6 +27,7 @@ import {
   HAIR_COLOR_OPTIONS,
   HAIR_OPTIONS,
   OUTFIT_OPTIONS,
+  RANDOM_STYLE_MIN_BUDGET,
   findExpr,
   findHair,
   findHairColor,
@@ -128,7 +129,7 @@ const ITEM_CATEGORY_LABELS: Record<Exclude<ItemCategory, 'background'>, string> 
 
 // 원본 1000×1400 프레임에서 실제로 쓸 영역. base 실루엣(측정: x0.31~0.69, y0.21~0.79)에
 // 넉넉히 여백을 둬서, 표정 별·머리·드레스처럼 몸 밖으로 나가는 요소가 잘리지 않게 한다.
-const CONTENT = { x0: 0, x1: 1, y0: 0.12, y1: 0.98 }
+const CONTENT = { x0: 0, x1: 1, y0: 0.12, y1: 1 }
 const CW_FRAC = CONTENT.x1 - CONTENT.x0 // 잘라낸 폭 비율
 const CH_FRAC = CONTENT.y1 - CONTENT.y0 // 잘라낸 높이 비율
 // 잘라낸 박스 안에 풀프레임 이미지를 확대·오프셋해서 넣기 위한 값(%).
@@ -1038,6 +1039,8 @@ export default function Decorate({
 
   const remaining = budget === null ? null : budget - spent
   // 남은 예산이 기준 이하로 내려가면 컬러 인화 조건을 만족한다(예산을 다 쓸수록 좋다).
+  // 랜덤은 어떤 조합이 뽑혀도 예산을 넘지 않아야 하므로, 최고가 조합만큼 남아 있을 때만 켠다.
+  const canRandomize = remaining === null || remaining >= RANDOM_STYLE_MIN_BUDGET
   const isColorPrintReady =
     remaining !== null && remaining <= COLOR_PRINT_MAX_REMAINING
   const background = canvasBackgroundId ? findItem(canvasBackgroundId) : undefined
@@ -1227,6 +1230,55 @@ export default function Decorate({
   const warn = (msg: string) => {
     setWarning(msg)
     window.setTimeout(() => setWarning(null), 1800)
+  }
+
+  // 신랑·신부를 각각 랜덤으로 꾸민다.
+  // 기본 헤어(민머리)와 기본 의상(이름표)은 후보에서 빼고, 염색·표정은 기본값도 나올 수 있다.
+  // 남은 예산 안에서만 고르며, 비싼 의상부터 정해야 예산이 모자라 의상만 못 입는 일이 없다.
+  const randomizeCharacter = (who: CharacterKey) => {
+    const current = characters[who]
+    let left = budget === null ? Number.POSITIVE_INFINITY : budget - spent
+
+    const pick = <T,>(list: T[]): T | null =>
+      list.length === 0 ? null : list[Math.floor(Math.random() * list.length)]
+
+    // 1) 의상 — 가장 비싸므로 먼저
+    const currentOutfitPrice = outfitPrice(who, current.outfitId ?? DEFAULT_OUTFIT_ID)
+    const outfits = OUTFIT_OPTIONS[who].filter(
+      (o) => o.id !== DEFAULT_OUTFIT_ID && o.price - currentOutfitPrice <= left,
+    )
+    const outfit = pick(outfits)
+    if (!outfit) {
+      warn('예산이 모자라 랜덤 꾸미기를 할 수 없어요.')
+      return
+    }
+    left -= outfit.price - currentOutfitPrice
+
+    // 2) 헤어
+    const currentHairPrice = hairPrice(who, current.hairId ?? DEFAULT_HAIR_ID)
+    const hairs = HAIR_OPTIONS[who].filter(
+      (h) => h.id !== DEFAULT_HAIR_ID && h.price - currentHairPrice <= left,
+    )
+    const hair = pick(hairs)
+    if (!hair) {
+      warn('예산이 모자라 랜덤 꾸미기를 할 수 없어요.')
+      return
+    }
+    left -= hair.price - currentHairPrice
+
+    // 3) 염색 — 기본색도 후보에 포함
+    const currentColorPrice = hairColorPrice(current.hairColorId ?? DEFAULT_HAIR_COLOR_ID)
+    const color = pick(HAIR_COLOR_OPTIONS.filter((c) => c.price - currentColorPrice <= left))
+    if (color) left -= color.price - currentColorPrice
+
+    // 4) 표정 — 기본 표정도 후보에 포함
+    const currentExprPrice = exprPrice(current.exprId ?? DEFAULT_EXPR_ID)
+    const expr = pick(FACE_EXPRESSIONS.filter((e) => e.price - currentExprPrice <= left))
+
+    setCharacterOutfit(who, outfit.id)
+    setCharacterHair(who, hair.id)
+    if (color) setCharacterHairColor(who, color.id)
+    if (expr) setCharacterExpr(who, expr.id)
   }
 
   // 캔버스 transform:scale을 고려해 화면 좌표 → 캔버스 내부 좌표로 변환.
@@ -1658,6 +1710,53 @@ export default function Decorate({
                     {c.label}
                   </span>
                 )}
+              </div>
+            )
+          })}
+
+          {/* 선택한 인물의 랜덤 꾸미기 버튼.
+              인물 컨테이너는 overflow-hidden이라 버튼이 잘리므로 같은 자리에 겹친 형제로 둔다. */}
+          {CHARACTERS.map((c) => {
+            const cs = characters[c.key]
+            if (cs.x === null || cs.y === null) return null
+            if (selectedChar !== c.key) return null
+            return (
+              <div
+                key={`${c.key}-random`}
+                className="pointer-events-none absolute"
+                style={{
+                  left: cs.x,
+                  top: cs.y,
+                  width: `${FIGURE_W_RATIO * 100}%`,
+                  aspectRatio: `${FIGURE_ASPECT_W} / ${FIGURE_ASPECT_H}`,
+                  zIndex: (cs.z ?? 0) + 1,
+                }}
+              >
+                <button
+                  type="button"
+                  aria-label={`${c.label} 랜덤 꾸미기`}
+                  title="랜덤으로 꾸미기"
+                  onPointerDown={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    // 꺼진 상태에서도 누르면 이유를 알려준다(터치 화면에서 완전히 막으면 이유를 알 수 없다).
+                    if (!canRandomize) {
+                      warn(`랜덤 꾸미기에 필요한 최소 금액이 부족합니다. (${formatWon(RANDOM_STYLE_MIN_BUDGET)} 필요)`)
+                      return
+                    }
+                    randomizeCharacter(c.key)
+                  }}
+                  aria-disabled={!canRandomize}
+                  className={`pointer-events-auto absolute left-1/2 flex h-12 -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full px-5 text-xl font-black shadow-md ${
+                    canRandomize
+                      ? 'bg-brand-500 text-white active:bg-brand-600'
+                      : 'bg-gray-300 text-white'
+                  }`}
+                  style={{ top: -26 }}
+                >
+                  <Shuffle aria-hidden="true" className="h-5 w-5" strokeWidth={2.8} />
+                  랜덤
+                </button>
               </div>
             )
           })}

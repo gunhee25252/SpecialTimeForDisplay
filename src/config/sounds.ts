@@ -13,6 +13,8 @@ export const SOUNDS = {
 
 export const BGM_PATH = assetUrl('sounds/bgm/ribbon-heart-loop.mp3')
 export const BGM_VOLUME = 0.5
+// 시작 화면으로 돌아올 때 음악이 사라지는 시간.
+export const BGM_FADE_OUT_MS = 1500
 
 export const EFFECT_VOLUMES = {
   default: 0.8,
