@@ -1,4 +1,4 @@
-import { SCENE_HEIGHT, SCENE_WIDTH } from '../data/constants'
+import { COLOR_PRINT_MAX_REMAINING, SCENE_HEIGHT, SCENE_WIDTH } from '../data/constants'
 import { findItem, getWeddingPhraseFontRatio } from '../data/items'
 import {
   CHARACTER_BODY,
@@ -102,7 +102,8 @@ export function calculatePrintSpec(
     printId,
     imageFile: makePrintFileName(printId, 'png'),
     copies: 1,
-    grayscale: remaining < 10_000_000,
+    // 예산을 다 쓸수록 좋다: 남은 예산이 기준 이하면 컬러, 넘게 남으면 흑백.
+    grayscale: remaining > COLOR_PRINT_MAX_REMAINING,
     size: '4x6',
     sheetRatio: '2:3',
     pixelWidth: PRINT_SHEET_WIDTH,

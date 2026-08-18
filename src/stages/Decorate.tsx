@@ -41,7 +41,7 @@ import {
 import StageLayout from '../components/StageLayout'
 import Button from '../components/Button'
 import { formatWon } from '../utils/format'
-import { BASE_HEIGHT, BASE_WIDTH, SCENE_HEIGHT, SCENE_WIDTH } from '../data/constants'
+import { BASE_HEIGHT, BASE_WIDTH, COLOR_PRINT_MAX_REMAINING, SCENE_HEIGHT, SCENE_WIDTH } from '../data/constants'
 import {
   getBackgroundRecommendations,
   type BackgroundRecommendation,
@@ -412,8 +412,6 @@ const RECOMMENDATION_RANK_COLORS = [
   'text-orange-600',
 ] as const
 
-const LOW_BUDGET_WARNING_THRESHOLD = 10_000_000
-
 function WeddingPhrase({
   text,
   color,
@@ -651,7 +649,7 @@ function BackgroundDecorateGuide({ onContinue }: { onContinue: () => void }) {
             ...textShadow,
           }}
         >
-          <p className="text-3xl font-black leading-snug">
+          <p className="text-[40px] font-black leading-snug">
             참여자의 <span style={{ color: '#f6c453' }}>선택을 분석</span>해
             <span className="block">
               <span style={{ color: '#f6c453' }}>세 가지 배경</span> 추천
@@ -670,7 +668,7 @@ function BackgroundDecorateGuide({ onContinue }: { onContinue: () => void }) {
             ...textShadow,
           }}
         >
-          <p className="text-3xl font-black leading-snug">
+          <p className="text-[40px] font-black leading-snug">
             <span style={{ color: '#56d6c5' }}>단색·실내·야외·지역</span>에서
             <span className="block">
               원하는 배경 <span>직접 선택</span>
@@ -685,7 +683,7 @@ function BackgroundDecorateGuide({ onContinue }: { onContinue: () => void }) {
       >
         <Button
           onClick={handleGuideContinue}
-          className="font-gyeongyeong w-[480px] whitespace-nowrap px-8 py-6 text-3xl"
+          className="font-gyeongyeong w-[480px] whitespace-nowrap px-8 py-6 text-[35px]"
         >
           {guidePage === 'recommendations' ? '다음으로' : '배경 꾸미기 시작'}
         </Button>
@@ -880,7 +878,7 @@ function DecorateStepSpotlightGuide({
             ...textShadow,
           }}
         >
-          <p className="text-3xl font-black leading-snug">
+          <p className="text-[40px] font-black leading-snug">
             <span style={{ color: '#fb923c' }}>구매 목록</span>에서 오브젝트를{' '}
             <span style={{ color: '#fb923c' }}>선택</span>하면
             <span className="block">
@@ -900,7 +898,7 @@ function DecorateStepSpotlightGuide({
             ...textShadow,
           }}
         >
-          <p className="text-3xl font-black leading-snug">
+          <p className="text-[40px] font-black leading-snug">
             {isCharacters ? (
               <>
                 신랑·신부 모두 <span style={{ color: accent }}>헤어·염색·얼굴·의상</span>을{' '}
@@ -914,21 +912,21 @@ function DecorateStepSpotlightGuide({
             )}
           </p>
           {!isCharacters && (
-            <div className="font-gothic mt-4 flex items-center gap-6 text-xl font-black">
+            <div className="font-gothic mt-4 flex items-center gap-6 text-[26px] font-black">
               <span className="flex items-center gap-2">
-                <strong className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-500 text-3xl text-white shadow-md">
+                <strong className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-500 text-[34px] text-white shadow-md">
                   +
                 </strong>
                 확대
               </span>
               <span className="flex items-center gap-2">
-                <strong className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-500 text-3xl text-white shadow-md">
+                <strong className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-500 text-[34px] text-white shadow-md">
                   −
                 </strong>
                 축소
               </span>
               <span className="flex items-center gap-2">
-                <strong className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-2xl text-brand-600 shadow-md ring-2 ring-brand-400">
+                <strong className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-[30px] text-brand-600 shadow-md ring-2 ring-brand-400">
                   ↻
                 </strong>
                 회전
@@ -947,7 +945,7 @@ function DecorateStepSpotlightGuide({
       <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
         <Button
           onClick={handleGuideContinue}
-          className="font-gyeongyeong w-[480px] whitespace-nowrap px-8 py-6 text-3xl"
+          className="font-gyeongyeong w-[480px] whitespace-nowrap px-8 py-6 text-[35px]"
         >
           {buttonLabel}
         </Button>
@@ -1024,7 +1022,7 @@ export default function Decorate({
   const [selectedChar, setSelectedChar] = useState<CharacterKey | null>(null)
   const [warning, setWarning] = useState<string | null>(null)
   const [isFrameEditing, setIsFrameEditing] = useState(false)
-  const [isLowBudgetAlerting, setIsLowBudgetAlerting] = useState(false)
+  const [isColorPrintAlerting, setIsColorPrintAlerting] = useState(false)
   const [transitionTarget, setTransitionTarget] =
     useState<DecorateTransitionTarget | null>(() =>
       seenDecorateGuides.background ? null : 'background',
@@ -1039,8 +1037,9 @@ export default function Decorate({
   const frameDragRef = useRef<FrameDragState | null>(null)
 
   const remaining = budget === null ? null : budget - spent
-  const isLowBudget =
-    remaining !== null && remaining < LOW_BUDGET_WARNING_THRESHOLD
+  // 남은 예산이 기준 이하로 내려가면 컬러 인화 조건을 만족한다(예산을 다 쓸수록 좋다).
+  const isColorPrintReady =
+    remaining !== null && remaining <= COLOR_PRINT_MAX_REMAINING
   const background = canvasBackgroundId ? findItem(canvasBackgroundId) : undefined
   const backgroundPrice = background?.price ?? 0
   const visibleMainTabs = mainTabsForStep(decorateStep)
@@ -1068,10 +1067,10 @@ export default function Decorate({
       : activeMainTab
 
   useEffect(() => {
-    if (transitionTarget !== null || !isLowBudget || lowBudgetAlertShown) return
+    if (transitionTarget !== null || !isColorPrintReady || lowBudgetAlertShown) return
     markLowBudgetAlertShown()
-    setIsLowBudgetAlerting(true)
-  }, [isLowBudget, lowBudgetAlertShown, markLowBudgetAlertShown, transitionTarget])
+    setIsColorPrintAlerting(true)
+  }, [isColorPrintReady, lowBudgetAlertShown, markLowBudgetAlertShown, transitionTarget])
 
   const visibleItems = ITEMS.filter(
     (item) =>
@@ -1172,8 +1171,8 @@ export default function Decorate({
     return entries
   }, [background, characters, placedItems])
 
-  // 첫 꾸미기 진입에서는 1순위 추천 배경으로 시작하되, 잔액이 1,000만 원 아래로
-  // 내려가거나 예산을 초과하면 무료 아이보리 배경으로 시작한다.
+  // 첫 꾸미기 진입에서는 1순위 추천 배경으로 시작하고, 예산을 초과하면 무료 아이보리 배경으로
+  // 시작한다. 예산은 남김없이 쓸수록 좋으므로 잔액을 남기려고 아끼지 않는다.
   useLayoutEffect(() => {
     if (hasInitializedBackgroundRef.current) return
     hasInitializedBackgroundRef.current = true
@@ -1182,9 +1181,7 @@ export default function Decorate({
     const recommended = backgroundRecommendations[0]?.item
     const canAffordRecommended =
       recommended &&
-      (budget === null ||
-        (spent + recommended.price <= budget &&
-          budget - (spent + recommended.price) >= LOW_BUDGET_WARNING_THRESHOLD))
+      (budget === null || spent + recommended.price <= budget)
     const initialBackground = canAffordRecommended
       ? recommended
       : findItem('bg-solid-ivory')
@@ -1493,7 +1490,7 @@ export default function Decorate({
               </div>
             ))}
           </div>
-          <div className="font-gyeongyeong grid grid-cols-3 text-3xl font-black">
+          <div className="font-gyeongyeong grid grid-cols-3 text-[40px] font-black">
             <span className="flex h-14 items-center justify-center gap-2 text-gray-800">
               <span>예산</span>
               <strong className="font-black">
@@ -1510,8 +1507,8 @@ export default function Decorate({
             >
               <span
                 className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 font-black ${
-                  isLowBudget ? 'text-red-500' : 'text-emerald-600'
-                } ${isLowBudgetAlerting ? 'low-budget-alert' : ''}`}
+                  isColorPrintReady ? 'text-emerald-600' : 'text-red-500'
+                } ${isColorPrintAlerting ? 'color-print-alert' : ''}`}
               >
                 <span>남음</span>
                 <strong className="font-black">

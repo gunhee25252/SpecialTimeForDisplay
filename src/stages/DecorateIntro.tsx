@@ -158,7 +158,7 @@ export default function DecorateIntro() {
                 ...textShadow,
               }}
             >
-              <div className="flex items-center gap-4 whitespace-nowrap text-3xl font-black">
+              <div className="flex items-center gap-5 whitespace-nowrap text-[40px] font-black">
                 <span>
                   꾸미기는 <span style={{ color: '#5a9ef7' }}>세 단계</span>예요
                 </span>
@@ -169,9 +169,9 @@ export default function DecorateIntro() {
                 ].map(([number, label]) => (
                   <span
                     key={number}
-                    className="font-gothic flex items-center gap-2 text-xl text-white"
+                    className="font-gothic flex items-center gap-2 text-[26px] text-white"
                   >
-                    <strong className="flex h-9 w-9 items-center justify-center rounded-full bg-[#5a9ef7] text-xl text-white">
+                    <strong className="flex h-11 w-11 items-center justify-center rounded-full bg-[#5a9ef7] text-[24px] text-white">
                       {number}
                     </strong>
                     {label}
@@ -192,26 +192,26 @@ export default function DecorateIntro() {
               ...textShadow,
             }}
           >
-            <p className="text-3xl font-black leading-snug">
-              남은 예산 <span style={{ color: '#fb7185' }}>1,000만 원 이상</span>은{' '}
+            <p className="text-[40px] font-black leading-snug">
+              남은 예산 <span style={{ color: '#fb7185' }}>1,000만 원 넘게</span> 남으면{' '}
               <span
-                className="inline-flex h-[38px] w-[64px] items-center justify-center rounded-md text-white shadow-sm"
-                style={{
-                  backgroundImage:
-                    'linear-gradient(90deg, #ff5f6d 0%, #ff9f43 20%, #ffd93d 40%, #5dd39e 60%, #4dabf7 80%, #a78bfa 100%)',
-                  textShadow: '0 1px 2px rgba(0, 0, 0, 0.35)',
-                }}
+                className="isolate inline-flex h-[48px] w-[80px] items-center justify-center overflow-hidden rounded-md align-middle leading-none shadow-sm"
+                style={{ background: 'linear-gradient(90deg, #fff 0 50%, #000 50% 100%)' }}
               >
-                컬러
+                <span className="text-white mix-blend-difference">흑백</span>
               </span>{' '}
               인화
               <span className="block">
-                <span style={{ color: '#fb7185' }}>1,000만 원 미만</span>은{' '}
+                <span style={{ color: '#fb7185' }}>1,000만 원 이하</span>로 남기면{' '}
                 <span
-                  className="isolate inline-flex h-[38px] w-[64px] items-center justify-center overflow-hidden rounded-md align-middle leading-none shadow-sm"
-                  style={{ background: 'linear-gradient(90deg, #fff 0 50%, #000 50% 100%)' }}
+                  className="inline-flex h-[48px] w-[80px] items-center justify-center rounded-md text-white shadow-sm"
+                  style={{
+                    backgroundImage:
+                      'linear-gradient(90deg, #ff5f6d 0%, #ff9f43 20%, #ffd93d 40%, #5dd39e 60%, #4dabf7 80%, #a78bfa 100%)',
+                    textShadow: '0 1px 2px rgba(0, 0, 0, 0.35)',
+                  }}
                 >
-                  <span className="text-white mix-blend-difference">흑백</span>
+                  컬러
                 </span>{' '}
                 인화
               </span>
@@ -232,7 +232,7 @@ export default function DecorateIntro() {
                 ...textShadow,
               }}
             >
-              <p className="text-3xl font-black leading-snug">
+              <p className="text-[40px] font-black leading-snug">
                 <span style={{ color: '#34d399' }}>프레임 조정</span>으로 인화될 사진의
                 <span className="block">
                   <span style={{ color: '#34d399' }}>위치·크기·비율</span> 변경
@@ -248,7 +248,7 @@ export default function DecorateIntro() {
         >
           <Button
             onClick={handleNextTutorialPage}
-            className="font-gyeongyeong w-[480px] whitespace-nowrap px-8 py-6 text-3xl"
+            className="font-gyeongyeong w-[480px] whitespace-nowrap px-8 py-6 text-[35px]"
           >
             다음으로
           </Button>

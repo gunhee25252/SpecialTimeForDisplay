@@ -11,7 +11,11 @@ if (!packageDirectory) {
 }
 
 const roundsSource = readFileSync('src/data/worldcupRounds.ts', 'utf8')
-const used = new Set([...roundsSource.matchAll(/wcImage\('([^']+)'\)/g)].map((match) => match[1]))
+// wcImage('x.png') 형태든 file: 'x.png' 형태든, 파일명처럼 보이는 문자열을 모두 사용 중으로 본다.
+// 라운드 데이터 구조가 바뀌어도 계속 동작하게 하려는 것.
+const used = new Set(
+  [...roundsSource.matchAll(/'([^']+\.(?:png|jpg|jpeg|webp))'/g)].map((match) => match[1]),
+)
 
 if (used.size === 0) {
   // 파싱이 깨진 채로 지우면 배포본이 망가지므로 여기서 멈춘다.

@@ -30,6 +30,8 @@ const PRINT_DPI = 300
 const STICKER_BOX = 100
 const STICKER_FONT = 88
 const PRINT_DONE_DELAY_MS = 10_000
+// 정지 사진 촬영이 이 시간 안에 끝나지 않으면 영상 프레임으로 되돌아간다.
+const STILL_PHOTO_TIMEOUT_MS = 4_000
 
 // 비율은 일부러 요구하지 않는다. 카메라에 2:3을 요청하면 드라이버가 잘라내는 대신
 // 가로를 눌러 억지로 맞추는(늘어난) 모드를 줄 수 있어서, 원본 비율 그대로 받아
@@ -65,8 +67,8 @@ type FrameOption = {
 const FRAMES: FrameOption[] = [
   { id: 'none', label: '없음' },
   { id: 'birthday', label: '생일', image: assetUrl('images/photo-booth-frames/birthday-single-01.png') },
-  { id: 'mbti', label: 'MBTI', image: assetUrl('images/photo-booth-frames/mbti-single-01.png') },
-  { id: 'princess', label: '공주', image: assetUrl('images/photo-booth-frames/princess-single-01.png') },
+  { id: 'frame01', label: 'MBTI', image: assetUrl('images/photo-booth-frames/frame01.png') },
+  { id: 'frame02', label: '공주', image: assetUrl('images/photo-booth-frames/frame02.png') },
 ]
 
 const STICKERS = [
@@ -83,6 +85,44 @@ function loadImage(src: string): Promise<HTMLImageElement> {
     image.onerror = () => reject(new Error('이미지를 불러오지 못했어요.'))
     image.src = src
   })
+}
+
+// 셔터를 누르는 순간에만 쓰는 정지 사진 경로. 웹캠은 대개 영상 스트림보다 사진 해상도가
+// 높고 압축 잡티도 적어서, 확대 배율이 줄어 인화 화질이 좋아진다.
+// 지원하지 않거나 실패하면 null을 돌려주고 호출한 쪽이 영상 프레임으로 되돌아간다.
+async function takeStillPhoto(track: MediaStreamTrack): Promise<ImageBitmap | null> {
+  const ImageCaptureCtor = (window as unknown as {
+    ImageCapture?: new (track: MediaStreamTrack) => {
+      takePhoto: (settings?: { imageWidth?: number; imageHeight?: number }) => Promise<Blob>
+      getPhotoCapabilities: () => Promise<{
+        imageWidth?: { max?: number }
+        imageHeight?: { max?: number }
+      }>
+    }
+  }).ImageCapture
+  if (!ImageCaptureCtor) return null
+
+  try {
+    const imageCapture = new ImageCaptureCtor(track)
+    let settings: { imageWidth?: number; imageHeight?: number } | undefined
+    try {
+      const capabilities = await imageCapture.getPhotoCapabilities()
+      const maxWidth = capabilities?.imageWidth?.max
+      const maxHeight = capabilities?.imageHeight?.max
+      if (maxWidth && maxHeight) settings = { imageWidth: maxWidth, imageHeight: maxHeight }
+    } catch {
+      // 사진 성능을 못 읽으면 카메라 기본값으로 찍는다.
+    }
+    // 드라이버가 응답하지 않으면 촬영 자체가 멈추므로 시간 제한을 둔다.
+    const blob = await Promise.race([
+      imageCapture.takePhoto(settings),
+      new Promise<null>((resolve) => window.setTimeout(() => resolve(null), STILL_PHOTO_TIMEOUT_MS)),
+    ])
+    if (!blob) return null
+    return await createImageBitmap(blob)
+  } catch {
+    return null
+  }
 }
 
 function cropToPrintRatio(source: string) {
@@ -250,6 +290,7 @@ export default function PhotoBooth() {
   const setStage = useAppStore((state) => state.setStage)
   const reset = useAppStore((state) => state.reset)
   const videoRef = useRef<HTMLVideoElement>(null)
+  const streamRef = useRef<MediaStream | null>(null)
   const stageRef = useRef<HTMLDivElement>(null)
   const uploadInputRef = useRef<HTMLInputElement>(null)
   const countdownTimerRef = useRef<number | null>(null)
@@ -286,6 +327,7 @@ export default function PhotoBooth() {
           stream.getTracks().forEach((track) => track.stop())
           return
         }
+        streamRef.current = stream
         if (videoRef.current) {
           videoRef.current.srcObject = stream
           await videoRef.current.play()
@@ -308,6 +350,7 @@ export default function PhotoBooth() {
     void connectCamera()
     return () => {
       cancelled = true
+      streamRef.current = null
       if (countdownTimerRef.current !== null) window.clearInterval(countdownTimerRef.current)
       stream?.getTracks().forEach((track) => track.stop())
     }
@@ -320,9 +363,57 @@ export default function PhotoBooth() {
     return () => window.clearTimeout(timer)
   }, [printStatus, reset])
 
-  const capture = useCallback(() => {
+  const capture = useCallback(async () => {
     const video = videoRef.current
     if (!video || video.videoWidth === 0 || video.videoHeight === 0) return
+
+    const videoWidth = video.videoWidth
+    const videoHeight = video.videoHeight
+    const videoRatio = videoWidth / videoHeight
+
+    // 셔터 순간에는 정지 사진을 우선 사용한다(없으면 영상 프레임).
+    const track = streamRef.current?.getVideoTracks()[0] ?? null
+    const still = track ? await takeStillPhoto(track) : null
+
+    let source: CanvasImageSource = video
+    let sourceWidth = videoWidth
+    let sourceHeight = videoHeight
+    let sourceX = 0
+    let sourceY = 0
+
+    if (still && still.width > 0 && still.height > 0) {
+      const stillRatio = still.width / still.height
+      // 정지 사진의 화각이 미리보기와 다를 수 있으므로, 먼저 영상과 같은 비율로 가운데를
+      // 잘라 화면에서 보던 구도를 그대로 맞춘다.
+      let usableWidth = still.width
+      let usableHeight = still.height
+      if (stillRatio > videoRatio) {
+        usableWidth = still.height * videoRatio
+      } else if (stillRatio < videoRatio) {
+        usableHeight = still.width / videoRatio
+      }
+      // 화소 수가 실제로 늘어날 때만 정지 사진을 쓴다.
+      if (usableWidth > videoWidth) {
+        source = still
+        sourceWidth = usableWidth
+        sourceHeight = usableHeight
+        sourceX = (still.width - usableWidth) / 2
+        sourceY = (still.height - usableHeight) / 2
+      }
+    }
+
+    // 여기서부터는 어떤 원본이든 동일하게 가운데를 2:3으로 잘라낸다.
+    const targetRatio = CAPTURE_WIDTH / CAPTURE_HEIGHT
+    const currentRatio = sourceWidth / sourceHeight
+    if (currentRatio > targetRatio) {
+      const cropped = sourceHeight * targetRatio
+      sourceX += (sourceWidth - cropped) / 2
+      sourceWidth = cropped
+    } else {
+      const cropped = sourceWidth / targetRatio
+      sourceY += (sourceHeight - cropped) / 2
+      sourceHeight = cropped
+    }
 
     const canvas = document.createElement('canvas')
     canvas.width = CAPTURE_WIDTH
@@ -330,27 +421,24 @@ export default function PhotoBooth() {
     const context = canvas.getContext('2d')
     if (!context) return
 
-    const targetRatio = CAPTURE_WIDTH / CAPTURE_HEIGHT
-    const sourceRatio = video.videoWidth / video.videoHeight
-    let sourceX = 0
-    let sourceY = 0
-    let sourceWidth = video.videoWidth
-    let sourceHeight = video.videoHeight
-
-    if (sourceRatio > targetRatio) {
-      sourceWidth = sourceHeight * targetRatio
-      sourceX = (video.videoWidth - sourceWidth) / 2
-    } else {
-      sourceHeight = sourceWidth / targetRatio
-      sourceY = (video.videoHeight - sourceHeight) / 2
-    }
-
     context.imageSmoothingEnabled = true
     context.imageSmoothingQuality = 'high'
     context.translate(CAPTURE_WIDTH, 0)
     context.scale(-1, 1)
-    context.drawImage(video, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, CAPTURE_WIDTH, CAPTURE_HEIGHT)
-    setCapturedPhoto(canvas.toDataURL('image/jpeg', 0.94))
+    context.drawImage(source, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, CAPTURE_WIDTH, CAPTURE_HEIGHT)
+    if (still) still.close()
+
+    // 최종 인화가 PNG이므로 중간 단계에서 JPEG로 손실을 만들지 않는다.
+    setCapturedPhoto(canvas.toDataURL('image/png'))
+
+    if (import.meta.env.DEV) {
+      const usedStill = source !== video
+      console.info(
+        `[한 컷 사진관] 촬영 원본 ${usedStill ? '정지 사진' : '영상 프레임'} · ` +
+          `잘라낸 영역 ${Math.round(sourceWidth)}×${Math.round(sourceHeight)} → ${CAPTURE_WIDTH}×${CAPTURE_HEIGHT} ` +
+          `(${(CAPTURE_WIDTH / sourceWidth).toFixed(2)}배)`,
+      )
+    }
   }, [])
 
   const startCountdown = () => {
@@ -368,7 +456,7 @@ export default function PhotoBooth() {
         countdownTimerRef.current = null
       }
       setCountdown(null)
-      capture()
+      void capture()
     }, 1000)
   }
 
