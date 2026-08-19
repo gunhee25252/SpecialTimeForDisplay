@@ -5,10 +5,12 @@ import {
   CHARACTER_HEAD,
   CHARACTERS,
   DEFAULT_EXPR_ID,
+  DEFAULT_GLASSES_ID,
   DEFAULT_HAIR_COLOR_ID,
   DEFAULT_HAIR_ID,
   DEFAULT_OUTFIT_ID,
   findExpr,
+  findGlasses,
   findHair,
   findHairColor,
   findOutfit,
@@ -181,6 +183,7 @@ async function drawCharacter(ctx: CanvasRenderingContext2D, key: 'groom' | 'brid
   const hair = findHair(key, cs.hairId ?? DEFAULT_HAIR_ID)
   const hairColor = findHairColor(cs.hairColorId ?? DEFAULT_HAIR_COLOR_ID)
   const outfit = findOutfit(key, cs.outfitId ?? DEFAULT_OUTFIT_ID)
+  const glasses = findGlasses(cs.glassesId ?? DEFAULT_GLASSES_ID)
   const isDefaultOutfit = (cs.outfitId ?? DEFAULT_OUTFIT_ID) === DEFAULT_OUTFIT_ID
   const hasHairColor = hairColor?.id !== DEFAULT_HAIR_COLOR_ID
   const figureW = SCENE_WIDTH * FIGURE_W_RATIO
@@ -203,6 +206,7 @@ async function drawCharacter(ctx: CanvasRenderingContext2D, key: 'groom' | 'brid
     }
   }
   if (ex) await drawImage(ctx, ex.image, imgX, imgY, imgW, imgH)
+  if (glasses?.image) await drawImage(ctx, glasses.image, imgX, imgY, imgW, imgH)
   await drawImage(ctx, outfit?.image ?? CHARACTER_BODY, imgX, imgY, imgW, imgH)
   if (isDefaultOutfit) {
     ctx.font = '700 25px sans-serif'

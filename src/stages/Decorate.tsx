@@ -20,19 +20,23 @@ import {
   CHARACTER_BODY,
   CHARACTER_HEAD,
   CHARACTERS,
+  DEFAULT_GLASSES_ID,
   DEFAULT_HAIR_COLOR_ID,
   DEFAULT_HAIR_ID,
   DEFAULT_OUTFIT_ID,
   FACE_EXPRESSIONS,
+  GLASSES_OPTIONS,
   HAIR_COLOR_OPTIONS,
   HAIR_OPTIONS,
   OUTFIT_OPTIONS,
   RANDOM_STYLE_MIN_BUDGET,
   findExpr,
+  findGlasses,
   findHair,
   findHairColor,
   findOutfit,
   exprPrice,
+  glassesPrice,
   hairColorPrice,
   hairPrice,
   outfitPrice,
@@ -54,11 +58,11 @@ interface ShopTab {
   label: string
   itemCat?: ItemCategory
   who?: CharacterKey
-  characterPart?: 'face' | 'hair' | 'hairColor' | 'outfit'
+  characterPart?: 'face' | 'hair' | 'hairColor' | 'glasses' | 'outfit'
 }
 type CharacterPart = NonNullable<ShopTab['characterPart']>
 type ObjectPart = ObjectShopGroup
-type EquipmentCharacterPart = 'face' | 'hair' | 'hairColor' | 'outfit'
+type EquipmentCharacterPart = 'face' | 'hair' | 'hairColor' | 'glasses' | 'outfit'
 
 interface EquipmentEntry {
   key: string
@@ -73,6 +77,7 @@ interface EquipmentEntry {
   who?: CharacterKey
   part?: EquipmentCharacterPart
   instanceId?: string
+  imageStyle?: React.CSSProperties
 }
 
 const MAIN_TABS: ShopTab[] = [
@@ -103,8 +108,12 @@ const CHARACTER_PART_TABS: { key: CharacterPart; label: string }[] = [
   { key: 'hair', label: '헤어' },
   { key: 'hairColor', label: '염색' },
   { key: 'face', label: '표정' },
+  { key: 'glasses', label: '안경' },
   { key: 'outfit', label: '의상' },
 ]
+
+// 안경 그림은 1000×1400 캔버스 눈높이에 작게 그려져 있어, 썸네일에서는 그 부분만 확대해 보여준다.
+const GLASSES_THUMB_STYLE: React.CSSProperties = { transform: 'scale(3) translateY(12%)' }
 
 const OBJECT_PART_TABS: { key: ObjectPart; label: string; itemCat: ItemCategory }[] = [
   { key: 'accessories', label: '장신구', itemCat: 'object' },
@@ -1038,6 +1047,7 @@ export default function Decorate({
   const setCharacterHair = useAppStore((s) => s.setCharacterHair)
   const setCharacterHairColor = useAppStore((s) => s.setCharacterHairColor)
   const setCharacterOutfit = useAppStore((s) => s.setCharacterOutfit)
+  const setCharacterGlasses = useAppStore((s) => s.setCharacterGlasses)
   const moveCharacter = useAppStore((s) => s.moveCharacter)
   const bringCharacterToFront = useAppStore((s) => s.bringCharacterToFront)
   const canvasBackgroundId = useAppStore((s) => s.canvasBackgroundId)
@@ -1154,6 +1164,7 @@ export default function Decorate({
       const hairColor = findHairColor(state.hairColorId)
       const expression = findExpr(state.exprId)
       const outfit = findOutfit(character.key, state.outfitId)
+      const glasses = findGlasses(state.glassesId)
 
       if (hair && hair.id !== DEFAULT_HAIR_ID) {
         entries.push({
@@ -1189,6 +1200,19 @@ export default function Decorate({
           image: expression.image,
           who: character.key,
           part: 'face',
+        })
+      }
+      if (glasses && glasses.id !== DEFAULT_GLASSES_ID) {
+        entries.push({
+          key: `${character.key}-glasses`,
+          kind: 'character',
+          label: `${character.label} 안경`,
+          name: glasses.name,
+          price: glasses.price,
+          image: glasses.image,
+          who: character.key,
+          part: 'glasses',
+          imageStyle: GLASSES_THUMB_STYLE,
         })
       }
       if (outfit && outfit.id !== DEFAULT_OUTFIT_ID) {
@@ -1547,6 +1571,7 @@ export default function Decorate({
     if (entry.part === 'hair') setCharacterHair(entry.who, DEFAULT_HAIR_ID)
     else if (entry.part === 'hairColor') setCharacterHairColor(entry.who, DEFAULT_HAIR_COLOR_ID)
     else if (entry.part === 'face') setCharacterExpr(entry.who, DEFAULT_EXPR_ID)
+    else if (entry.part === 'glasses') setCharacterGlasses(entry.who, DEFAULT_GLASSES_ID)
     else setCharacterOutfit(entry.who, DEFAULT_OUTFIT_ID)
   }
 
@@ -1669,6 +1694,7 @@ export default function Decorate({
             const hair = findHair(c.key, cs.hairId ?? DEFAULT_HAIR_ID)
             const hairColor = findHairColor(cs.hairColorId ?? DEFAULT_HAIR_COLOR_ID)
             const outfit = findOutfit(c.key, cs.outfitId ?? DEFAULT_OUTFIT_ID)
+            const glasses = findGlasses(cs.glassesId ?? DEFAULT_GLASSES_ID)
             const isDefaultOutfit = (cs.outfitId ?? DEFAULT_OUTFIT_ID) === DEFAULT_OUTFIT_ID
             const hasHairColor = hairColor?.id !== DEFAULT_HAIR_COLOR_ID
             const hairBaseStyle =
@@ -1733,6 +1759,15 @@ export default function Decorate({
                 {ex && (
                   <img
                     src={ex.image}
+                    alt=""
+                    className="pointer-events-none"
+                    style={CHAR_IMG_STYLE}
+                    draggable={false}
+                  />
+                )}
+                {glasses?.image && (
+                  <img
+                    src={glasses.image}
                     alt=""
                     className="pointer-events-none"
                     style={CHAR_IMG_STYLE}
@@ -2080,6 +2115,7 @@ export default function Decorate({
                               src={entry.image}
                               alt=""
                               className="h-full w-full object-contain"
+                              style={entry.imageStyle}
                               draggable={false}
                             />
                           ) : entry.renderStyle === 'weddingPhrase' ? (
@@ -2222,7 +2258,7 @@ export default function Decorate({
           </div>
           <div className="mb-3 flex min-h-[40px] w-full items-center rounded-lg bg-gray-100 p-1">
             {activeMainTab.who ? (
-              <div className="grid w-full grid-cols-4 gap-1">
+              <div className="grid w-full grid-cols-5 gap-1">
                 {CHARACTER_PART_TABS.map((t) => (
                   <button
                     key={t.key}
@@ -2406,6 +2442,47 @@ export default function Decorate({
                     <span className="w-full truncate text-center text-base font-semibold text-gray-700">{color.name}</span>
                     <span className="w-full truncate text-center text-sm text-gray-400">
                       {color.price === 0 ? '무료' : formatWon(color.price)}
+                    </span>
+                  </button>
+                )
+              })}
+            </ShopScrollRow>
+          ) : activeTab.who && activeTab.characterPart === 'glasses' ? (
+            <ShopScrollRow key={activeTab.key} large>
+              {GLASSES_OPTIONS.map((g) => {
+                const who = activeTab.who!
+                const curGlasses = characters[who]?.glassesId ?? DEFAULT_GLASSES_ID
+                const isCur = g.id === curGlasses
+                const delta = g.price - glassesPrice(curGlasses)
+                const affordable = budget === null || spent + delta <= budget
+                return (
+                  <button
+                    key={g.id}
+                    onClick={() => {
+                      if (!setCharacterGlasses(who, g.id)) warn('예산을 초과해서 바꿀 수 없어요.')
+                    }}
+                    disabled={!affordable && !isCur}
+                    className={`flex w-24 shrink-0 select-none flex-col items-center gap-1 rounded-xl border-2 p-1.5 active:bg-brand-50 disabled:opacity-40 ${
+                      isCur ? 'border-brand-500 bg-brand-50' : 'border-brand-100'
+                    }`}
+                  >
+                    <span className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-lg bg-brand-50 text-sm font-bold text-brand-300">
+                      {g.image ? (
+                        /* 안경은 1000×1400 캔버스 한가운데 작게 그려져 있어서, 눈 높이를 확대해 보여준다. */
+                        <img
+                          src={g.image}
+                          alt={g.name}
+                          className="h-full w-full object-contain"
+                          style={GLASSES_THUMB_STYLE}
+                          draggable={false}
+                        />
+                      ) : (
+                        '없음'
+                      )}
+                    </span>
+                    <span className="w-full truncate text-center text-base font-semibold text-gray-700">{g.name}</span>
+                    <span className="w-full truncate text-center text-sm text-gray-400">
+                      {g.price === 0 ? '무료' : formatWon(g.price)}
                     </span>
                   </button>
                 )

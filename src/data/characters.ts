@@ -27,6 +27,13 @@ export interface HairColorOption {
   price: number
 }
 
+export interface GlassesOption {
+  id: string
+  name: string
+  image: string | null
+  price: number
+}
+
 export interface OutfitOption {
   id: string
   name: string
@@ -57,6 +64,7 @@ export const DEFAULT_EXPR_ID = 'face00'
 export const DEFAULT_HAIR_ID = 'none'
 export const DEFAULT_HAIR_COLOR_ID = 'natural'
 export const DEFAULT_OUTFIT_ID = 'body'
+export const DEFAULT_GLASSES_ID = 'none'
 
 const GROOM_HAIR_IDS = [
   'man_hair_00',
@@ -441,6 +449,20 @@ export const OUTFIT_OPTIONS: Record<CharacterKey, OutfitOption[]> = {
   ],
 }
 
+// 안경은 신랑·신부가 같은 그림을 쓰므로 표정·염색처럼 한 벌만 둔다. 값싼 것부터 보이게 정렬.
+export const GLASSES_OPTIONS: GlassesOption[] = [
+  { id: DEFAULT_GLASSES_ID, name: '없음', image: null, price: 0 },
+  { id: 'glasses08', name: '동그리', image: assetUrl('images/characters/glasses/glasses08.png'), price: 200_000 },
+  { id: 'glasses01', name: '블랙 뿔테', image: assetUrl('images/characters/glasses/glasses01.png'), price: 300_000 },
+  { id: 'glasses06', name: '레드 슬림', image: assetUrl('images/characters/glasses/glasses06.png'), price: 300_000 },
+  { id: 'glasses00', name: '골드 보잉', image: assetUrl('images/characters/glasses/glasses00.png'), price: 400_000 },
+  { id: 'glasses03', name: '민트 고글', image: assetUrl('images/characters/glasses/glasses03.png'), price: 400_000 },
+  { id: 'glasses05', name: '라운드', image: assetUrl('images/characters/glasses/glasses05.png'), price: 400_000 },
+  { id: 'glasses02', name: '하트', image: assetUrl('images/characters/glasses/glasses02.png'), price: 500_000 },
+  { id: 'glasses04', name: '핑크 캣아이', image: assetUrl('images/characters/glasses/glasses04.png'), price: 500_000 },
+  { id: 'glasses07', name: '별', image: assetUrl('images/characters/glasses/glasses07.png'), price: 500_000 },
+]
+
 export function findExpr(id: string | null | undefined): FaceExpr | undefined {
   return FACE_EXPRESSIONS.find((e) => e.id === id)
 }
@@ -463,6 +485,14 @@ export function findHairColor(id: string | null | undefined): HairColorOption | 
 
 export function hairColorPrice(id: string | null | undefined): number {
   return findHairColor(id)?.price ?? 0
+}
+
+export function findGlasses(id: string | null | undefined): GlassesOption | undefined {
+  return GLASSES_OPTIONS.find((g) => g.id === id)
+}
+
+export function glassesPrice(id: string | null | undefined): number {
+  return findGlasses(id)?.price ?? 0
 }
 
 export function findOutfit(who: CharacterKey, id: string | null | undefined): OutfitOption | undefined {
