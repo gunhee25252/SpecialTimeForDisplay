@@ -1,4 +1,4 @@
-import { COLOR_PRINT_MAX_REMAINING, SCENE_HEIGHT, SCENE_WIDTH } from '../data/constants'
+import { SCENE_HEIGHT, SCENE_WIDTH } from '../data/constants'
 import { findItem, getWeddingPhraseFontRatio } from '../data/items'
 import {
   CHARACTER_BODY,
@@ -90,20 +90,21 @@ export function commitPrintId(printId: number) {
   window.localStorage.setItem('special-time-print-id', String(printId))
 }
 
+// _budget/_spent는 예산 기준 흑백 인화 규칙에 쓰던 값이다. 지금은 무조건 컬러로 인화하지만,
+// 규칙을 되살릴 때 호출부를 고치지 않아도 되도록 자리만 남겨 둔다.
 export function calculatePrintSpec(
   printId: number,
-  budget: number | null,
-  spent: number,
+  _budget: number | null,
+  _spent: number,
   frameRatio: PrintFrameRatio = '2:3',
 ): PrintSpec {
-  const remaining = Math.max(0, (budget ?? 0) - spent)
   const rotationDegrees = isLandscapePrintFrame(frameRatio) ? 90 : 0
   return {
     printId,
     imageFile: makePrintFileName(printId, 'png'),
     copies: 1,
-    // 예산을 다 쓸수록 좋다: 남은 예산이 기준 이하면 컬러, 넘게 남으면 흑백.
-    grayscale: remaining > COLOR_PRINT_MAX_REMAINING,
+    // 예산과 상관없이 항상 컬러로 인화한다.
+    grayscale: false,
     size: '4x6',
     sheetRatio: '2:3',
     pixelWidth: PRINT_SHEET_WIDTH,

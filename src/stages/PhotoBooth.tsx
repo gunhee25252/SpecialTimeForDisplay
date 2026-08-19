@@ -36,7 +36,7 @@ const STICKER_MIN_SCALE = 0.5
 const STICKER_MAX_SCALE = 2
 const PRINT_DONE_DELAY_MS = 10_000
 // 촬영 버튼을 누른 뒤 셔터가 눌리기까지의 카운트다운(초).
-const COUNTDOWN_SECONDS = 10
+const COUNTDOWN_SECONDS = 5
 // 정지 사진 촬영이 이 시간 안에 끝나지 않으면 영상 프레임으로 되돌아간다.
 const STILL_PHOTO_TIMEOUT_MS = 4_000
 

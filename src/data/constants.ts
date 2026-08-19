@@ -11,6 +11,6 @@ export const BASE_HEIGHT = 1920
 export const SCENE_WIDTH = 1080
 export const SCENE_HEIGHT = 1620
 
-// 예산을 남김없이 쓸수록 좋다: 남은 예산이 이 금액 이하로 내려가면 컬러로 인화하고,
-// 넘게 남으면 흑백으로 인화한다.
+// 예산 기준 흑백/컬러 인화 규칙에 쓰던 기준선. 지금은 예산과 무관하게 항상 컬러로 인화하므로
+// 아무 곳에서도 쓰지 않는다. 규칙을 되살릴 때를 위해 값만 남겨 둔다.
 export const COLOR_PRINT_MAX_REMAINING = 30_000_000

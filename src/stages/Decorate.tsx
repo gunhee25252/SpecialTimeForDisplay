@@ -42,7 +42,7 @@ import {
 import StageLayout from '../components/StageLayout'
 import Button from '../components/Button'
 import { formatWon } from '../utils/format'
-import { BASE_HEIGHT, BASE_WIDTH, COLOR_PRINT_MAX_REMAINING, SCENE_HEIGHT, SCENE_WIDTH } from '../data/constants'
+import { BASE_HEIGHT, BASE_WIDTH, SCENE_HEIGHT, SCENE_WIDTH } from '../data/constants'
 import {
   getBackgroundRecommendations,
   type BackgroundRecommendation,
@@ -1046,12 +1046,10 @@ export default function Decorate({
   const printFrame = useAppStore((s) => s.printFrame)
   const decorateStep = useAppStore((s) => s.decorateStep)
   const seenDecorateGuides = useAppStore((s) => s.seenDecorateGuides)
-  const lowBudgetAlertShown = useAppStore((s) => s.lowBudgetAlertShown)
   const setPrintFrameRatio = useAppStore((s) => s.setPrintFrameRatio)
   const setPrintFrame = useAppStore((s) => s.setPrintFrame)
   const setDecorateStep = useAppStore((s) => s.setDecorateStep)
   const markDecorateGuideSeen = useAppStore((s) => s.markDecorateGuideSeen)
-  const markLowBudgetAlertShown = useAppStore((s) => s.markLowBudgetAlertShown)
   const setStage = useAppStore((s) => s.setStage)
   const resultCode = useAppStore((s) => s.resultCode)
   const axisScores = useAppStore((s) => s.axisScores)
@@ -1086,7 +1084,6 @@ export default function Decorate({
   const [selectedChar, setSelectedChar] = useState<CharacterKey | null>(null)
   const [warning, setWarning] = useState<string | null>(null)
   const [isFrameEditing, setIsFrameEditing] = useState(false)
-  const [isColorPrintAlerting, setIsColorPrintAlerting] = useState(false)
   const [transitionTarget, setTransitionTarget] =
     useState<DecorateTransitionTarget | null>(() =>
       seenDecorateGuides.background ? null : 'background',
@@ -1101,11 +1098,8 @@ export default function Decorate({
   const frameDragRef = useRef<FrameDragState | null>(null)
 
   const remaining = budget === null ? null : budget - spent
-  // 남은 예산이 기준 이하로 내려가면 컬러 인화 조건을 만족한다(예산을 다 쓸수록 좋다).
   // 랜덤은 어떤 조합이 뽑혀도 예산을 넘지 않아야 하므로, 최고가 조합만큼 남아 있을 때만 켠다.
   const canRandomize = remaining === null || remaining >= RANDOM_STYLE_MIN_BUDGET
-  const isColorPrintReady =
-    remaining !== null && remaining <= COLOR_PRINT_MAX_REMAINING
   const background = canvasBackgroundId ? findItem(canvasBackgroundId) : undefined
   const backgroundPrice = background?.price ?? 0
   const visibleMainTabs = mainTabsForStep(decorateStep)
@@ -1131,12 +1125,6 @@ export default function Decorate({
           itemCat: activeObjectTab.itemCat,
         }
       : activeMainTab
-
-  useEffect(() => {
-    if (transitionTarget !== null || !isColorPrintReady || lowBudgetAlertShown) return
-    markLowBudgetAlertShown()
-    setIsColorPrintAlerting(true)
-  }, [isColorPrintReady, lowBudgetAlertShown, markLowBudgetAlertShown, transitionTarget])
 
   const visibleItems = ITEMS.filter(
     (item) =>
@@ -1621,9 +1609,7 @@ export default function Decorate({
               className="flex h-14 items-center justify-center border-l border-gray-200"
             >
               <span
-                className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 font-black ${
-                  isColorPrintReady ? 'text-emerald-600' : 'text-red-500'
-                } ${isColorPrintAlerting ? 'color-print-alert' : ''}`}
+                className="inline-flex items-center gap-2 rounded-xl px-3 py-2 font-black text-emerald-600"
               >
                 <span>남음</span>
                 <strong className="font-black">

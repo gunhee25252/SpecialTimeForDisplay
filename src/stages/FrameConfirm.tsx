@@ -261,7 +261,7 @@ export default function FrameConfirm() {
             다시 꾸미기
           </Button>
           <Button onClick={confirmFrame} className="flex-1">
-            이대로 인쇄하기
+            이대로 확정하기
           </Button>
         </div>
       </div>
