@@ -704,6 +704,9 @@ function DecorateStepSpotlightGuide({
   const [shopRect, setShopRect] = useState<BackgroundGuideRect | null>(null)
   const [purchaseListRect, setPurchaseListRect] = useState<BackgroundGuideRect | null>(null)
   const [objectGuidePage, setObjectGuidePage] = useState<'main' | 'purchase'>('main')
+  // 캐릭터 단계는 '상점 설명' → '랜덤 버튼 설명' 두 장으로 나눈다.
+  const [characterGuidePage, setCharacterGuidePage] = useState<'main' | 'random'>('main')
+  const [characterRect, setCharacterRect] = useState<BackgroundGuideRect | null>(null)
 
   useLayoutEffect(() => {
     const overlay = overlayRef.current
@@ -735,6 +738,20 @@ function DecorateStepSpotlightGuide({
         height: (bottom - top) / scaleY + padding * 2,
       })
 
+      const character = root.querySelector<HTMLElement>('[data-tutorial-target="character"]')
+      if (target === 'characters' && character) {
+        const charBounds = character.getBoundingClientRect()
+        const charPadding = 6
+        setCharacterRect({
+          x: (charBounds.left - rootBounds.left) / scaleX - charPadding,
+          y: (charBounds.top - rootBounds.top) / scaleY - charPadding,
+          width: charBounds.width / scaleX + charPadding * 2,
+          height: charBounds.height / scaleY + charPadding * 2,
+        })
+      } else {
+        setCharacterRect(null)
+      }
+
       const purchaseList = root.querySelector<HTMLElement>('[data-tutorial-target="purchase-list"]')
       if (target === 'objects' && purchaseList) {
         const purchaseBounds = purchaseList.getBoundingClientRect()
@@ -755,7 +772,7 @@ function DecorateStepSpotlightGuide({
     observer.observe(root)
     root
       .querySelectorAll<HTMLElement>(
-        '[data-background-guide-target="shop"], [data-background-guide-shop-end], [data-tutorial-target="purchase-list"]',
+        '[data-background-guide-target="shop"], [data-background-guide-shop-end], [data-tutorial-target="purchase-list"], [data-tutorial-target="character"]',
       )
       .forEach((element) => observer.observe(element))
     window.addEventListener('resize', updateTarget)
@@ -768,14 +785,18 @@ function DecorateStepSpotlightGuide({
 
   useEffect(() => {
     setObjectGuidePage('main')
+    setCharacterGuidePage('main')
   }, [target])
 
   const isCharacters = target === 'characters'
   const isPurchaseGuide = !isCharacters && objectGuidePage === 'purchase'
+  const isRandomGuide = isCharacters && characterGuidePage === 'random'
   const accent = isCharacters ? '#c084fc' : '#a3e635'
   const number = isCharacters ? 2 : 3
   const buttonLabel = isCharacters
-    ? '신랑·신부 꾸미기 시작'
+    ? isRandomGuide
+      ? '신랑·신부 꾸미기 시작'
+      : '다음으로'
     : isPurchaseGuide
       ? '오브젝트 꾸미기 시작'
       : '다음으로'
@@ -784,6 +805,10 @@ function DecorateStepSpotlightGuide({
   const handleGuideContinue = () => {
     if (!isCharacters && objectGuidePage === 'main') {
       setObjectGuidePage('purchase')
+      return
+    }
+    if (isCharacters && characterGuidePage === 'main') {
+      setCharacterGuidePage('random')
       return
     }
     onContinue()
@@ -800,12 +825,22 @@ function DecorateStepSpotlightGuide({
         <defs>
           <mask id={`decorate-${target}-guide-mask`}>
             <rect width={BASE_WIDTH} height={BASE_HEIGHT} fill="white" />
-            {!isPurchaseGuide && shopRect && (
+            {!isPurchaseGuide && !isRandomGuide && shopRect && (
               <rect
                 x={shopRect.x}
                 y={shopRect.y}
                 width={shopRect.width}
                 height={shopRect.height}
+                rx="18"
+                fill="black"
+              />
+            )}
+            {isRandomGuide && characterRect && (
+              <rect
+                x={characterRect.x}
+                y={characterRect.y}
+                width={characterRect.width}
+                height={characterRect.height}
                 rx="18"
                 fill="black"
               />
@@ -829,9 +864,19 @@ function DecorateStepSpotlightGuide({
           fillOpacity="0.72"
           mask={`url(#decorate-${target}-guide-mask)`}
         />
-        {!isPurchaseGuide && shopRect && (
+        {!isPurchaseGuide && !isRandomGuide && shopRect && (
           <rect
             {...shopRect}
+            rx="18"
+            fill="none"
+            stroke={accent}
+            strokeWidth="9"
+            vectorEffect="non-scaling-stroke"
+          />
+        )}
+        {isRandomGuide && characterRect && (
+          <rect
+            {...characterRect}
             rx="18"
             fill="none"
             stroke={accent}
@@ -867,6 +912,24 @@ function DecorateStepSpotlightGuide({
         </h1>
       </div>
 
+      {/* 랜덤 안내: 인물을 누른 것처럼 보여주고, 실제와 같은 모양의 랜덤 버튼을 얹는다. */}
+      {isRandomGuide && shopRect && (
+        <div
+          className="absolute left-1/2 w-[900px] -translate-x-1/2 text-center text-white"
+          style={{ top: shopRect.y + 28, ...textShadow }}
+        >
+          <p className="text-[40px] font-black leading-snug">
+            캐릭터를 선택하고{' '}
+            <span className="mx-1 inline-flex h-12 items-center gap-2 whitespace-nowrap rounded-full bg-brand-500 px-5 align-middle text-xl font-black text-white shadow-md">
+              <Shuffle aria-hidden="true" className="h-5 w-5" strokeWidth={2.8} />
+              랜덤
+            </span>{' '}
+            버튼을 누르면
+            <span className="block">랜덤으로 꾸미기도 가능!</span>
+          </p>
+        </div>
+      )}
+
       {isPurchaseGuide && purchaseListRect && (
         <div
           className="absolute text-right text-white"
@@ -889,7 +952,7 @@ function DecorateStepSpotlightGuide({
         </div>
       )}
 
-      {!isPurchaseGuide && shopRect && (
+      {!isPurchaseGuide && !isRandomGuide && shopRect && (
         <div
           className="absolute w-[680px] -translate-x-1/2 text-left text-white"
           style={{
@@ -1639,6 +1702,7 @@ export default function Decorate({
             return (
               <div
                 key={c.key}
+                data-tutorial-target={c.key === 'bride' ? 'character' : undefined}
                 onPointerDown={(e) => handlePointerDownChar(e, c.key, cs.x!, cs.y!)}
                 className={`absolute overflow-hidden rounded-2xl ${
                   selectedChar === c.key ? 'ring-4 ring-brand-400' : ''
@@ -1720,6 +1784,8 @@ export default function Decorate({
             const cs = characters[c.key]
             if (cs.x === null || cs.y === null) return null
             if (selectedChar !== c.key) return null
+            // 캔버스 축소율만큼 되돌려서 안내에 나온 버튼과 같은 크기로 보이게 한다.
+            const buttonScale = Math.min(2.5, 1 / (canvasTransform.scale || 1))
             return (
               <div
                 key={`${c.key}-random`}
@@ -1747,12 +1813,16 @@ export default function Decorate({
                     randomizeCharacter(c.key)
                   }}
                   aria-disabled={!canRandomize}
-                  className={`pointer-events-auto absolute left-1/2 flex h-12 -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full px-5 text-xl font-black shadow-md ${
+                  className={`pointer-events-auto absolute left-1/2 flex h-12 items-center gap-2 whitespace-nowrap rounded-full px-5 text-xl font-black shadow-md ${
                     canRandomize
                       ? 'bg-brand-500 text-white active:bg-brand-600'
                       : 'bg-gray-300 text-white'
                   }`}
-                  style={{ top: -26 }}
+                  style={{
+                    top: -26,
+                    transform: `translateX(-50%) scale(${buttonScale})`,
+                    transformOrigin: 'bottom center',
+                  }}
                 >
                   <Shuffle aria-hidden="true" className="h-5 w-5" strokeWidth={2.8} />
                   랜덤

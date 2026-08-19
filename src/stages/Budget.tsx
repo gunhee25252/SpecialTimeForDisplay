@@ -243,18 +243,18 @@ export default function Budget() {
           <div className="w-full max-w-[760px] rounded-2xl border-4 border-brand-100 bg-white px-12 py-14 text-center shadow-2xl">
             <h2
               id="budget-reroll-confirm-title"
-              className="text-4xl font-black leading-tight text-gray-800"
+              className="font-gyeongyeong text-[46px] font-black leading-tight text-gray-800"
             >
               정말 예산을 다시 돌리시겠습니까?
             </h2>
-            <p className="mt-6 whitespace-pre-line text-3xl font-bold leading-relaxed text-red-500">
+            <p className="font-gothic mt-6 whitespace-pre-line text-[30px] font-bold leading-relaxed text-red-500">
               {'현재 예산은 사라지고 다시 뽑은 예산으로 변경됩니다.\n예산 다시 돌리기는 한 번만 사용할 수 있습니다.'}
             </p>
             <div className="mt-10 grid grid-cols-2 gap-5">
               <button
                 type="button"
                 onClick={() => setIsRerollConfirming(false)}
-                className="rounded-2xl border-2 border-gray-300 bg-white px-8 py-5 text-3xl font-black text-gray-600 active:bg-gray-100"
+                className="font-gothic rounded-2xl border-2 border-gray-300 bg-white px-8 py-5 text-[28px] font-black text-gray-600 active:bg-gray-100"
               >
                 아니요
               </button>
@@ -264,7 +264,7 @@ export default function Budget() {
                   setIsRerollConfirming(false)
                   handleDraw(true)
                 }}
-                className="rounded-2xl bg-brand-500 px-8 py-5 text-3xl font-black text-white active:bg-brand-600"
+                className="font-gothic rounded-2xl bg-brand-500 px-8 py-5 text-[28px] font-black text-white active:bg-brand-600"
               >
                 네
               </button>

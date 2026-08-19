@@ -305,10 +305,12 @@ export const ITEMS: DecorItem[] = [
 
   // 장신구: 인물 위에 독립적으로 배치하며 오브젝트처럼 이동/크기 조절/회전한다.
   { id: 'prop17', category: 'object', name: '동그리 안경', price: 500_000, thumbnail: '#2e2b31', image: PROP_IMAGES.prop17, defaultWidth: 170, defaultHeight: 65, shape: 'rect', objectGroup: 'accessories' },
-  { id: 'accessory-pearl-earring', category: 'object', name: '진주 귀걸이', price: 200_000, thumbnail: '#f4e8d7', image: ACCESSORY_IMAGES.pearlEarring, defaultWidth: 48, defaultHeight: 57, shape: 'rect', objectGroup: 'accessories' },
-  { id: 'accessory-gold-hoop', category: 'object', name: '골드 링 귀걸이', price: 200_000, thumbnail: '#e7b23e', image: ACCESSORY_IMAGES.goldHoop, defaultWidth: 48, defaultHeight: 57, shape: 'rect', objectGroup: 'accessories' },
+  // 귀걸이 2종은 새 디자인으로 교체 예정이라 상점에서 잠시 내려둔다.
+  // 되살릴 때는 아래 두 줄의 주석만 풀면 된다.
+  // { id: 'accessory-pearl-earring', category: 'object', name: '진주 귀걸이', price: 200_000, thumbnail: '#f4e8d7', image: ACCESSORY_IMAGES.pearlEarring, defaultWidth: 48, defaultHeight: 57, shape: 'rect', objectGroup: 'accessories' },
+  // { id: 'accessory-gold-hoop', category: 'object', name: '골드 링 귀걸이', price: 200_000, thumbnail: '#e7b23e', image: ACCESSORY_IMAGES.goldHoop, defaultWidth: 48, defaultHeight: 57, shape: 'rect', objectGroup: 'accessories' },
   { id: 'accessory-floral-hairpin', category: 'object', name: '꽃 헤어핀', price: 400_000, thumbnail: '#f3a7b5', image: ACCESSORY_IMAGES.floralHairpin, defaultWidth: 160, defaultHeight: 70, shape: 'rect', objectGroup: 'accessories' },
-  { id: 'accessory-pearl-necklace', category: 'object', name: '진주 목걸이', price: 500_000, thumbnail: '#eadfce', image: ACCESSORY_IMAGES.pearlNecklace, defaultWidth: 150, defaultHeight: 78, shape: 'rect', objectGroup: 'accessories' },
+  { id: 'accessory-pearl-necklace', category: 'object', name: '진주 목걸이', price: 500_000, thumbnail: '#eadfce', image: ACCESSORY_IMAGES.pearlNecklace, defaultWidth: 100, defaultHeight: 52, shape: 'rect', objectGroup: 'accessories' },
   { id: 'accessory-heart-sunglasses', category: 'object', name: '하트 선글라스', price: 500_000, thumbnail: '#f06b9b', image: ACCESSORY_IMAGES.heartSunglasses, imageOpacity: 0.68, defaultWidth: 175, defaultHeight: 77, shape: 'rect', objectGroup: 'accessories' },
   { id: 'accessory-cat-eye-sunglasses', category: 'object', name: '캣아이 선글라스', price: 500_000, thumbnail: '#252329', image: ACCESSORY_IMAGES.catEyeSunglasses, defaultWidth: 180, defaultHeight: 70, shape: 'rect', objectGroup: 'accessories' },
   { id: 'accessory-aviator-sunglasses', category: 'object', name: '보잉 선글라스', price: 500_000, thumbnail: '#d6a447', image: ACCESSORY_IMAGES.aviatorSunglasses, defaultWidth: 180, defaultHeight: 74, shape: 'rect', objectGroup: 'accessories' },
