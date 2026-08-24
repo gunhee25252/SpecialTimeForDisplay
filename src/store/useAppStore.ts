@@ -19,6 +19,12 @@ import {
   MIN_BUDGET_AMOUNT,
   SOLO_MIN_BUDGET_AMOUNT,
 } from '../data/budgetTiers'
+import {
+  CHARACTER_FIGURE_HEIGHT,
+  CHARACTER_FIGURE_WIDTH,
+  MAX_CHARACTER_SCALE,
+  MIN_CHARACTER_SCALE,
+} from '../data/constants'
 import { findItem } from '../data/items'
 import {
   DEFAULT_EXPR_ID,
@@ -38,7 +44,7 @@ export type Stage = 'intro' | 'photoBooth' | 'playerSelect' | 'worldcup' | 'resu
 
 export type PlayerCount = 1 | 2
 export type PrintFrameRatio = '2:3' | '3:2'
-export type DecorateStep = 'background' | 'characters' | 'objects'
+export type DecorateStep = 'background' | 'groom' | 'bride' | 'objects'
 export type ItemScaleAnchor = 'center' | 'top-left' | 'bottom-left'
 export const DEFAULT_ACCESSORY_SCALE = 0.9
 export interface PrintFrame {
@@ -81,6 +87,7 @@ export type CharacterState = {
   hairColorId: string
   outfitId: string
   glassesId: string
+  scale: number
   x: number | null
   y: number | null
   z: number
@@ -95,6 +102,7 @@ function makeCharacters(): CharactersState {
       hairColorId: DEFAULT_HAIR_COLOR_ID,
       outfitId: DEFAULT_OUTFIT_ID,
       glassesId: DEFAULT_GLASSES_ID,
+      scale: 1,
       x: null,
       y: null,
       z: 1,
@@ -105,6 +113,7 @@ function makeCharacters(): CharactersState {
       hairColorId: DEFAULT_HAIR_COLOR_ID,
       outfitId: DEFAULT_OUTFIT_ID,
       glassesId: DEFAULT_GLASSES_ID,
+      scale: 1,
       x: null,
       y: null,
       z: 2,
@@ -164,6 +173,7 @@ interface AppState {
   setCharacterHairColor: (who: CharacterKey, hairColorId: string) => boolean // 헤어 염색(가격차 반영, 초과면 false)
   setCharacterOutfit: (who: CharacterKey, outfitId: string) => boolean // 의상 교체(가격차 반영, 초과면 false)
   setCharacterGlasses: (who: CharacterKey, glassesId: string) => boolean // 안경 교체(가격차 반영, 초과면 false)
+  setCharacterScale: (who: CharacterKey, scale: number) => void // 인물 크기 조절(발밑 가운데 고정)
   moveCharacter: (who: CharacterKey, x: number, y: number) => void // 인물 위치 이동
   bringCharacterToFront: (who: CharacterKey) => void
   setCanvasBackground: (itemId: string | null) => boolean
@@ -314,7 +324,8 @@ const initialState = {
   decorateStep: 'background' as DecorateStep,
   seenDecorateGuides: {
     background: false,
-    characters: false,
+    groom: false,
+    bride: false,
     objects: false,
   } as Record<DecorateStep, boolean>,
   lowBudgetAlertShown: false,
@@ -359,7 +370,8 @@ export const useAppStore = create<AppState>((set, get) => ({
         decorateStep: 'background',
         seenDecorateGuides: {
           background: false,
-          characters: false,
+          groom: false,
+          bride: false,
           objects: false,
         },
         lowBudgetAlertShown: false,
@@ -616,6 +628,32 @@ export const useAppStore = create<AppState>((set, get) => ({
     })
     return true
   },
+
+  setCharacterScale: (who, requestedScale) =>
+    set((state) => {
+      const current = state.characters[who]
+      const currentScale = current.scale ?? 1
+      const scale = Math.min(
+        MAX_CHARACTER_SCALE,
+        Math.max(MIN_CHARACTER_SCALE, Math.round(requestedScale * 10) / 10),
+      )
+      if (scale === currentScale) return {}
+      // 발밑 가운데를 기준으로 커지고 작아진다. 서 있던 자리가 그대로 유지돼서
+      // 크기만 바꿔도 인물이 바닥에서 떠오르거나 옆으로 밀리지 않는다.
+      const widthDelta = CHARACTER_FIGURE_WIDTH * (scale - currentScale)
+      const heightDelta = CHARACTER_FIGURE_HEIGHT * (scale - currentScale)
+      return {
+        characters: {
+          ...state.characters,
+          [who]: {
+            ...current,
+            scale,
+            x: current.x === null ? null : current.x - widthDelta / 2,
+            y: current.y === null ? null : current.y - heightDelta,
+          },
+        },
+      }
+    }),
 
   moveCharacter: (who, x, y) =>
     set((state) => ({

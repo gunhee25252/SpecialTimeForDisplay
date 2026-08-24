@@ -46,7 +46,17 @@ import {
 import StageLayout from '../components/StageLayout'
 import Button from '../components/Button'
 import { formatWon } from '../utils/format'
-import { BASE_HEIGHT, BASE_WIDTH, SCENE_HEIGHT, SCENE_WIDTH } from '../data/constants'
+import {
+  BASE_HEIGHT,
+  BASE_WIDTH,
+  CHARACTER_CONTENT,
+  CHARACTER_FIGURE_HEIGHT,
+  CHARACTER_FIGURE_WIDTH,
+  MAX_CHARACTER_SCALE,
+  MIN_CHARACTER_SCALE,
+  SCENE_HEIGHT,
+  SCENE_WIDTH,
+} from '../data/constants'
 import {
   getBackgroundRecommendations,
   type BackgroundRecommendation,
@@ -80,28 +90,19 @@ interface EquipmentEntry {
   imageStyle?: React.CSSProperties
 }
 
-const MAIN_TABS: ShopTab[] = [
-  { key: 'background', label: '배경', itemCat: 'background' },
-  { key: 'groom', label: '신랑', who: 'groom' },
-  { key: 'bride', label: '신부', who: 'bride' },
-  { key: 'objects', label: '오브젝트', itemCat: 'object' },
-]
-
 const DECORATE_STEPS: { key: DecorateStep; number: number; label: string }[] = [
   { key: 'background', number: 1, label: '배경' },
-  { key: 'characters', number: 2, label: '신랑·신부' },
-  { key: 'objects', number: 3, label: '오브젝트' },
+  { key: 'groom', number: 2, label: '신랑' },
+  { key: 'bride', number: 3, label: '신부' },
+  { key: 'objects', number: 4, label: '오브젝트' },
 ]
 
-function mainTabsForStep(step: DecorateStep) {
-  if (step === 'background') return MAIN_TABS.filter((tab) => tab.key === 'background')
-  if (step === 'characters') return MAIN_TABS.filter((tab) => tab.who)
-  return MAIN_TABS.filter((tab) => tab.key === 'objects')
-}
+// 단계 순서대로 앞뒤로만 오간다. 상위 탭이 없어져서 단계가 곧 상점 화면이다.
+const STEP_ORDER = DECORATE_STEPS.map((step) => step.key)
 
-function firstMainTabKey(step: DecorateStep) {
-  if (step === 'characters') return 'groom'
-  return step
+// 인물 단계면 그 인물, 아니면 null.
+function stepCharacter(step: DecorateStep): CharacterKey | null {
+  return step === 'groom' || step === 'bride' ? step : null
 }
 
 const CHARACTER_PART_TABS: { key: CharacterPart; label: string }[] = [
@@ -116,7 +117,6 @@ const CHARACTER_PART_TABS: { key: CharacterPart; label: string }[] = [
 const GLASSES_THUMB_STYLE: React.CSSProperties = { transform: 'scale(3) translateY(12%)' }
 
 const OBJECT_PART_TABS: { key: ObjectPart; label: string; itemCat: ItemCategory }[] = [
-  { key: 'accessories', label: '장신구', itemCat: 'object' },
   { key: 'props', label: '오브제', itemCat: 'object' },
   { key: 'stickers', label: '스티커', itemCat: 'sticker' },
   { key: 'presetText', label: '웨딩 문구', itemCat: 'text' },
@@ -136,9 +136,7 @@ const ITEM_CATEGORY_LABELS: Record<Exclude<ItemCategory, 'background'>, string> 
   text: '문구',
 }
 
-// 원본 1000×1400 프레임에서 실제로 쓸 영역. base 실루엣(측정: x0.31~0.69, y0.21~0.79)에
-// 넉넉히 여백을 둬서, 표정 별·머리·드레스처럼 몸 밖으로 나가는 요소가 잘리지 않게 한다.
-const CONTENT = { x0: 0, x1: 1, y0: 0.12, y1: 1 }
+const CONTENT = CHARACTER_CONTENT
 const CW_FRAC = CONTENT.x1 - CONTENT.x0 // 잘라낸 폭 비율
 const CH_FRAC = CONTENT.y1 - CONTENT.y0 // 잘라낸 높이 비율
 // 잘라낸 박스 안에 풀프레임 이미지를 확대·오프셋해서 넣기 위한 값(%).
@@ -148,15 +146,12 @@ const IMG_L_PCT = -CONTENT.x0 * IMG_W_PCT
 const IMG_T_PCT = -CONTENT.y0 * IMG_H_PCT
 // 캔버스 대비 인물(잘라낸 박스) 너비 + 종횡비. 여백을 늘린 만큼 박스 너비도 키워
 // 실제 인물의 화면상 크기는 비슷하게 유지.
-const FIGURE_W_RATIO = 400 / 1080
+const FIGURE_W_RATIO = CHARACTER_FIGURE_WIDTH / SCENE_WIDTH
 const FIGURE_ASPECT_W = CW_FRAC * 1000
 const FIGURE_ASPECT_H = CH_FRAC * 1400
-const FIGURE_H_OVER_W = FIGURE_ASPECT_H / FIGURE_ASPECT_W
-const FIGURE_WIDTH = SCENE_WIDTH * FIGURE_W_RATIO
-const FIGURE_HEIGHT = FIGURE_WIDTH * FIGURE_H_OVER_W
+const FIGURE_WIDTH = CHARACTER_FIGURE_WIDTH
+const FIGURE_HEIGHT = CHARACTER_FIGURE_HEIGHT
 const CHARACTER_MIN_VISIBLE_RATIO = 0.4
-const CHARACTER_MIN_VISIBLE_WIDTH = FIGURE_WIDTH * CHARACTER_MIN_VISIBLE_RATIO
-const CHARACTER_MIN_VISIBLE_HEIGHT = FIGURE_HEIGHT * CHARACTER_MIN_VISIBLE_RATIO
 const MIN_PRINT_FRAME_SIZE = SCENE_WIDTH * 0.18
 const DEFAULT_PRINT_FRAME_SCALE = 0.85
 const MIN_ITEM_TOUCH_SIZE = 96
@@ -247,16 +242,14 @@ function resizePrintFrame(
   }
 }
 
-function clampCharacterPosition(x: number, y: number) {
+function clampCharacterPosition(x: number, y: number, scale = 1) {
+  const width = FIGURE_WIDTH * scale
+  const height = FIGURE_HEIGHT * scale
+  const minVisibleWidth = width * CHARACTER_MIN_VISIBLE_RATIO
+  const minVisibleHeight = height * CHARACTER_MIN_VISIBLE_RATIO
   return {
-    x: Math.min(
-      SCENE_WIDTH - CHARACTER_MIN_VISIBLE_WIDTH,
-      Math.max(-FIGURE_WIDTH + CHARACTER_MIN_VISIBLE_WIDTH, x),
-    ),
-    y: Math.min(
-      SCENE_HEIGHT - CHARACTER_MIN_VISIBLE_HEIGHT,
-      Math.max(-FIGURE_HEIGHT + CHARACTER_MIN_VISIBLE_HEIGHT, y),
-    ),
+    x: Math.min(SCENE_WIDTH - minVisibleWidth, Math.max(-width + minVisibleWidth, x)),
+    y: Math.min(SCENE_HEIGHT - minVisibleHeight, Math.max(-height + minVisibleHeight, y)),
   }
 }
 
@@ -706,16 +699,13 @@ function DecorateStepSpotlightGuide({
   target,
   onContinue,
 }: {
-  target: Exclude<DecorateTransitionTarget, 'background'>
+  target: 'groom' | 'bride' | 'objects'
   onContinue: () => void
 }) {
   const overlayRef = useRef<HTMLDivElement>(null)
   const [shopRect, setShopRect] = useState<BackgroundGuideRect | null>(null)
   const [purchaseListRect, setPurchaseListRect] = useState<BackgroundGuideRect | null>(null)
   const [objectGuidePage, setObjectGuidePage] = useState<'main' | 'purchase'>('main')
-  // 캐릭터 단계는 '상점 설명' → '랜덤 버튼 설명' 두 장으로 나눈다.
-  const [characterGuidePage, setCharacterGuidePage] = useState<'main' | 'random'>('main')
-  const [characterRect, setCharacterRect] = useState<BackgroundGuideRect | null>(null)
 
   useLayoutEffect(() => {
     const overlay = overlayRef.current
@@ -747,20 +737,6 @@ function DecorateStepSpotlightGuide({
         height: (bottom - top) / scaleY + padding * 2,
       })
 
-      const character = root.querySelector<HTMLElement>('[data-tutorial-target="character"]')
-      if (target === 'characters' && character) {
-        const charBounds = character.getBoundingClientRect()
-        const charPadding = 6
-        setCharacterRect({
-          x: (charBounds.left - rootBounds.left) / scaleX - charPadding,
-          y: (charBounds.top - rootBounds.top) / scaleY - charPadding,
-          width: charBounds.width / scaleX + charPadding * 2,
-          height: charBounds.height / scaleY + charPadding * 2,
-        })
-      } else {
-        setCharacterRect(null)
-      }
-
       const purchaseList = root.querySelector<HTMLElement>('[data-tutorial-target="purchase-list"]')
       if (target === 'objects' && purchaseList) {
         const purchaseBounds = purchaseList.getBoundingClientRect()
@@ -781,7 +757,7 @@ function DecorateStepSpotlightGuide({
     observer.observe(root)
     root
       .querySelectorAll<HTMLElement>(
-        '[data-background-guide-target="shop"], [data-background-guide-shop-end], [data-tutorial-target="purchase-list"], [data-tutorial-target="character"]',
+        '[data-background-guide-target="shop"], [data-background-guide-shop-end], [data-tutorial-target="purchase-list"]',
       )
       .forEach((element) => observer.observe(element))
     window.addEventListener('resize', updateTarget)
@@ -794,18 +770,16 @@ function DecorateStepSpotlightGuide({
 
   useEffect(() => {
     setObjectGuidePage('main')
-    setCharacterGuidePage('main')
   }, [target])
 
-  const isCharacters = target === 'characters'
+  // 인물 단계(신랑·신부)는 화면이 같아서 안내도 한 장으로 끝낸다.
+  const characterLabel = target === 'groom' ? '신랑' : target === 'bride' ? '신부' : null
+  const isCharacters = characterLabel !== null
   const isPurchaseGuide = !isCharacters && objectGuidePage === 'purchase'
-  const isRandomGuide = isCharacters && characterGuidePage === 'random'
   const accent = isCharacters ? '#c084fc' : '#a3e635'
-  const number = isCharacters ? 2 : 3
+  const number = target === 'groom' ? 2 : target === 'bride' ? 3 : 4
   const buttonLabel = isCharacters
-    ? isRandomGuide
-      ? '신랑·신부 꾸미기 시작'
-      : '다음으로'
+    ? `${characterLabel} 꾸미기 시작`
     : isPurchaseGuide
       ? '오브젝트 꾸미기 시작'
       : '다음으로'
@@ -814,10 +788,6 @@ function DecorateStepSpotlightGuide({
   const handleGuideContinue = () => {
     if (!isCharacters && objectGuidePage === 'main') {
       setObjectGuidePage('purchase')
-      return
-    }
-    if (isCharacters && characterGuidePage === 'main') {
-      setCharacterGuidePage('random')
       return
     }
     onContinue()
@@ -834,22 +804,12 @@ function DecorateStepSpotlightGuide({
         <defs>
           <mask id={`decorate-${target}-guide-mask`}>
             <rect width={BASE_WIDTH} height={BASE_HEIGHT} fill="white" />
-            {!isPurchaseGuide && !isRandomGuide && shopRect && (
+            {!isPurchaseGuide && shopRect && (
               <rect
                 x={shopRect.x}
                 y={shopRect.y}
                 width={shopRect.width}
                 height={shopRect.height}
-                rx="18"
-                fill="black"
-              />
-            )}
-            {isRandomGuide && characterRect && (
-              <rect
-                x={characterRect.x}
-                y={characterRect.y}
-                width={characterRect.width}
-                height={characterRect.height}
                 rx="18"
                 fill="black"
               />
@@ -873,19 +833,9 @@ function DecorateStepSpotlightGuide({
           fillOpacity="0.72"
           mask={`url(#decorate-${target}-guide-mask)`}
         />
-        {!isPurchaseGuide && !isRandomGuide && shopRect && (
+        {!isPurchaseGuide && shopRect && (
           <rect
             {...shopRect}
-            rx="18"
-            fill="none"
-            stroke={accent}
-            strokeWidth="9"
-            vectorEffect="non-scaling-stroke"
-          />
-        )}
-        {isRandomGuide && characterRect && (
-          <rect
-            {...characterRect}
             rx="18"
             fill="none"
             stroke={accent}
@@ -911,7 +861,9 @@ function DecorateStepSpotlightGuide({
       >
         <h1 className="font-ryuryu whitespace-nowrap text-[50px] font-black leading-tight text-brand-300">
           {isCharacters ? (
-            <>{number}. 신랑·신부를 꾸미고 원하는 위치로 옮겨보세요</>
+            <>
+              {number}. {characterLabel}을 꾸미고 원하는 위치로 옮겨보세요
+            </>
           ) : (
             <>
               {number}. 오브젝트를 배치해
@@ -920,24 +872,6 @@ function DecorateStepSpotlightGuide({
           )}
         </h1>
       </div>
-
-      {/* 랜덤 안내: 인물을 누른 것처럼 보여주고, 실제와 같은 모양의 랜덤 버튼을 얹는다. */}
-      {isRandomGuide && shopRect && (
-        <div
-          className="absolute left-1/2 w-[900px] -translate-x-1/2 text-center text-white"
-          style={{ top: shopRect.y + 28, ...textShadow }}
-        >
-          <p className="text-[40px] font-black leading-snug">
-            캐릭터를 선택하고{' '}
-            <span className="mx-1 inline-flex h-12 items-center gap-2 whitespace-nowrap rounded-full bg-brand-500 px-5 align-middle text-xl font-black text-white shadow-md">
-              <Shuffle aria-hidden="true" className="h-5 w-5" strokeWidth={2.8} />
-              랜덤
-            </span>{' '}
-            버튼을 누르면
-            <span className="block">랜덤으로 꾸미기도 가능!</span>
-          </p>
-        </div>
-      )}
 
       {isPurchaseGuide && purchaseListRect && (
         <div
@@ -961,7 +895,7 @@ function DecorateStepSpotlightGuide({
         </div>
       )}
 
-      {!isPurchaseGuide && !isRandomGuide && shopRect && (
+      {!isPurchaseGuide && shopRect && (
         <div
           className="absolute w-[680px] -translate-x-1/2 text-left text-white"
           style={{
@@ -974,8 +908,7 @@ function DecorateStepSpotlightGuide({
           <p className="text-[40px] font-black leading-snug">
             {isCharacters ? (
               <>
-                신랑·신부 모두 <span style={{ color: accent }}>헤어·염색·얼굴·의상</span>을{' '}
-                <span style={{ color: accent }}>각각</span> 선택
+                <span style={{ color: accent }}>헤어·염색·표정·안경·의상</span>을 골라 꾸며보세요
               </>
             ) : (
               <>
@@ -1048,6 +981,7 @@ export default function Decorate({
   const setCharacterHairColor = useAppStore((s) => s.setCharacterHairColor)
   const setCharacterOutfit = useAppStore((s) => s.setCharacterOutfit)
   const setCharacterGlasses = useAppStore((s) => s.setCharacterGlasses)
+  const setCharacterScale = useAppStore((s) => s.setCharacterScale)
   const moveCharacter = useAppStore((s) => s.moveCharacter)
   const bringCharacterToFront = useAppStore((s) => s.bringCharacterToFront)
   const canvasBackgroundId = useAppStore((s) => s.canvasBackgroundId)
@@ -1080,16 +1014,13 @@ export default function Decorate({
   )
   const firstRecommendedGroup =
     backgroundRecommendations[0]?.item.backgroundGroup ?? 'solid'
-  const [activeMainTabKey, setActiveMainTabKey] = useState<string>(() =>
-    firstMainTabKey(decorateStep),
-  )
   const [activeBackgroundPart, setActiveBackgroundPart] =
     useState<BackgroundGroup>(firstRecommendedGroup)
   const [activeCharacterParts, setActiveCharacterParts] = useState<Record<CharacterKey, CharacterPart>>({
     groom: 'hair',
     bride: 'hair',
   })
-  const [activeObjectPart, setActiveObjectPart] = useState<ObjectPart>('accessories')
+  const [activeObjectPart, setActiveObjectPart] = useState<ObjectPart>('props')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [selectedChar, setSelectedChar] = useState<CharacterKey | null>(null)
   const [warning, setWarning] = useState<string | null>(null)
@@ -1112,37 +1043,33 @@ export default function Decorate({
   const canRandomize = remaining === null || remaining >= RANDOM_STYLE_MIN_BUDGET
   const background = canvasBackgroundId ? findItem(canvasBackgroundId) : undefined
   const backgroundPrice = background?.price ?? 0
-  const visibleMainTabs = mainTabsForStep(decorateStep)
-  const activeMainTab =
-    visibleMainTabs.find((t) => t.key === activeMainTabKey) ?? visibleMainTabs[0]
-  const activeCharacterPart = activeMainTab.who ? activeCharacterParts[activeMainTab.who] : 'hair'
+  const stepWho = stepCharacter(decorateStep)
+  const activeCharacterPart = stepWho ? activeCharacterParts[stepWho] : 'hair'
   const activeObjectTab =
     OBJECT_PART_TABS.find((tab) => tab.key === activeObjectPart) ??
     OBJECT_PART_TABS[0]
   const activePrintFrame = printFrame ?? defaultPrintFrame(printFrameRatio)
-  const activeTab: ShopTab = activeMainTab.who
+  const activeTab: ShopTab = stepWho
     ? {
-        key: `${activeMainTab.key}-${activeCharacterPart}`,
-        label: `${activeMainTab.label} ${CHARACTER_PART_TABS.find((t) => t.key === activeCharacterPart)?.label ?? ''}`,
-        who: activeMainTab.who,
+        key: `${stepWho}-${activeCharacterPart}`,
+        label: `${stepWho === 'groom' ? '신랑' : '신부'} ${CHARACTER_PART_TABS.find((t) => t.key === activeCharacterPart)?.label ?? ''}`,
+        who: stepWho,
         characterPart: activeCharacterPart,
       }
-
-    : activeMainTab.key === 'objects'
+    : decorateStep === 'objects'
       ? {
           key: `objects-${activeObjectPart}`,
           label: activeObjectTab.label,
           itemCat: activeObjectTab.itemCat,
         }
-      : activeMainTab
+      : { key: 'background', label: '배경', itemCat: 'background' }
 
   const visibleItems = ITEMS.filter(
     (item) =>
       item.category === activeTab.itemCat &&
       (item.category !== 'background' ||
         item.backgroundGroup === activeBackgroundPart) &&
-      (activeMainTab.key !== 'objects' ||
-        item.objectGroup === activeObjectPart),
+      (decorateStep !== 'objects' || item.objectGroup === activeObjectPart),
   ).sort((a, b) => a.price - b.price)
   const equipmentEntries = useMemo<EquipmentEntry[]>(() => {
     const entries: EquipmentEntry[] = []
@@ -1398,34 +1325,26 @@ export default function Decorate({
     }
   }
 
-  const handleMainTabClick = (tab: ShopTab) => {
-    setActiveMainTabKey(tab.key)
-  }
-
   const activateDecorateStep = (step: DecorateStep) => {
     setDecorateStep(step)
-    setActiveMainTabKey(firstMainTabKey(step))
     setSelectedId(null)
     setSelectedChar(null)
     setIsFrameEditing(false)
   }
 
   const handleNextDecorateStep = () => {
-    if (decorateStep === 'background') {
-      activateDecorateStep('characters')
-      if (!seenDecorateGuides.characters) setTransitionTarget('characters')
+    if (decorateStep === 'objects') {
+      setStage('frameConfirm')
       return
     }
-    if (decorateStep === 'characters') {
-      activateDecorateStep('objects')
-      if (!seenDecorateGuides.objects) setTransitionTarget('objects')
-      return
-    }
-    setStage('frameConfirm')
+    const next = STEP_ORDER[STEP_ORDER.indexOf(decorateStep) + 1]
+    activateDecorateStep(next)
+    if (!seenDecorateGuides[next]) setTransitionTarget(next)
   }
 
   const handlePreviousDecorateStep = () => {
-    activateDecorateStep(decorateStep === 'objects' ? 'characters' : 'background')
+    const previous = STEP_ORDER[STEP_ORDER.indexOf(decorateStep) - 1]
+    if (previous) activateDecorateStep(previous)
   }
 
   const handleTransitionContinue = () => {
@@ -1500,8 +1419,13 @@ export default function Decorate({
     const { x, y } = toCanvasCoords(e.clientX, e.clientY)
     if (drag.kind === 'item') moveItem(drag.key, x - drag.offsetX, y - drag.offsetY)
     else {
-      const position = clampCharacterPosition(x - drag.offsetX, y - drag.offsetY)
-      moveCharacter(drag.key as CharacterKey, position.x, position.y)
+      const who = drag.key as CharacterKey
+      const position = clampCharacterPosition(
+        x - drag.offsetX,
+        y - drag.offsetY,
+        characters[who]?.scale ?? 1,
+      )
+      moveCharacter(who, position.x, position.y)
     }
   }
 
@@ -1599,7 +1523,7 @@ export default function Decorate({
       <div className="flex h-full flex-col gap-4">
         {/* 예산 바 */}
         <div className="relative shrink-0 rounded-2xl bg-white px-6 py-5 shadow-sm">
-          <div data-tutorial-target="steps" className="mb-4 grid grid-cols-3 gap-3">
+          <div data-tutorial-target="steps" className="mb-4 grid grid-cols-4 gap-3">
             {DECORATE_STEPS.map((step, index) => (
               <div
                 key={step.key}
@@ -1695,6 +1619,7 @@ export default function Decorate({
             const hairColor = findHairColor(cs.hairColorId ?? DEFAULT_HAIR_COLOR_ID)
             const outfit = findOutfit(c.key, cs.outfitId ?? DEFAULT_OUTFIT_ID)
             const glasses = findGlasses(cs.glassesId ?? DEFAULT_GLASSES_ID)
+            const charScale = cs.scale ?? 1
             const isDefaultOutfit = (cs.outfitId ?? DEFAULT_OUTFIT_ID) === DEFAULT_OUTFIT_ID
             const hasHairColor = hairColor?.id !== DEFAULT_HAIR_COLOR_ID
             const hairBaseStyle =
@@ -1714,7 +1639,6 @@ export default function Decorate({
             return (
               <div
                 key={c.key}
-                data-tutorial-target={c.key === 'bride' ? 'character' : undefined}
                 onPointerDown={(e) => handlePointerDownChar(e, c.key, cs.x!, cs.y!)}
                 className={`absolute overflow-hidden rounded-2xl ${
                   selectedChar === c.key ? 'ring-4 ring-brand-400' : ''
@@ -1722,7 +1646,7 @@ export default function Decorate({
                 style={{
                   left: cs.x,
                   top: cs.y,
-                  width: `${FIGURE_W_RATIO * 100}%`,
+                  width: `${FIGURE_W_RATIO * charScale * 100}%`,
                   aspectRatio: `${FIGURE_ASPECT_W} / ${FIGURE_ASPECT_H}`,
                   zIndex: cs.z ?? 0,
                   touchAction: 'none',
@@ -1788,7 +1712,7 @@ export default function Decorate({
                       left: '50%',
                       top: '55%',
                       transform: 'translate(-50%, -50%)',
-                      fontSize: 25,
+                      fontSize: 25 * charScale,
                       textShadow: '0 1px 3px rgba(255,255,255,0.9)',
                     }}
                   >
@@ -1805,6 +1729,7 @@ export default function Decorate({
             const cs = characters[c.key]
             if (cs.x === null || cs.y === null) return null
             if (selectedChar !== c.key) return null
+            const charScale = cs.scale ?? 1
             // 캔버스 축소율만큼 되돌려서 안내에 나온 버튼과 같은 크기로 보이게 한다.
             const buttonScale = Math.min(2.5, 1 / (canvasTransform.scale || 1))
             return (
@@ -1814,7 +1739,7 @@ export default function Decorate({
                 style={{
                   left: cs.x,
                   top: cs.y,
-                  width: `${FIGURE_W_RATIO * 100}%`,
+                  width: `${FIGURE_W_RATIO * charScale * 100}%`,
                   aspectRatio: `${FIGURE_ASPECT_W} / ${FIGURE_ASPECT_H}`,
                   zIndex: (cs.z ?? 0) + 1,
                 }}
@@ -1847,6 +1772,36 @@ export default function Decorate({
                 >
                   <Shuffle aria-hidden="true" className="h-5 w-5" strokeWidth={2.8} />
                   랜덤
+                </button>
+
+                {/* 크기 조절. 오브젝트 핸들과 같은 자리·같은 모양으로 둔다. */}
+                <button
+                  type="button"
+                  aria-label={`${c.label} 크게`}
+                  title="크게"
+                  disabled={charScale >= MAX_CHARACTER_SCALE}
+                  onPointerDown={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    setCharacterScale(c.key, charScale + 0.1)
+                  }}
+                  className="pointer-events-auto absolute -left-3 -top-3 flex h-9 w-9 items-center justify-center rounded-full bg-brand-500 text-2xl font-black text-white shadow-md disabled:bg-gray-300"
+                >
+                  +
+                </button>
+                <button
+                  type="button"
+                  aria-label={`${c.label} 작게`}
+                  title="작게"
+                  disabled={charScale <= MIN_CHARACTER_SCALE}
+                  onPointerDown={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    setCharacterScale(c.key, charScale - 0.1)
+                  }}
+                  className="pointer-events-auto absolute -bottom-3 -left-3 flex h-9 w-9 items-center justify-center rounded-full bg-brand-500 text-2xl font-black text-white shadow-md disabled:bg-gray-300"
+                >
+                  −
                 </button>
               </div>
             )
@@ -2058,7 +2013,6 @@ export default function Decorate({
             )}
 
             <button
-              data-tutorial-target="frame-button"
               type="button"
               aria-pressed={isFrameEditing}
               onClick={isFrameEditing ? finishFrameEditing : beginFrameEditing}
@@ -2229,41 +2183,14 @@ export default function Decorate({
           data-background-guide-target="shop"
           className="flex h-[388px] shrink-0 flex-col rounded-2xl bg-white p-3 shadow-sm"
         >
-          <div
-            className={`mb-2 grid gap-2 ${
-              decorateStep === 'characters' ? 'grid-cols-2' : 'grid-cols-1'
-            }`}
-          >
-            {decorateStep === 'characters' ? (
-              <>
-              {visibleMainTabs.map((t) => (
-                <button
-                  key={t.key}
-                  onClick={() => handleMainTabClick(t)}
-                  className={`select-none rounded-xl py-2 text-lg font-bold ${
-                    t.key === activeMainTabKey
-                      ? 'bg-brand-500 text-white'
-                      : 'bg-brand-50 text-brand-500'
-                  }`}
-                >
-                  {t.label}
-                </button>
-              ))}
-              </>
-            ) : (
-              <div className="select-none rounded-xl bg-brand-500 py-2 text-center text-lg font-bold text-white">
-                {decorateStep === 'background' ? '배경' : '오브젝트'}
-              </div>
-            )}
-          </div>
-          <div className="mb-3 flex min-h-[40px] w-full items-center rounded-lg bg-gray-100 p-1">
-            {activeMainTab.who ? (
+          <div className="mb-3 flex min-h-[74px] w-full items-center rounded-xl bg-gray-100 p-1.5">
+            {stepWho ? (
               <div className="grid w-full grid-cols-5 gap-1">
                 {CHARACTER_PART_TABS.map((t) => (
                   <button
                     key={t.key}
-                    onClick={() => handleCharacterPartClick(activeMainTab.who!, t.key)}
-                    className={`select-none whitespace-nowrap rounded-md py-1.5 text-base font-bold transition ${
+                    onClick={() => handleCharacterPartClick(stepWho, t.key)}
+                    className={`select-none whitespace-nowrap rounded-lg py-3.5 text-[22px] font-bold transition ${
                       t.key === activeCharacterPart
                         ? 'bg-white text-gray-900 shadow-sm'
                         : 'text-gray-500 active:bg-white/70'
@@ -2273,13 +2200,13 @@ export default function Decorate({
                   </button>
                 ))}
               </div>
-            ) : activeMainTab.key === 'objects' ? (
-              <div className="grid w-full grid-cols-5 gap-1">
+            ) : decorateStep === 'objects' ? (
+              <div className="grid w-full grid-cols-4 gap-1">
                 {OBJECT_PART_TABS.map((t) => (
                   <button
                     key={t.key}
                     onClick={() => setActiveObjectPart(t.key)}
-                    className={`select-none whitespace-nowrap rounded-md py-1.5 text-base font-bold transition ${
+                    className={`select-none whitespace-nowrap rounded-lg py-3.5 text-[22px] font-bold transition ${
                       t.key === activeObjectPart
                         ? 'bg-white text-gray-900 shadow-sm'
                         : 'text-gray-500 active:bg-white/70'
@@ -2289,13 +2216,13 @@ export default function Decorate({
                   </button>
                 ))}
               </div>
-            ) : activeMainTab.key === 'background' ? (
+            ) : decorateStep === 'background' ? (
               <div className="grid w-full grid-cols-4 gap-1">
                 {BACKGROUND_PART_TABS.map((t) => (
                   <button
                     key={t.key}
                     onClick={() => setActiveBackgroundPart(t.key)}
-                    className={`select-none rounded-md py-1.5 text-base font-bold transition ${
+                    className={`select-none rounded-lg py-3.5 text-[22px] font-bold transition ${
                       t.key === activeBackgroundPart
                         ? 'bg-white text-gray-900 shadow-sm'
                         : 'text-gray-500 active:bg-white/70'
@@ -2306,7 +2233,7 @@ export default function Decorate({
                 ))}
               </div>
             ) : (
-              <div aria-hidden="true" className="h-8 w-full" />
+              <div aria-hidden="true" className="h-[62px] w-full" />
             )}
           </div>
 
@@ -2639,9 +2566,11 @@ export default function Decorate({
           <Button onClick={handleNextDecorateStep} className="flex-1 border-2 border-transparent">
             {decorateStep === 'background'
               ? '배경 선택 완료'
-              : decorateStep === 'characters'
-                ? '신랑·신부 꾸미기 완료'
-                : '완성하기'}
+              : decorateStep === 'groom'
+                ? '신랑 꾸미기 완료'
+                : decorateStep === 'bride'
+                  ? '신부 꾸미기 완료'
+                  : '완성하기'}
           </Button>
         </div>
       </div>

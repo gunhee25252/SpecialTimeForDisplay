@@ -100,7 +100,7 @@ textarea {
 
 .shop-scrollbar::-webkit-scrollbar {
   display: block;
-  height: 12px;
+  height: 18px;
 }
 
 .shop-scrollbar::-webkit-scrollbar-track {
@@ -109,7 +109,7 @@ textarea {
 }
 
 .shop-scrollbar::-webkit-scrollbar-thumb {
-  border: 3px solid #fdf2f8;
+  border: 4px solid #fdf2f8;
   border-radius: 9999px;
   background: #f472b6;
 }
@@ -123,21 +123,21 @@ textarea {
 
 .character-shop-row > button,
 .object-shop-row > button {
-  width: 11rem;
-  height: 14.25rem;
+  width: 11.5rem;
+  height: 15.25rem;
   gap: 0.4rem;
   padding: 0.75rem;
 }
 
 .character-shop-row > button > span:first-child,
 .object-shop-row > button > span:first-child {
-  width: 9rem;
-  height: 9rem;
+  width: 9.75rem;
+  height: 9.75rem;
 }
 
 .character-shop-row > button > span:first-child > span {
-  width: 7rem;
-  height: 7rem;
+  width: 7.6rem;
+  height: 7.6rem;
 }
 
 .character-shop-row > button > span:nth-child(2) {

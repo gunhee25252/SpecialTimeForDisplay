@@ -1,4 +1,9 @@
-import { SCENE_HEIGHT, SCENE_WIDTH } from '../data/constants'
+import {
+  CHARACTER_CONTENT,
+  CHARACTER_FIGURE_WIDTH,
+  SCENE_HEIGHT,
+  SCENE_WIDTH,
+} from '../data/constants'
 import { findItem, getWeddingPhraseFontRatio } from '../data/items'
 import {
   CHARACTER_BODY,
@@ -48,14 +53,14 @@ export interface PrintRenderState {
   rotateLandscapeForOutput?: boolean
 }
 
-const CONTENT = { x0: 0, x1: 1, y0: 0.12, y1: 1 }
+const CONTENT = CHARACTER_CONTENT
 const CW_FRAC = CONTENT.x1 - CONTENT.x0
 const CH_FRAC = CONTENT.y1 - CONTENT.y0
 const IMG_W_PCT = 100 / CW_FRAC
 const IMG_H_PCT = 100 / CH_FRAC
 const IMG_L_PCT = -CONTENT.x0 * IMG_W_PCT
 const IMG_T_PCT = -CONTENT.y0 * IMG_H_PCT
-const FIGURE_W_RATIO = 400 / 1080
+const FIGURE_W_RATIO = CHARACTER_FIGURE_WIDTH / SCENE_WIDTH
 const FIGURE_ASPECT_W = CW_FRAC * 1000
 const FIGURE_ASPECT_H = CH_FRAC * 1400
 const FIGURE_H_OVER_W = FIGURE_ASPECT_H / FIGURE_ASPECT_W
@@ -186,7 +191,7 @@ async function drawCharacter(ctx: CanvasRenderingContext2D, key: 'groom' | 'brid
   const glasses = findGlasses(cs.glassesId ?? DEFAULT_GLASSES_ID)
   const isDefaultOutfit = (cs.outfitId ?? DEFAULT_OUTFIT_ID) === DEFAULT_OUTFIT_ID
   const hasHairColor = hairColor?.id !== DEFAULT_HAIR_COLOR_ID
-  const figureW = SCENE_WIDTH * FIGURE_W_RATIO
+  const figureW = SCENE_WIDTH * FIGURE_W_RATIO * (cs.scale ?? 1)
   const figureH = figureW * FIGURE_H_OVER_W
   const imgX = cs.x + (IMG_L_PCT / 100) * figureW
   const imgY = cs.y + (IMG_T_PCT / 100) * figureH
@@ -209,7 +214,7 @@ async function drawCharacter(ctx: CanvasRenderingContext2D, key: 'groom' | 'brid
   if (glasses?.image) await drawImage(ctx, glasses.image, imgX, imgY, imgW, imgH)
   await drawImage(ctx, outfit?.image ?? CHARACTER_BODY, imgX, imgY, imgW, imgH)
   if (isDefaultOutfit) {
-    ctx.font = '700 25px sans-serif'
+    ctx.font = `700 ${25 * (cs.scale ?? 1)}px sans-serif`
     ctx.fillStyle = '#4b5563'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'

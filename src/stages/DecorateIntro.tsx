@@ -3,15 +3,14 @@ import { BASE_HEIGHT, BASE_WIDTH } from '../data/constants'
 import Button from '../components/Button'
 import Decorate from './Decorate'
 
-type TutorialTarget = 'steps' | 'remaining' | 'frame-button'
-type TutorialPage = 0 | 1 | 2
+type TutorialTarget = 'steps' | 'remaining'
+type TutorialPage = 0 | 1
 type TutorialRect = { x: number; y: number; width: number; height: number }
 type TutorialRects = Partial<Record<TutorialTarget, TutorialRect>>
 
 const TARGET_PADDING: Record<TutorialTarget, { x: number; y: number }> = {
   steps: { x: 14, y: 14 },
   remaining: { x: 12, y: 10 },
-  'frame-button': { x: 4, y: 0 },
 }
 
 export default function DecorateIntro() {
@@ -31,7 +30,7 @@ export default function DecorateIntro() {
       const scaleY = rootBounds.height / root.offsetHeight || 1
       const next: TutorialRects = {}
 
-      ;(['steps', 'remaining', 'frame-button'] as TutorialTarget[]).forEach((name) => {
+      ;(['steps', 'remaining'] as TutorialTarget[]).forEach((name) => {
         const target = root.querySelector<HTMLElement>(`[data-tutorial-target="${name}"]`)
         if (!target) return
         const bounds = target.getBoundingClientRect()
@@ -60,17 +59,11 @@ export default function DecorateIntro() {
 
   const steps = targetRects.steps
   const remaining = targetRects.remaining
-  const frameButton = targetRects['frame-button']
-  const activeTarget =
-    tutorialPage === 0
-      ? steps
-      : tutorialPage === 1
-        ? remaining
-        : frameButton
+  const activeTarget = tutorialPage === 0 ? steps : remaining
   const textShadow = { textShadow: '0 2px 5px rgba(0, 0, 0, 0.75)' }
 
   const handleNextTutorialPage = () => {
-    if (tutorialPage < 2) {
+    if (tutorialPage < 1) {
       setTutorialPage((tutorialPage + 1) as TutorialPage)
       return
     }
@@ -135,16 +128,6 @@ export default function DecorateIntro() {
               vectorEffect="non-scaling-stroke"
             />
           )}
-          {tutorialPage === 2 && frameButton && (
-            <rect
-              {...frameButton}
-              rx="16"
-              fill="none"
-              stroke="#34d399"
-              strokeWidth="9"
-              vectorEffect="non-scaling-stroke"
-            />
-          )}
         </svg>
 
         {tutorialPage === 0 && steps && (
@@ -160,12 +143,13 @@ export default function DecorateIntro() {
             >
               <div className="flex items-center gap-5 whitespace-nowrap text-[40px] font-black">
                 <span>
-                  꾸미기는 <span style={{ color: '#5a9ef7' }}>세 단계</span>예요
+                  꾸미기는 <span style={{ color: '#5a9ef7' }}>네 단계</span>예요
                 </span>
                 {[
                   ['1', '배경'],
-                  ['2', '신랑·신부'],
-                  ['3', '오브젝트'],
+                  ['2', '신랑'],
+                  ['3', '신부'],
+                  ['4', '오브젝트'],
                 ].map(([number, label]) => (
                   <span
                     key={number}
@@ -199,29 +183,6 @@ export default function DecorateIntro() {
               </span>
             </p>
           </div>
-        )}
-
-        {tutorialPage === 2 && frameButton && (
-          <>
-            <div
-              className="absolute text-right text-white"
-              style={{
-                left: Math.max(40, frameButton.x - 494),
-                top: frameButton.y + frameButton.height / 2,
-                width: 470,
-                textAlign: 'right',
-                transform: 'translateY(-50%)',
-                ...textShadow,
-              }}
-            >
-              <p className="text-[40px] font-black leading-snug">
-                <span style={{ color: '#34d399' }}>프레임 조정</span>으로 인화될 사진의
-                <span className="block">
-                  <span style={{ color: '#34d399' }}>위치·크기·비율</span> 변경
-                </span>
-              </p>
-            </div>
-          </>
         )}
 
         <div
